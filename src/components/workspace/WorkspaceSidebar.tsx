@@ -5,7 +5,7 @@ import {
   PanelLeftClose,
   Plus,
   Search,
-  Square,
+  FileText,
   UserRound,
 } from "lucide-react";
 import { useState } from "react";
@@ -115,7 +115,7 @@ export function WorkspaceSidebar({
                                   : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
                               }`}
                             >
-                              <Square className="h-3.5 w-3.5 shrink-0" />
+                              <FileText className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
                               <span className="truncate">{board.name}</span>
                             </button>
                           </li>
