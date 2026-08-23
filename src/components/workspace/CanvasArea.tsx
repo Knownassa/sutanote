@@ -1,5 +1,6 @@
 import { Maximize, Minus, Plus } from "lucide-react";
-import { FloatingToolbar } from "./FloatingToolbar";
+import { BottomToolbar } from "./BottomToolbar";
+import { PropertiesPanel } from "./PropertiesPanel";
 import { StickyNote, TextCard, TodoCard } from "./CanvasCards";
 
 export function CanvasArea({ selection = true }: { selection?: boolean }) {
@@ -13,9 +14,11 @@ export function CanvasArea({ selection = true }: { selection?: boolean }) {
         <TodoCard />
       </div>
 
-      {selection && <FloatingToolbar />}
+      {selection && <PropertiesPanel />}
 
-      <div className="absolute bottom-5 right-5 flex items-center gap-1 rounded-lg border border-border bg-popover p-1 shadow-sm">
+      <BottomToolbar />
+
+      <div className="absolute bottom-6 right-6 flex items-center gap-1 rounded-2xl border border-border bg-popover/85 p-1.5 shadow-lg backdrop-blur-md">
         <button
           type="button"
           aria-label="Zoom out"
