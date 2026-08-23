@@ -1,4 +1,4 @@
-import { db } from "../db";
+import { db } from "../database";
 import { DEFAULT_BOARD_ID } from "./types";
 
 interface Migration {
@@ -100,9 +100,9 @@ export async function runMigrations(): Promise<void> {
   for (const m of migrations) {
     if (applied.has(m.version)) continue;
     await m.up();
-    await db.query(
-      `INSERT INTO schema_migrations (version, name) VALUES ($1, $2)`,
-      [m.version, m.name],
-    );
+    await db.query(`INSERT INTO schema_migrations (version, name) VALUES ($1, $2)`, [
+      m.version,
+      m.name,
+    ]);
   }
 }

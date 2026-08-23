@@ -1,5 +1,9 @@
-import { db } from "../db";
+import { db } from "../database";
 import type { CanvasNode, CanvasEdge } from "./types";
+
+function inClause(ids: string[], start: number): string {
+  return ids.map((_, i) => `$${start + i + 1}`).join(",");
+}
 
 export async function flushBoard(
   boardId: string,
@@ -8,16 +12,22 @@ export async function flushBoard(
   dirtyEdges: Map<string, CanvasEdge>,
   deletedEdgeIds: Set<string>,
 ): Promise<void> {
-  const nodeList = [...deletedNodeIds].map((id) => `'${id.replace(/'/g, "''")}'`).join(",");
-  const edgeList = [...deletedEdgeIds].map((id) => `'${id.replace(/'/g, "''")}'`).join(",");
+  const delNodeIds = [...deletedNodeIds];
+  const delEdgeIds = [...deletedEdgeIds];
 
   await db.transaction(async (tx) => {
     // 1. Deletions always win over pending upserts.
-    if (deletedNodeIds.size > 0) {
-      await tx.query(`DELETE FROM canvas_nodes WHERE id = ANY(ARRAY[${nodeList}])`);
+    if (delNodeIds.length > 0) {
+      await tx.query(
+        `DELETE FROM canvas_nodes WHERE id IN (${inClause(delNodeIds, 0)})`,
+        delNodeIds,
+      );
     }
-    if (deletedEdgeIds.size > 0) {
-      await tx.query(`DELETE FROM canvas_edges WHERE id = ANY(ARRAY[${edgeList}])`);
+    if (delEdgeIds.length > 0) {
+      await tx.query(
+        `DELETE FROM canvas_edges WHERE id IN (${inClause(delEdgeIds, 0)})`,
+        delEdgeIds,
+      );
     }
 
     // 2. Upsert dirty entities (skip anything just deleted).

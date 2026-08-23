@@ -10,9 +10,10 @@ import {
   Connection,
 } from "reactflow";
 import { nanoid } from "nanoid";
-import { initDB } from "./db";
+import { initDB } from "./init-db";
 import { loadNodesByBoard } from "./persistence/node-repository";
 import { loadEdgesByBoard } from "./persistence/edge-repository";
+import { getNodeDef } from "./node-definitions";
 import { flushBoard } from "./persistence/persistence-manager";
 import {
   DEFAULT_BOARD_ID,
@@ -50,6 +51,8 @@ const defaultColors: Record<string, string> = {
   sticky: "bg-note-yellow",
   todo: "bg-card",
 };
+
+const SAVE_DELAY = 500;
 
 const queueSize = () =>
   dirtyNodes.size + dirtyEdges.size + deletedNodeIds.size + deletedEdgeIds.size;
@@ -95,8 +98,13 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
 
   const scheduleFlush = () => {
     set({ persistenceStatus: "dirty", pendingChanges: queueSize() });
-    if (flushTimer) clearTimeout(flushTimer);
-    flushTimer = setTimeout(() => void get().flushNow(), 500);
+    // If a flush is already scheduled, let it run — do not stack timers.
+    if (flushTimer) return;
+    flushTimer = setTimeout(async () => {
+      // Reset first so mutations during the flush can reschedule cleanly.
+      flushTimer = undefined;
+      await get().flushNow();
+    }, SAVE_DELAY);
   };
 
   return {
@@ -111,6 +119,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
 
     flushNow: async () => {
       if (flushing) return;
+      // Snapshot the current queue. Mutations during the flush create NEW
+      // entries/objects, so we must not clear anything that changed.
       const dn = new Map(dirtyNodes);
       const dd = new Set(deletedNodeIds);
       const de = new Map(dirtyEdges);
@@ -124,11 +134,21 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       set({ persistenceStatus: "saving" });
       try {
         await flushBoard(DEFAULT_BOARD_ID, dn, dd, de, dde);
-        // Only clear what we successfully flushed.
-        for (const id of dn.keys()) dirtyNodes.delete(id);
-        for (const id of dd) deletedNodeIds.delete(id);
-        for (const id of de.keys()) dirtyEdges.delete(id);
-        for (const id of dde) deletedEdgeIds.delete(id);
+        // Clear only entries that are still exactly what we flushed. Anything
+        // replaced mid-flush (reference differs) stays dirty and re-flushes.
+        for (const [id, snap] of dn) {
+          if (dirtyNodes.get(id) === snap) dirtyNodes.delete(id);
+        }
+        for (const id of dd) {
+          // Keep it deleted only if it wasn't re-created during the flush.
+          if (deletedNodeIds.has(id) && !dirtyNodes.has(id)) deletedNodeIds.delete(id);
+        }
+        for (const [id, snap] of de) {
+          if (dirtyEdges.get(id) === snap) dirtyEdges.delete(id);
+        }
+        for (const id of dde) {
+          if (deletedEdgeIds.has(id) && !dirtyEdges.has(id)) deletedEdgeIds.delete(id);
+        }
 
         set({
           persistenceStatus: queueSize() > 0 ? "dirty" : "saved",
@@ -146,7 +166,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         flushing = false;
         // If new changes arrived during the flush, keep the cycle alive.
         if (queueSize() > 0 && !flushTimer) {
-          flushTimer = setTimeout(() => void get().flushNow(), 500);
+          flushTimer = setTimeout(() => void get().flushNow(), SAVE_DELAY);
         }
       }
     },
@@ -180,7 +200,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
             color: "bg-note-yellow",
             rotation: -0.8,
           },
-          style: { width: 240, minHeight: 120 },
+          style: {
+            width: getNodeDef("sticky").defaultWidth,
+            minHeight: getNodeDef("sticky").defaultHeight,
+          },
         },
         {
           id: nanoid(),
@@ -192,7 +215,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
             color: "bg-card",
             rotation: 0,
           },
-          style: { width: 240, minHeight: 120 },
+          style: {
+            width: getNodeDef("text").defaultWidth,
+            minHeight: getNodeDef("text").defaultHeight,
+          },
         },
         {
           id: nanoid(),
@@ -209,7 +235,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
               { label: "Press Delete to remove a card", done: false },
             ],
           },
-          style: { width: 240, minHeight: 120 },
+          style: {
+            width: getNodeDef("todo").defaultWidth,
+            minHeight: getNodeDef("todo").defaultHeight,
+          },
         },
       ];
 
@@ -279,6 +308,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
 
     addNode: (type, position) => {
       const maxZ = get().nodes.reduce((m, n) => Math.max(m, n.zIndex ?? 0), 0);
+      const def = getNodeDef(type);
       const newNode: CanvasNode = {
         id: nanoid(),
         type,
@@ -298,7 +328,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
               }
             : {}),
         },
-        style: { width: 240, minHeight: 120 },
+        style: { width: def.defaultWidth, minHeight: def.defaultHeight },
       };
       const next = [...get().nodes, newNode];
       set({ nodes: next, selectedNodeId: newNode.id });

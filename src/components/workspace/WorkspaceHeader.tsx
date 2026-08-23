@@ -1,14 +1,38 @@
-import { ChevronRight, MoreHorizontal, Redo2, Settings, Undo2, AlertTriangle, Check, Loader2 } from "lucide-react";
+import { useState } from "react";
+import {
+  ChevronRight,
+  MoreHorizontal,
+  Redo2,
+  Settings,
+  Undo2,
+  AlertTriangle,
+  Check,
+  Loader2,
+} from "lucide-react";
 import { useCanvasStore } from "@/lib/store";
+import { SettingsDialog } from "./SettingsDialog";
 
 const crumbs = ["Workspace", "Studio Rebrand", "Moodboard"];
 
-function IconButton({ label, children }: { label: string; children: React.ReactNode }) {
+function IconButton({
+  label,
+  children,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  children?: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="button"
       aria-label={label}
-      className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+      onClick={onClick}
+      disabled={disabled}
+      title={disabled ? `${label} (coming soon)` : label}
+      className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
     >
       {children}
     </button>
@@ -31,16 +55,20 @@ function SaveStatus() {
 
   return (
     <span
-      title={status === "error" ? lastSaveError ?? "Save failed" : undefined}
+      title={status === "error" ? (lastSaveError ?? "Save failed") : undefined}
       className={`flex items-center gap-1.5 rounded-full border border-border bg-popover/80 px-2.5 py-1 text-[11px] ${cls}`}
     >
-      <Icon className={`h-3 w-3 ${status === "dirty" || status === "saving" ? "animate-spin" : ""}`} />
+      <Icon
+        className={`h-3 w-3 ${status === "dirty" || status === "saving" ? "animate-spin" : ""}`}
+      />
       {label}
     </span>
   );
 }
 
 export function WorkspaceHeader() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b border-border pl-5 pr-3">
       <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm">
@@ -62,20 +90,18 @@ export function WorkspaceHeader() {
 
       <div className="flex items-center gap-1.5">
         <SaveStatus />
-        <IconButton label="Undo">
-          <Undo2 className="h-4 w-4" />
-        </IconButton>
-        <IconButton label="Redo">
-          <Redo2 className="h-4 w-4" />
-        </IconButton>
+        <IconButton label="Undo" disabled />
+        <IconButton label="Redo" disabled />
         <span className="mx-1 h-4 w-px bg-border" />
-        <IconButton label="Settings">
+        <IconButton label="Settings" onClick={() => setSettingsOpen(true)}>
           <Settings className="h-4 w-4" />
         </IconButton>
         <IconButton label="Menu">
           <MoreHorizontal className="h-4 w-4" />
         </IconButton>
       </div>
+
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </header>
   );
 }

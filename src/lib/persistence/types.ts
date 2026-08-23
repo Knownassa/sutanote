@@ -1,11 +1,6 @@
 import type { Node, Edge } from "reactflow";
 
-export type PersistenceStatus =
-  | "clean"
-  | "dirty"
-  | "saving"
-  | "saved"
-  | "error";
+export type PersistenceStatus = "clean" | "dirty" | "saving" | "saved" | "error";
 
 export interface CanvasNodeData {
   text: string;

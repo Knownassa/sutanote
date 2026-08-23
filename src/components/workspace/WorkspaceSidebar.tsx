@@ -53,7 +53,7 @@ export function WorkspaceSidebar({
           transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
           className="shrink-0 overflow-hidden border-r border-sidebar-border bg-sidebar"
         >
-          <div className="flex h-full w-[260px] flex-col">
+          <div className="flex h-full w-[240px] flex-col">
             <div className="flex h-12 shrink-0 items-center justify-between border-b border-sidebar-border pl-5 pr-3">
               <span className="text-sm font-medium tracking-tight">Sutonote</span>
               <button

@@ -8,6 +8,8 @@ import { CanvasArea } from "@/components/workspace/CanvasArea";
 import { RightPropertiesSidebar } from "@/components/workspace/RightPropertiesSidebar";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { useCanvasStore } from "@/lib/store";
+import { useSettingsStore } from "@/lib/settings-store";
+import { useThemeManager } from "@/lib/theme";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -31,9 +33,12 @@ export const Route = createFileRoute("/")({
 });
 
 function Workspace() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
+  const sidebarOpen = useSettingsStore((s) => s.leftSidebarOpen);
+  const toggleSidebar = useSettingsStore((s) => s.toggleLeftSidebar);
+  const setSidebarOpen = useSettingsStore((s) => s.setLeftSidebarOpen);
+  useThemeManager();
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -50,7 +55,7 @@ function Workspace() {
     <div className="flex h-screen w-screen overflow-hidden bg-background">
       <WorkspaceSidebar
         open={sidebarOpen}
-        onToggle={() => setSidebarOpen(false)}
+        onToggle={toggleSidebar}
         onOpenPalette={() => setPaletteOpen(true)}
       />
 

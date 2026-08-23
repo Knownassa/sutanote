@@ -9,25 +9,24 @@ function StickyNoteNode({ id, data, selected }: NodeProps) {
   const rotation = (data.rotation as number) ?? 0;
 
   return (
-    <div>
+    <div
+      style={{
+        transform: `rotate(${rotation}deg)`,
+        transformOrigin: "center",
+        width: "100%",
+      }}
+    >
       <motion.div
         initial={reduce ? false : { scale: 0.9, opacity: 0 }}
         animate={{ scale: selected ? 1.02 : 1, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
-        className={`relative select-none rounded-lg border p-3 shadow-sm transition-[box-shadow,border-color] ${
+        className={`relative w-full select-none rounded-lg border p-3 shadow-sm transition-[box-shadow,border-color] ${
           data.color ?? "bg-note-yellow"
         } ${
           selected
             ? "border-border-strong shadow-[0_8px_30px_rgba(0,0,0,0.08)]"
             : "border-note-foreground/10 hover:shadow-md"
         }`}
-        style={{
-          transform: `rotate(${rotation}deg)`,
-          transformOrigin: "center",
-          minWidth: 200,
-          maxWidth: 320,
-          minHeight: 140,
-        }}
       >
         <Handle
           type="target"

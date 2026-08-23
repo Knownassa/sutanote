@@ -1,7 +1,5 @@
-import { PGlite } from "@electric-sql/pglite";
+import { db } from "./database";
 import { runMigrations } from "./persistence/migrations";
-
-export const db = new PGlite("idb://sutonote");
 
 export async function initDB() {
   await runMigrations();

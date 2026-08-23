@@ -1,5 +1,6 @@
-import { db } from "../db";
+import { db } from "../database";
 import type { CanvasNode, CanvasNodeData } from "./types";
+import { getNodeDef } from "../node-definitions";
 
 interface CanvasNodeRow {
   id: string;
@@ -27,15 +28,16 @@ export async function loadNodesByBoard(boardId: string): Promise<CanvasNode[]> {
     type: row.type,
     position: { x: row.position_x, y: row.position_y },
     zIndex: row.z_index,
-    style: { width: row.width ?? 240, minHeight: row.height ?? 120 },
+    style: {
+      width: row.width ?? getNodeDef(row.type).defaultWidth,
+      minHeight: row.height ?? getNodeDef(row.type).defaultHeight,
+    },
     data: row.data as CanvasNodeData,
   }));
 }
 
 export async function deleteNodesPermanently(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  const list = ids.map((id) => `'${id.replace(/'/g, "''")}'`).join(",");
-  await db.query(
-    `DELETE FROM canvas_nodes WHERE id = ANY(ARRAY[${list}])`,
-  );
+  const clause = ids.map((_, i) => `$${i + 1}`).join(",");
+  await db.query(`DELETE FROM canvas_nodes WHERE id IN (${clause})`, ids);
 }

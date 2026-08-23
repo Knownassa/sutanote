@@ -34,10 +34,9 @@ function TodoNode({ id, data, selected }: NodeProps) {
         initial={reduce ? false : { scale: 0.9, opacity: 0 }}
         animate={{ scale: selected ? 1.02 : 1, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
-        className={`relative select-none rounded-xl border p-5 transition-[box-shadow,border-color] ${
+        className={`relative w-full select-none rounded-xl border p-5 transition-[box-shadow,border-color] ${
           data.color ?? "bg-card"
         } ${selected ? "border-border-strong shadow-[0_8px_30px_rgba(0,0,0,0.08)]" : "border-border hover:shadow-md"}`}
-        style={{ minWidth: 260, maxWidth: 400 }}
       >
         <Handle
           type="target"

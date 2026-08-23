@@ -1,4 +1,4 @@
-import { db } from "../db";
+import { db } from "../database";
 import type { CanvasEdge } from "./types";
 
 interface CanvasEdgeRow {
@@ -33,8 +33,6 @@ export async function loadEdgesByBoard(boardId: string): Promise<CanvasEdge[]> {
 
 export async function deleteEdgesPermanently(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  const list = ids.map((id) => `'${id.replace(/'/g, "''")}'`).join(",");
-  await db.query(
-    `DELETE FROM canvas_edges WHERE id = ANY(ARRAY[${list}])`,
-  );
+  const clause = ids.map((_, i) => `$${i + 1}`).join(",");
+  await db.query(`DELETE FROM canvas_edges WHERE id IN (${clause})`, ids);
 }

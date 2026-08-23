@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -6,10 +6,14 @@ import ReactFlow, {
   NodeTypes,
   ReactFlowProvider,
   type Node,
+  type Viewport,
 } from "reactflow";
 import { AnimatePresence, motion } from "motion/react";
 import "reactflow/dist/style.css";
 import { useCanvasStore } from "@/lib/store";
+import { useSettingsStore } from "@/lib/settings-store";
+import { computeExtent, type BoardExtent } from "@/lib/board-extent";
+import { loadViewport, saveViewport } from "@/lib/viewport";
 import StickyNoteNode from "@/components/nodes/StickyNoteNode";
 import TextNode from "@/components/nodes/TextNode";
 import TodoNode from "@/components/nodes/TodoNode";
@@ -19,6 +23,11 @@ const nodeTypes: NodeTypes = {
   text: TextNode,
   todo: TodoNode,
 };
+
+function centerViewport(): Viewport {
+  if (typeof window === "undefined") return { x: 0, y: 0, zoom: 0.9 };
+  return { x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 0.9 };
+}
 
 const addAtViewportCenter = (
   getViewport: () => { x: number; y: number; zoom: number },
@@ -42,17 +51,55 @@ function CanvasInner() {
   const onConnect = useCanvasStore((s) => s.onConnect);
   const setSelected = useCanvasStore((s) => s.setSelected);
   const initializeStore = useCanvasStore((s) => s.initializeStore);
-  const { fitView, getViewport } = useReactFlow();
+  const gridVisible = useSettingsStore((s) => s.gridVisible);
+  const snapToGrid = useSettingsStore((s) => s.snapToGrid);
+  const { getViewport } = useReactFlow();
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [defaultViewport] = useState<Viewport>(() => loadViewport() ?? centerViewport());
+  const [extent, setExtent] = useState<BoardExtent>(
+    typeof window === "undefined"
+      ? [
+          [-800, -600],
+          [800, 600],
+        ]
+      : [
+          [-window.innerWidth, -window.innerHeight],
+          [window.innerWidth, window.innerHeight],
+        ],
+  );
 
   useEffect(() => {
     let active = true;
-    initializeStore().then(() => {
-      if (active) setTimeout(() => fitView({ duration: 500 }), 100);
-    });
+    initializeStore();
     return () => {
       active = false;
     };
-  }, [initializeStore, fitView]);
+  }, [initializeStore]);
+
+  // Establish a bounded working area from the visible viewport (+padding) once.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const vp = getViewport();
+    const z = vp.zoom || 1;
+    const tlX = (0 - vp.x) / z;
+    const tlY = (0 - vp.y) / z;
+    const brX = (rect.width - vp.x) / z;
+    const brY = (rect.height - vp.y) / z;
+    const pad = 400;
+    setExtent([
+      [tlX - pad, tlY - pad],
+      [brX + pad, brY + pad],
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Monotonic, seamless expansion as content approaches the working boundary.
+  useEffect(() => {
+    setExtent((prev) => computeExtent(prev, nodes));
+  }, [nodes]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -62,7 +109,6 @@ function CanvasInner() {
       const store = useCanvasStore.getState();
       const mod = e.metaKey || e.ctrlKey;
 
-      // Node creation shortcuts
       if (!mod && (e.key === "t" || e.key === "T")) {
         e.preventDefault();
         addAtViewportCenter(getViewport, store.addNode, "text");
@@ -78,7 +124,7 @@ function CanvasInner() {
         addAtViewportCenter(getViewport, store.addNode, "todo");
         return;
       }
-      // Nudge selected node with arrow keys
+
       if (store.selectedNodeId) {
         const node = store.nodes.find((n) => n.id === store.selectedNodeId);
         if (node) {
@@ -104,7 +150,6 @@ function CanvasInner() {
         }
       }
 
-      // Delete selected node (kept in sync with the DB)
       if ((e.key === "Delete" || e.key === "Backspace") && store.selectedNodeId) {
         e.preventDefault();
         store.deleteNode(store.selectedNodeId);
@@ -119,9 +164,10 @@ function CanvasInner() {
     [setSelected],
   );
   const handlePaneClick = useCallback(() => setSelected(null), [setSelected]);
+  const handleMoveEnd = useCallback((_e: unknown, vp: Viewport) => saveViewport(vp), []);
 
   return (
-    <div className="relative w-full h-full">
+    <div ref={containerRef} className="relative w-full h-full">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -130,15 +176,16 @@ function CanvasInner() {
         onConnect={onConnect}
         onNodeClick={handleNodeClick}
         onPaneClick={handlePaneClick}
+        onMoveEnd={handleMoveEnd}
         nodeTypes={nodeTypes}
         proOptions={{ hideAttribution: true }}
-        fitView
+        defaultViewport={defaultViewport}
+        translateExtent={extent}
         className="bg-canvas"
         nodeOrigin={[0.5, 0.5]}
         minZoom={0.2}
         maxZoom={2}
-        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-        snapToGrid={true}
+        snapToGrid={snapToGrid}
         snapGrid={[16, 16]}
         deleteKeyCode={["Backspace", "Delete"]}
         multiSelectionKeyCode={["Meta", "Shift"]}
@@ -146,7 +193,7 @@ function CanvasInner() {
         panOnDrag={[1, 2]}
         connectionRadius={30}
       >
-        <Background color="var(--canvas-dot)" gap={24} size={1.5} />
+        {gridVisible && <Background color="var(--canvas-dot)" gap={24} size={1.5} />}
         <Controls
           className="bg-popover border-border rounded-lg shadow-lg"
           showZoom={true}
@@ -202,7 +249,7 @@ function CanvasOverlay() {
 }
 
 const btnBase =
-  "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-[transform,background-color,color,box-shadow] hover:bg-surface-hover hover:text-foreground active:scale-95";
+  "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-[transform,background-color,color,box-shadow] hover:bg-surface-hover hover:text-foreground active:scale-95 disabled:opacity-40 disabled:hover:bg-transparent disabled:active:scale-100";
 
 function BottomToolbar() {
   const addNode = useCanvasStore((state) => state.addNode);
@@ -306,8 +353,8 @@ function BottomToolbar() {
       </button>
       <button
         type="button"
-        onClick={() => setActiveTool("image")}
-        aria-label="Image"
+        disabled
+        aria-label="Image (coming soon)"
         className={`${btnBase} ${activeTool === "image" ? "bg-surface-active text-foreground" : ""}`}
       >
         <svg
