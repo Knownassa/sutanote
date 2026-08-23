@@ -55,14 +55,26 @@ function centerViewport(): Viewport {
   return { x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 0.9 };
 }
 
+function getCanvasCenter(): { x: number; y: number } {
+  if (typeof document === "undefined")
+    return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  const el = document.querySelector(".react-flow");
+  const rect = el?.getBoundingClientRect();
+  return {
+    x: rect ? rect.left + rect.width / 2 : window.innerWidth / 2,
+    y: rect ? rect.top + rect.height / 2 : window.innerHeight / 2,
+  };
+}
+
 const addAtViewportCenter = (
   getViewport: () => { x: number; y: number; zoom: number },
   addNode: (type: string, position: { x: number; y: number }) => void,
   type: string,
 ) => {
   const vp = getViewport();
-  const x = (window.innerWidth / 2 - vp.x) / vp.zoom;
-  const y = (window.innerHeight / 2 - vp.y) / vp.zoom;
+  const center = getCanvasCenter();
+  const x = (center.x - vp.x) / vp.zoom;
+  const y = (center.y - vp.y) / vp.zoom;
   addNode(type, {
     x: x + (Math.floor(Math.random() * 200) - 100),
     y: y + (Math.floor(Math.random() * 200) - 100),
@@ -250,9 +262,10 @@ function CanvasInner() {
         if (editingText) return;
         e.preventDefault();
         const vp = getViewport();
+        const center = getCanvasCenter();
         const pos = {
-          x: (window.innerWidth / 2 - vp.x) / vp.zoom,
-          y: (window.innerHeight / 2 - vp.y) / vp.zoom,
+          x: (center.x - vp.x) / vp.zoom,
+          y: (center.y - vp.y) / vp.zoom,
         };
         canvas.pasteAt(pos);
         return;

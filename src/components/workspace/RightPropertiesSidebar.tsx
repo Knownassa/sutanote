@@ -15,6 +15,7 @@ import {
 import { useCanvasStore } from "@/lib/store";
 import { getNodeDef } from "@/lib/node-definitions";
 import { storeImageAsset } from "@/lib/asset-store";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const colors = [
   { name: "Yellow", class: "bg-note-yellow" },
@@ -23,14 +24,6 @@ const colors = [
   { name: "Lavender", class: "bg-note-lavender" },
   { name: "Blue", class: "bg-note-blue" },
   { name: "White", class: "bg-card" },
-];
-
-const textColors = [
-  { name: "Default", value: "" },
-  { name: "Ink", value: "#0f172a" },
-  { name: "Red", value: "#dc2626" },
-  { name: "Blue", value: "#2563eb" },
-  { name: "Green", value: "#16a34a" },
 ];
 
 function SectionLabel({ children }: { children: string }) {
@@ -123,8 +116,8 @@ export function RightPropertiesSidebar() {
   const selectedNodeIds = useCanvasStore((s) => s.selectedNodeIds);
   const nodes = useCanvasStore((s) => s.nodes);
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
-  const updateNodeSize = useCanvasStore((s) => s.updateNodeSize);
-  const updateNodePosition = useCanvasStore((s) => s.updateNodePosition);
+  const setPositionSelected = useCanvasStore((s) => s.setPositionSelected);
+  const setSizeSelected = useCanvasStore((s) => s.setSizeSelected);
   const bringToFront = useCanvasStore((s) => s.bringToFront);
   const sendToBack = useCanvasStore((s) => s.sendToBack);
   const bringForward = useCanvasStore((s) => s.bringForward);
@@ -133,6 +126,7 @@ export function RightPropertiesSidebar() {
   const distributeSelected = useCanvasStore((s) => s.distributeSelected);
   const matchSizeSelected = useCanvasStore((s) => s.matchSizeSelected);
   const setColorSelected = useCanvasStore((s) => s.setColorSelected);
+  const setBackgroundColorSelected = useCanvasStore((s) => s.setBackgroundColorSelected);
   const setLockedSelected = useCanvasStore((s) => s.setLockedSelected);
   const groupSelected = useCanvasStore((s) => s.groupSelected);
   const ungroupSelected = useCanvasStore((s) => s.ungroupSelected);
@@ -162,7 +156,7 @@ export function RightPropertiesSidebar() {
     selected.every((n) => n.data.color === node.data.color) && node.data.color !== undefined;
 
   return (
-    <div className="flex h-full w-[260px] flex-col gap-5 overflow-y-auto p-4">
+    <ScrollArea className="h-full w-[260px] p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
           {multi ? `${selected.length} items selected` : "Properties"}
@@ -183,25 +177,25 @@ export function RightPropertiesSidebar() {
             <Field
               label="X"
               value={Math.round(node.position.x)}
-              onCommit={(n) => updateNodePosition(node.id, n, node.position.y)}
+              onCommit={(n) => setPositionSelected(node.id, n, node.position.y)}
             />
             <Field
               label="Y"
               value={Math.round(node.position.y)}
-              onCommit={(n) => updateNodePosition(node.id, node.position.x, n)}
+              onCommit={(n) => setPositionSelected(node.id, node.position.x, n)}
             />
             <Field
               label="W"
               value={commonStyle("width")}
               onCommit={(n) =>
-                updateNodeSize(node.id, Math.max(def.minWidth, n), node.style?.minHeight as number)
+                setSizeSelected(node.id, Math.max(def.minWidth, n), node.style?.minHeight as number)
               }
             />
             <Field
               label="H"
               value={commonStyle("minHeight")}
               onCommit={(n) =>
-                updateNodeSize(node.id, node.style?.width as number, Math.max(def.minHeight, n))
+                setSizeSelected(node.id, node.style?.width as number, Math.max(def.minHeight, n))
               }
             />
           </div>
@@ -341,73 +335,10 @@ export function RightPropertiesSidebar() {
           ))}
           <CustomColorButton
             currentColor={(node.data.backgroundColor as string) ?? ""}
-            onPick={(hex) => {
-              // Apply custom background color via inline style.
-              const next = useCanvasStore
-                .getState()
-                .nodes.map((n) =>
-                  n.selected ? { ...n, data: { ...n.data, backgroundColor: hex } } : n,
-                ) as import("@/lib/persistence/types").CanvasNode[];
-              useCanvasStore.setState({ nodes: next });
-              useCanvasStore.getState().pushHistory();
-            }}
+            onPick={(hex) => setBackgroundColorSelected(hex)}
           />
         </div>
       </div>
-
-      {!multi && node.type === "text" && (
-        <div>
-          <SectionLabel>Text</SectionLabel>
-          <div className="space-y-2">
-            <Toolbar3
-              labels={["12", "14", "16", "20", "24"]}
-              active={[12, 14, 16, 20, 24].indexOf((node.data.fontSize as number) ?? 14)}
-              onPick={(i) =>
-                updateNodeData(node.id, { fontSize: [12, 14, 16, 20, 24][i] as number })
-              }
-            />
-            <Toolbar3
-              labels={["L", "C", "R"]}
-              active={["left", "center", "right"].indexOf(
-                (node.data.textAlign as string) ?? "left",
-              )}
-              onPick={(i) =>
-                updateNodeData(node.id, {
-                  textAlign: ["left", "center", "right"][i] as "left" | "center" | "right",
-                })
-              }
-            />
-            <div className="flex gap-1">
-              <button
-                type="button"
-                onClick={() => updateNodeData(node.id, { bold: !node.data.bold })}
-                className={`flex-1 rounded-md border border-border py-1 text-[11px] ${node.data.bold ? "bg-surface-active text-foreground" : "text-muted-foreground"}`}
-              >
-                Bold
-              </button>
-              <button
-                type="button"
-                onClick={() => updateNodeData(node.id, { italic: !node.data.italic })}
-                className={`flex-1 rounded-md border border-border py-1 text-[11px] italic ${node.data.italic ? "bg-surface-active text-foreground" : "text-muted-foreground"}`}
-              >
-                Italic
-              </button>
-            </div>
-            <div className="grid grid-cols-5 gap-1">
-              {textColors.map((tc) => (
-                <button
-                  key={tc.name}
-                  type="button"
-                  onClick={() => updateNodeData(node.id, { textColor: tc.value })}
-                  title={tc.name}
-                  className={`aspect-square rounded-md border border-border-strong ${tc.value ? "" : "bg-gradient-to-br from-white to-black/10"}`}
-                  style={tc.value ? { background: tc.value } : undefined}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {!multi && node.type === "sticky" && (
         <div>
@@ -532,7 +463,7 @@ export function RightPropertiesSidebar() {
           )}
         </div>
       </div>
-    </div>
+    </ScrollArea>
   );
 }
 

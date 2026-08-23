@@ -10,6 +10,7 @@ import {
 } from "@/lib/item-registry";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ToolPickerProps {
   open: boolean;
@@ -45,10 +46,11 @@ export function ToolPicker({ open, onClose }: ToolPickerProps) {
   const pick = useCallback(
     (item: ItemDefinition) => {
       // Place at center of visible canvas area using viewport transform.
-      const pos = screenToFlowPosition({
-        x: window.innerWidth / 2,
-        y: window.innerHeight / 2,
-      });
+      const canvasEl = document.querySelector(".react-flow");
+      const rect = canvasEl?.getBoundingClientRect();
+      const cx = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+      const cy = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
+      const pos = screenToFlowPosition({ x: cx, y: cy });
       addNode(item.type, pos);
       setActiveTool("select");
       onClose();
@@ -81,7 +83,7 @@ export function ToolPicker({ open, onClose }: ToolPickerProps) {
             </button>
           </div>
 
-          <div className="max-h-[320px] overflow-y-auto">
+          <ScrollArea className="max-h-[320px]">
             {categories.map((cat) => {
               const items = AVAILABLE_ITEMS.filter((i) => i.category === cat);
               if (items.length === 0) return null;
@@ -109,7 +111,7 @@ export function ToolPicker({ open, onClose }: ToolPickerProps) {
                 </div>
               );
             })}
-          </div>
+          </ScrollArea>
         </motion.div>
       )}
     </AnimatePresence>

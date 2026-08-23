@@ -181,6 +181,19 @@ const migrations: Migration[] = [
       }
     },
   },
+  {
+    version: 6,
+    name: "006_vault_kv",
+    up: async () => {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS vault_kv (
+          path TEXT PRIMARY KEY,
+          content TEXT NOT NULL,
+          updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+      `);
+    },
+  },
 ];
 
 export async function runMigrations(): Promise<void> {

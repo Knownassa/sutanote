@@ -110,6 +110,11 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var s=localStorage.getItem("sutonote:settings");if(s){var p=JSON.parse(s);var t=(p.state&&p.state.theme)||"system";if(t==="dark"){document.documentElement.classList.add("dark")}else if(t==="system"){if(window.matchMedia("(prefers-color-scheme:dark)").matches){document.documentElement.classList.add("dark")}}}else{if(window.matchMedia("(prefers-color-scheme:dark)").matches){document.documentElement.classList.add("dark")}}}catch(e){}})();`,
+          }}
+        />
         <HeadContent />
       </head>
       <body>

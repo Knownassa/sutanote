@@ -57,21 +57,26 @@ function Workspace() {
     <div
       className="grid h-screen w-screen overflow-hidden bg-background"
       style={{
-        gridTemplateColumns: sidebarOpen ? "240px minmax(0, 1fr) 0px" : "0px minmax(0, 1fr) 0px",
+        gridTemplateColumns: "240px minmax(0, 1fr) 260px",
         gridTemplateRows: "48px minmax(0, 1fr)",
-        transition: "grid-template-columns 160ms ease",
       }}
     >
       {/* Left sidebar — row 1-2, col 1 */}
-      <div
-        className="col-start-1 row-span-2 overflow-hidden border-r border-sidebar-border bg-sidebar"
-        style={{ minWidth: sidebarOpen ? 240 : 0 }}
-      >
-        <WorkspaceSidebar
-          open={sidebarOpen}
-          onToggle={toggleSidebar}
-          onOpenPalette={() => setPaletteOpen(true)}
-        />
+      <div className="col-start-1 row-span-2 overflow-hidden border-r border-sidebar-border bg-sidebar">
+        <motion.div
+          initial={false}
+          animate={{ width: sidebarOpen ? 240 : 0 }}
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          className="h-full overflow-hidden"
+        >
+          <div className="h-full w-[240px]">
+            <WorkspaceSidebar
+              open={sidebarOpen}
+              onToggle={toggleSidebar}
+              onOpenPalette={() => setPaletteOpen(true)}
+            />
+          </div>
+        </motion.div>
       </div>
 
       {/* Header — row 1, col 2 */}
@@ -94,24 +99,23 @@ function Workspace() {
       </div>
 
       {/* Canvas — row 2, col 2 */}
-      <div className="col-start-2 row-start-2 min-h-0 min-w-0">
+      <div className="col-start-2 row-start-2 h-full w-full min-h-0 min-w-0">
         <CanvasArea />
       </div>
 
-      {/* Right properties — row 1-2, col 3 (animated) */}
-      <AnimatePresence initial={false}>
-        {rightPanelOpen && (
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 260, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-            className="col-start-3 row-span-2 shrink-0 overflow-hidden border-l border-border bg-popover"
-          >
+      {/* Right properties — row 1-2, col 3 */}
+      <div className="col-start-3 row-span-2 overflow-hidden border-l border-border bg-popover">
+        <motion.div
+          initial={false}
+          animate={{ width: rightPanelOpen ? 260 : 0 }}
+          transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+          className="h-full overflow-hidden"
+        >
+          <div className="h-full w-[260px]">
             <RightPropertiesSidebar />
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </motion.div>
+      </div>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>

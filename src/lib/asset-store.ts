@@ -101,3 +101,15 @@ export async function deleteAsset(assetId: string): Promise<void> {
     urlCache.delete(assetId);
   }
 }
+
+/** Generic binary blob storage (used by VaultStorage). Key is an arbitrary path/id. */
+export async function storeAssetBlob(key: string, data: Uint8Array): Promise<void> {
+  await idbPut(key, new Blob([data.buffer as ArrayBuffer]));
+}
+
+/** Generic binary blob retrieval (used by VaultStorage). Returns null if not found. */
+export async function getAssetBlob(key: string): Promise<Uint8Array | null> {
+  const blob = await idbGet(key);
+  if (!blob) return null;
+  return new Uint8Array(await blob.arrayBuffer());
+}

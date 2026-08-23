@@ -59,6 +59,9 @@ interface CanvasState {
   distributeSelected: (axis: "horizontal" | "vertical") => void;
   matchSizeSelected: (dim: "width" | "height") => void;
   setColorSelected: (color: string) => void;
+  setBackgroundColorSelected: (hex: string) => void;
+  setPositionSelected: (id: string, x: number, y: number) => void;
+  setSizeSelected: (id: string, width: number, height: number) => void;
   setLockedSelected: (locked: boolean) => void;
   groupSelected: () => void;
   ungroupSelected: () => void;
@@ -813,6 +816,37 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
 
     setColorSelected: (color) => {
       applyToSelected((n) => ({ ...n, data: { ...n.data, color } }));
+    },
+
+    setBackgroundColorSelected: (hex) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      applyToSelected((n) => ({ ...n, data: { ...n.data, backgroundColor: hex } }));
+    },
+
+    setPositionSelected: (id, x, y) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      const next = get().nodes.map((n) =>
+        n.id === id ? { ...n, position: { x, y } } : n,
+      ) as CanvasNode[];
+      commitNodes(next);
+      const node = next.find((n) => n.id === id);
+      if (node) {
+        markNodeDirty(node);
+        scheduleFlush();
+      }
+    },
+
+    setSizeSelected: (id, width, height) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      const next = get().nodes.map((n) =>
+        n.id === id ? { ...n, style: { ...n.style, width, minHeight: height } } : n,
+      ) as CanvasNode[];
+      commitNodes(next);
+      const node = next.find((n) => n.id === id);
+      if (node) {
+        markNodeDirty(node);
+        scheduleFlush();
+      }
     },
 
     setLockedSelected: (locked) => {
