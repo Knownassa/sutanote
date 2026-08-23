@@ -1,4 +1,4 @@
-import { Check, Square } from "lucide-react";
+import { CheckCircle2, Circle } from "lucide-react";
 
 const cardBase =
   "absolute select-none border border-border bg-card transition-[box-shadow,border-color] duration-200 hover:border-border-strong hover:shadow-md";
@@ -48,11 +48,9 @@ export function TodoCard() {
         {todos.map((todo) => (
           <li key={todo.label} className="flex items-center gap-2.5 text-sm">
             {todo.done ? (
-              <span className="flex h-4 w-4 items-center justify-center rounded-[5px] border border-primary/40 bg-primary/10">
-                <Check className="h-3 w-3 text-primary" />
-              </span>
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
             ) : (
-              <Square className="h-4 w-4 text-muted-foreground/60" strokeWidth={1.5} />
+              <Circle className="h-4 w-4 shrink-0 text-muted-foreground/60" strokeWidth={1.5} />
             )}
             <span className={todo.done ? "text-muted-foreground line-through" : "text-foreground"}>
               {todo.label}

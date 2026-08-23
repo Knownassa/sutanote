@@ -1,48 +1,207 @@
-import { Maximize, Minus, Plus } from "lucide-react";
-import { BottomToolbar } from "./BottomToolbar";
-import { PropertiesPanel } from "./PropertiesPanel";
-import { StickyNote, TextCard, TodoCard } from "./CanvasCards";
+import React, { useEffect } from "react";
+import ReactFlow, {
+  Background,
+  Controls,
+  useReactFlow,
+  NodeTypes,
+  ReactFlowProvider,
+} from "reactflow";
+import "reactflow/dist/style.css";
+import { useCanvasStore } from "@/lib/store";
+import { initDB } from "@/lib/db";
+import StickyNoteNode from "@/components/nodes/StickyNoteNode";
+import TextNode from "@/components/nodes/TextNode";
+import TodoNode from "@/components/nodes/TodoNode";
 
-export function CanvasArea({ selection = true }: { selection?: boolean }) {
+const nodeTypes: NodeTypes = {
+  sticky: StickyNoteNode,
+  text: TextNode,
+  todo: TodoNode,
+};
+
+function CanvasInner() {
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelected, loadNodes } =
+    useCanvasStore();
+  const { fitView } = useReactFlow();
+
+  useEffect(() => {
+    initDB()
+      .then(() => loadNodes())
+      .then(() => {
+        setTimeout(() => fitView({ duration: 500 }), 100);
+      });
+  }, [loadNodes, fitView]);
+
   return (
-    <div className="relative flex-1 overflow-hidden bg-canvas">
-      <div className="canvas-dots absolute inset-0" />
+    <div className="w-full h-full">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onNodeClick={(_e, node) => setSelected(node.id)}
+        onPaneClick={() => setSelected(null)}
+        nodeTypes={nodeTypes}
+        fitView
+        className="bg-canvas"
+        nodeOrigin={[0.5, 0.5]}
+        minZoom={0.2}
+        maxZoom={2}
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        snapToGrid={true}
+        snapGrid={[16, 16]}
+        deleteKeyCode={["Backspace", "Delete"]}
+        multiSelectionKeyCode={["Meta", "Shift"]}
+        selectionOnDrag={true}
+        panOnDrag={[1, 2]}
+        connectionRadius={30}
+      >
+        <Background color="var(--canvas-dot)" gap={24} size={1.5} />
+        <Controls
+          className="bg-popover border-border rounded-lg shadow-lg"
+          showZoom={true}
+          showFitView={true}
+          showInteractive={true}
+        />
+      </ReactFlow>
+    </div>
+  );
+}
 
-      <div className="absolute inset-0">
-        <TextCard />
-        <StickyNote />
-        <TodoCard />
+export function CanvasArea() {
+  return (
+    <ReactFlowProvider>
+      <div className="relative flex-1 overflow-hidden">
+        <CanvasInner />
+        <BottomToolbar />
       </div>
+    </ReactFlowProvider>
+  );
+}
 
-      {selection && <PropertiesPanel />}
+function BottomToolbar() {
+  const addNode = useCanvasStore((state) => state.addNode);
+  const { getViewport } = useReactFlow();
 
-      <BottomToolbar />
+  const handleAdd = (type: string) => {
+    const viewport = getViewport();
+    const centerX = (window.innerWidth / 2 - viewport.x) / viewport.zoom;
+    const centerY = (window.innerHeight / 2 - viewport.y) / viewport.zoom;
+    const randomX = Math.floor(Math.random() * 200) - 100;
+    const randomY = Math.floor(Math.random() * 200) - 100;
+    addNode(type, { x: centerX + randomX, y: centerY + randomY });
+  };
 
-      <div className="absolute bottom-6 right-6 flex items-center gap-1 rounded-2xl border border-border bg-popover/85 p-1.5 shadow-lg backdrop-blur-md">
-        <button
-          type="button"
-          aria-label="Zoom out"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+  return (
+    <div className="pointer-events-auto absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-border bg-popover/85 p-2 shadow-lg backdrop-blur-md">
+      <button
+        type="button"
+        aria-label="Select"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+      >
+        <svg
+          className="h-[18px] w-[18px]"
+          strokeWidth={1.75}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
         >
-          <Minus className="h-4 w-4" />
-        </button>
-        <span className="min-w-10 text-center text-xs text-muted-foreground">100%</span>
-        <button
-          type="button"
-          aria-label="Zoom in"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+          <path
+            d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path d="M13 13l6 6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      <span className="mx-1 h-6 w-px bg-border" />
+      <button
+        type="button"
+        onClick={() => handleAdd("text")}
+        aria-label="Text"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+      >
+        <svg
+          className="h-[18px] w-[18px]"
+          strokeWidth={1.75}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
         >
-          <Plus className="h-4 w-4" />
-        </button>
-        <span className="mx-1 h-5 w-px bg-border" />
-        <button
-          type="button"
-          aria-label="Fit to screen"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+          <polyline points="4 7 4 4 20 4 20 7" strokeLinecap="round" strokeLinejoin="round" />
+          <line x1="9" y1="20" x2="15" y2="20" strokeLinecap="round" strokeLinejoin="round" />
+          <line x1="12" y1="4" x2="12" y2="20" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        onClick={() => handleAdd("sticky")}
+        aria-label="Sticky note"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+      >
+        <svg
+          className="h-[18px] w-[18px]"
+          strokeWidth={1.75}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
         >
-          <Maximize className="h-4 w-4" />
-        </button>
-      </div>
+          <path
+            d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3z"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <polyline points="15 3 15 9 21 9" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        onClick={() => handleAdd("todo")}
+        aria-label="To-do list"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+      >
+        <svg
+          className="h-[18px] w-[18px]"
+          strokeWidth={1.75}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="M9 11l3 3L22 4" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+      <button
+        type="button"
+        aria-label="Image"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+      >
+        <svg
+          className="h-[18px] w-[18px]"
+          strokeWidth={1.75}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <rect
+            x="3"
+            y="3"
+            width="18"
+            height="18"
+            rx="2"
+            ry="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="8.5" cy="8.5" r="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <polyline points="21 15 16 10 5 21" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
     </div>
   );
 }

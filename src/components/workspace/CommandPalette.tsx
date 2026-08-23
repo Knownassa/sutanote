@@ -26,7 +26,6 @@ export function CommandPalette({
 }) {
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-
       <CommandInput placeholder="Search actions..." />
       <CommandList className="p-1">
         <CommandEmpty>No results.</CommandEmpty>

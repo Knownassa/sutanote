@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PanelLeftOpen } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import { CanvasArea } from "@/components/workspace/CanvasArea";
+import { RightPropertiesSidebar } from "@/components/workspace/RightPropertiesSidebar";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
+import { useCanvasStore } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -30,6 +33,7 @@ export const Route = createFileRoute("/")({
 function Workspace() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -71,6 +75,20 @@ function Workspace() {
           <CanvasArea />
         </main>
       </div>
+
+      <AnimatePresence initial={false}>
+        {selectedNodeId && (
+          <motion.div
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 260, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="h-screen shrink-0 overflow-hidden border-l border-border bg-popover"
+          >
+            <RightPropertiesSidebar />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>

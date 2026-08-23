@@ -26,9 +26,9 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Lora", Georgia, serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -58,6 +58,7 @@
   --color-note-rose: var(--note-rose);
   --color-note-sage: var(--note-sage);
   --color-note-lavender: var(--note-lavender);
+  --color-note-blue: var(--note-blue);
   --color-note-foreground: var(--note-foreground);
   --color-sync: var(--sync);
   --color-sidebar: var(--sidebar);
@@ -99,6 +100,7 @@
   --note-rose: oklch(0.8862 0.0399 12.5);
   --note-sage: oklch(0.8983 0.0361 145.5);
   --note-lavender: oklch(0.8916 0.0347 295.5);
+  --note-blue: oklch(0.882 0.032 244);
   --note-foreground: oklch(0.2661 0.0132 90);
   --sync: oklch(0.596 0.0902 148.5);
   --sidebar: oklch(0.9702 0.0026 106.42);
@@ -136,6 +138,7 @@
   --note-rose: oklch(0.7204 0.062 14);
   --note-sage: oklch(0.7305 0.0512 148);
   --note-lavender: oklch(0.7305 0.0512 295);
+  --note-blue: oklch(0.715 0.05 244);
   --note-foreground: oklch(0.1776 0.0038 285.9);
   --sync: oklch(0.7217 0.1076 148.5);
   --sidebar: oklch(0.1476 0.0031 285.9);

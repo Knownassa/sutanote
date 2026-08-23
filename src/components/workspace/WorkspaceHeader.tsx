@@ -1,14 +1,8 @@
-import { ChevronRight, Download, Redo2, Settings, Undo2 } from "lucide-react";
+import { ChevronRight, MoreHorizontal, Redo2, Settings, Undo2 } from "lucide-react";
 
 const crumbs = ["Workspace", "Studio Rebrand", "Moodboard"];
 
-function IconButton({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function IconButton({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <button
       type="button"
@@ -47,17 +41,12 @@ export function WorkspaceHeader() {
         <IconButton label="Redo">
           <Redo2 className="h-4 w-4" />
         </IconButton>
-
-        <div className="mx-2 flex items-center gap-2 rounded-lg border border-border px-2.5 py-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-sync" />
-          <span className="text-xs text-muted-foreground">Saved locally</span>
-        </div>
-
-        <IconButton label="Export">
-          <Download className="h-4 w-4" />
-        </IconButton>
+        <span className="mx-1 h-4 w-px bg-border" />
         <IconButton label="Settings">
           <Settings className="h-4 w-4" />
+        </IconButton>
+        <IconButton label="Menu">
+          <MoreHorizontal className="h-4 w-4" />
         </IconButton>
       </div>
     </header>
