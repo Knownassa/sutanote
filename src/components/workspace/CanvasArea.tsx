@@ -1,14 +1,14 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import ReactFlow, {
   Background,
   Controls,
   useReactFlow,
   NodeTypes,
   ReactFlowProvider,
+  type Node,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { useCanvasStore } from "@/lib/store";
-import { initDB } from "@/lib/db";
 import StickyNoteNode from "@/components/nodes/StickyNoteNode";
 import TextNode from "@/components/nodes/TextNode";
 import TodoNode from "@/components/nodes/TodoNode";
@@ -20,17 +20,30 @@ const nodeTypes: NodeTypes = {
 };
 
 function CanvasInner() {
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelected, loadNodes } =
-    useCanvasStore();
+  const nodes = useCanvasStore((s) => s.nodes);
+  const edges = useCanvasStore((s) => s.edges);
+  const onNodesChange = useCanvasStore((s) => s.onNodesChange);
+  const onEdgesChange = useCanvasStore((s) => s.onEdgesChange);
+  const onConnect = useCanvasStore((s) => s.onConnect);
+  const setSelected = useCanvasStore((s) => s.setSelected);
+  const initializeStore = useCanvasStore((s) => s.initializeStore);
   const { fitView } = useReactFlow();
 
   useEffect(() => {
-    initDB()
-      .then(() => loadNodes())
-      .then(() => {
-        setTimeout(() => fitView({ duration: 500 }), 100);
-      });
-  }, [loadNodes, fitView]);
+    let active = true;
+    initializeStore().then(() => {
+      if (active) setTimeout(() => fitView({ duration: 500 }), 100);
+    });
+    return () => {
+      active = false;
+    };
+  }, [initializeStore, fitView]);
+
+  const handleNodeClick = useCallback(
+    (_e: React.MouseEvent, node: Node) => setSelected(node.id),
+    [setSelected],
+  );
+  const handlePaneClick = useCallback(() => setSelected(null), [setSelected]);
 
   return (
     <div className="w-full h-full">
@@ -40,8 +53,8 @@ function CanvasInner() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        onNodeClick={(_e, node) => setSelected(node.id)}
-        onPaneClick={() => setSelected(null)}
+        onNodeClick={handleNodeClick}
+        onPaneClick={handlePaneClick}
         nodeTypes={nodeTypes}
         fitView
         className="bg-canvas"

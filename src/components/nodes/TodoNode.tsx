@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { useCanvasStore } from "@/lib/store";
 import { CheckCircle2, Circle } from "lucide-react";
@@ -7,10 +8,8 @@ interface Todo {
   done: boolean;
 }
 
-export default function TodoNode({ id, data }: NodeProps) {
+function TodoNode({ id, data, selected }: NodeProps) {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
-  const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
-  const isSelected = selectedNodeId === id;
 
   const todos: Todo[] = Array.isArray(data.todos)
     ? (data.todos as Todo[])
@@ -21,7 +20,6 @@ export default function TodoNode({ id, data }: NodeProps) {
       ];
 
   const setTodos = (next: Todo[]) => updateNodeData(id, { todos: next });
-
   const toggle = (i: number) =>
     setTodos(todos.map((t, idx) => (idx === i ? { ...t, done: !t.done } : t)));
   const remove = (i: number) => setTodos(todos.filter((_, idx) => idx !== i));
@@ -30,7 +28,7 @@ export default function TodoNode({ id, data }: NodeProps) {
   return (
     <div
       className={`relative select-none rounded-xl border p-5 transition-all ${data.color ?? "bg-card"} ${
-        isSelected ? "ring-2 ring-stone-400 ring-offset-2" : ""
+        selected ? "ring-2 ring-stone-400 ring-offset-2" : ""
       }`}
       style={{ minWidth: 260, maxWidth: 400 }}
     >
@@ -120,3 +118,5 @@ export default function TodoNode({ id, data }: NodeProps) {
     </div>
   );
 }
+
+export default memo(TodoNode);

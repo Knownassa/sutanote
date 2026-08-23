@@ -10,7 +10,7 @@ import {
   Connection,
 } from "reactflow";
 import { nanoid } from "nanoid";
-import { saveNode, loadNodes, deleteNode } from "./db";
+import { initDB, loadNodesFromDB, saveNodesToDB, deleteNodeFromDB, type SavedNode } from "./db";
 
 interface CanvasNodeData {
   text: string;
@@ -27,37 +27,34 @@ interface CanvasState {
   nodes: CanvasNode[];
   edges: Edge[];
   selectedNodeId: string | null;
+  isLoaded: boolean;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: (connection: Connection) => void;
   addNode: (type: string, position: { x: number; y: number }) => void;
   updateNodeData: (id: string, data: Partial<CanvasNodeData>) => void;
-  setSelected: (id: string | null) => void;
-  loadNodes: () => Promise<void>;
-  removeNode: (id: string) => void;
   deleteNode: (id: string) => void;
+  setSelected: (id: string | null) => void;
   setNodeZ: (id: string, z: number) => void;
+  initializeStore: () => Promise<void>;
 }
 
-const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const toSaved = (n: CanvasNode): SavedNode => ({
+  id: n.id,
+  type: n.type ?? "sticky",
+  position: n.position,
+  width: (n.style?.width as number) ?? null,
+  height: (n.style?.minHeight as number) ?? null,
+  data: n.data,
+});
 
-function debounceSave(node: CanvasNode) {
-  const existingTimer = debounceTimers.get(node.id);
-  if (existingTimer) clearTimeout(existingTimer);
-
-  const timer = setTimeout(async () => {
-    await saveNode({
-      id: node.id,
-      type: node.type ?? "sticky",
-      position: node.position,
-      data: node.data,
-      width: node.width ?? null,
-      height: node.height ?? null,
-      z_index: (node.zIndex ?? 0) as number,
-    });
-    debounceTimers.delete(node.id);
+// One shared timer saves the entire board 500ms after the last change.
+let saveTimeout: ReturnType<typeof setTimeout> | undefined;
+function debouncedSave(nodes: CanvasNode[]) {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    saveNodesToDB(nodes.map(toSaved));
   }, 500);
-  debounceTimers.set(node.id, timer);
 }
 
 const defaultColors: Record<string, string> = {
@@ -70,18 +67,20 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   nodes: [],
   edges: [],
   selectedNodeId: null,
+  isLoaded: false,
+
+  initializeStore: async () => {
+    if (get().isLoaded) return;
+    await initDB();
+    const dbNodes = await loadNodesFromDB();
+    set({ nodes: dbNodes as CanvasNode[], isLoaded: true });
+  },
 
   onNodesChange: (changes) => {
-    set((state) => {
-      const newNodes = applyNodeChanges(changes, state.nodes) as CanvasNode[];
-      changes.forEach((change) => {
-        if (change.type === "position" && change.dragging === false) {
-          const node = newNodes.find((n) => n.id === change.id);
-          if (node) debounceSave(node);
-        }
-      });
-      return { nodes: newNodes };
-    });
+    const newNodes = applyNodeChanges(changes, get().nodes) as CanvasNode[];
+    set({ nodes: newNodes });
+    const structural = changes.some((c) => c.type === "position" || c.type === "dimensions");
+    if (structural) debouncedSave(newNodes);
   },
 
   onEdgesChange: (changes) => {
@@ -98,7 +97,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       type,
       position,
       data: {
-        text: type === "sticky" ? "" : type === "todo" ? "" : "",
+        text: "",
         color: defaultColors[type] ?? "bg-note-yellow",
         ...(type === "todo"
           ? {
@@ -112,59 +111,30 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       },
       style: { width: 240, minHeight: 120 },
     };
-
-    set((state) => ({ nodes: [...state.nodes, newNode], selectedNodeId: newNode.id }));
-    saveNode({
-      id: newNode.id,
-      type: newNode.type ?? "sticky",
-      position: newNode.position,
-      data: newNode.data,
-      width: (newNode.style?.width as number) ?? null,
-      height: (newNode.style?.minHeight as number) ?? null,
-      z_index: 0,
-    });
+    const next = [...get().nodes, newNode];
+    set({ nodes: next, selectedNodeId: newNode.id });
+    debouncedSave(next);
   },
 
   updateNodeData: (id, data) => {
-    set((state) => ({
-      nodes: state.nodes.map((n) =>
-        n.id === id ? { ...n, data: { ...n.data, ...data } } : n,
-      ) as CanvasNode[],
-    }));
-    const node = get().nodes.find((n) => n.id === id);
-    if (node) debounceSave(node);
+    const newNodes = get().nodes.map((n) =>
+      n.id === id ? { ...n, data: { ...n.data, ...data } } : n,
+    ) as CanvasNode[];
+    set({ nodes: newNodes });
+    debouncedSave(newNodes);
+  },
+
+  deleteNode: (id) => {
+    const newNodes = get().nodes.filter((n) => n.id !== id);
+    set({ nodes: newNodes, selectedNodeId: null });
+    deleteNodeFromDB(id);
   },
 
   setSelected: (id) => set({ selectedNodeId: id }),
 
-  loadNodes: async () => {
-    const savedNodes = await loadNodes();
-    const nodes: CanvasNode[] = savedNodes.map((n) => ({
-      id: n.id,
-      type: n.type,
-      position: n.position as { x: number; y: number },
-      data: n.data as CanvasNodeData,
-      style: { width: n.width ?? 240, minHeight: n.height ?? 120 },
-      zIndex: n.z_index,
-    }));
-    set({ nodes });
-  },
-
-  removeNode: (id) => {
-    set((state) => ({ nodes: state.nodes.filter((n) => n.id !== id) }));
-    deleteNode(id);
-  },
-
-  deleteNode: (id) => {
-    set((state) => ({ nodes: state.nodes.filter((n) => n.id !== id) }));
-    deleteNode(id);
-  },
-
   setNodeZ: (id, z) => {
-    set((state) => ({
-      nodes: state.nodes.map((n) => (n.id === id ? { ...n, zIndex: z } : n)),
-    }));
-    const node = get().nodes.find((n) => n.id === id);
-    if (node) debounceSave(node);
+    const newNodes = get().nodes.map((n) => (n.id === id ? { ...n, zIndex: z } : n));
+    set({ nodes: newNodes });
+    debouncedSave(newNodes);
   },
 }));
