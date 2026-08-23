@@ -7,6 +7,7 @@ import ReactFlow, {
   ReactFlowProvider,
   type Node,
 } from "reactflow";
+import { AnimatePresence, motion } from "motion/react";
 import "reactflow/dist/style.css";
 import { useCanvasStore } from "@/lib/store";
 import StickyNoteNode from "@/components/nodes/StickyNoteNode";
@@ -19,6 +20,20 @@ const nodeTypes: NodeTypes = {
   todo: TodoNode,
 };
 
+const addAtViewportCenter = (
+  getViewport: () => { x: number; y: number; zoom: number },
+  addNode: (type: string, position: { x: number; y: number }) => void,
+  type: string,
+) => {
+  const vp = getViewport();
+  const x = (window.innerWidth / 2 - vp.x) / vp.zoom;
+  const y = (window.innerHeight / 2 - vp.y) / vp.zoom;
+  addNode(type, {
+    x: x + (Math.floor(Math.random() * 200) - 100),
+    y: y + (Math.floor(Math.random() * 200) - 100),
+  });
+};
+
 function CanvasInner() {
   const nodes = useCanvasStore((s) => s.nodes);
   const edges = useCanvasStore((s) => s.edges);
@@ -26,8 +41,9 @@ function CanvasInner() {
   const onEdgesChange = useCanvasStore((s) => s.onEdgesChange);
   const onConnect = useCanvasStore((s) => s.onConnect);
   const setSelected = useCanvasStore((s) => s.setSelected);
+  const addNode = useCanvasStore((s) => s.addNode);
   const initializeStore = useCanvasStore((s) => s.initializeStore);
-  const { fitView } = useReactFlow();
+  const { fitView, getViewport } = useReactFlow();
 
   useEffect(() => {
     let active = true;
@@ -38,6 +54,19 @@ function CanvasInner() {
       active = false;
     };
   }, [initializeStore, fitView]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if ((e.key === "t" || e.key === "T") && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        addAtViewportCenter(getViewport, addNode, "text");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [getViewport, addNode]);
 
   const handleNodeClick = useCallback(
     (_e: React.MouseEvent, node: Node) => setSelected(node.id),
@@ -87,32 +116,63 @@ export function CanvasArea() {
     <ReactFlowProvider>
       <div className="relative flex-1 overflow-hidden">
         <CanvasInner />
+        <CanvasOverlay />
         <BottomToolbar />
       </div>
     </ReactFlowProvider>
   );
 }
 
+function CanvasOverlay() {
+  const count = useCanvasStore((s) => s.nodes.length);
+  const isSaving = useCanvasStore((s) => s.isSaving);
+
+  return (
+    <>
+      <AnimatePresence>
+        {count === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
+          >
+            <p className="font-serif text-sm text-muted-foreground/70">
+              Click a tool below to begin, or press{" "}
+              <kbd className="rounded bg-surface px-1.5 py-0.5 font-mono text-[10px] text-foreground/70">
+                T
+              </kbd>{" "}
+              for a text note
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="pointer-events-none absolute bottom-6 right-6 z-20 flex items-center gap-1.5 rounded-full border border-border bg-popover/85 px-3 py-1.5 text-[11px] text-muted-foreground shadow-sm backdrop-blur-md">
+        <span
+          className={`h-1.5 w-1.5 rounded-full transition-colors ${
+            isSaving ? "animate-pulse bg-amber-500" : "bg-sync"
+          }`}
+        />
+        {isSaving ? "Saving…" : "Saved locally"}
+      </div>
+    </>
+  );
+}
+
+const btnBase =
+  "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-[transform,background-color,color,box-shadow] hover:bg-surface-hover hover:text-foreground active:scale-95";
+
 function BottomToolbar() {
   const addNode = useCanvasStore((state) => state.addNode);
   const { getViewport } = useReactFlow();
 
-  const handleAdd = (type: string) => {
-    const viewport = getViewport();
-    const centerX = (window.innerWidth / 2 - viewport.x) / viewport.zoom;
-    const centerY = (window.innerHeight / 2 - viewport.y) / viewport.zoom;
-    const randomX = Math.floor(Math.random() * 200) - 100;
-    const randomY = Math.floor(Math.random() * 200) - 100;
-    addNode(type, { x: centerX + randomX, y: centerY + randomY });
-  };
+  const handleAdd = (type: string) => addAtViewportCenter(getViewport, addNode, type);
 
   return (
-    <div className="pointer-events-auto absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-border bg-popover/85 p-2 shadow-lg backdrop-blur-md">
-      <button
-        type="button"
-        aria-label="Select"
-        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
-      >
+    <div className="pointer-events-auto absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-border bg-popover/90 p-2 shadow-[0_8px_30px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
+      <button type="button" aria-label="Select" className={btnBase}>
         <svg
           className="h-[18px] w-[18px]"
           strokeWidth={1.75}
@@ -129,12 +189,7 @@ function BottomToolbar() {
         </svg>
       </button>
       <span className="mx-1 h-6 w-px bg-border" />
-      <button
-        type="button"
-        onClick={() => handleAdd("text")}
-        aria-label="Text"
-        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
-      >
+      <button type="button" onClick={() => handleAdd("text")} aria-label="Text" className={btnBase}>
         <svg
           className="h-[18px] w-[18px]"
           strokeWidth={1.75}
@@ -151,7 +206,7 @@ function BottomToolbar() {
         type="button"
         onClick={() => handleAdd("sticky")}
         aria-label="Sticky note"
-        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+        className={btnBase}
       >
         <svg
           className="h-[18px] w-[18px]"
@@ -172,7 +227,7 @@ function BottomToolbar() {
         type="button"
         onClick={() => handleAdd("todo")}
         aria-label="To-do list"
-        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+        className={btnBase}
       >
         <svg
           className="h-[18px] w-[18px]"
@@ -189,11 +244,7 @@ function BottomToolbar() {
           />
         </svg>
       </button>
-      <button
-        type="button"
-        aria-label="Image"
-        className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
-      >
+      <button type="button" aria-label="Image" className={btnBase}>
         <svg
           className="h-[18px] w-[18px]"
           strokeWidth={1.75}

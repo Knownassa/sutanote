@@ -15,10 +15,6 @@ const colors = [
   { name: "Lavender", class: "bg-note-lavender" },
   { name: "Blue", class: "bg-note-blue" },
   { name: "White", class: "bg-card" },
-  { name: "Yellow", class: "bg-note-yellow" },
-  { name: "Rose", class: "bg-note-rose" },
-  { name: "Sage", class: "bg-note-sage" },
-  { name: "Lavender", class: "bg-note-lavender" },
 ];
 
 function SectionLabel({ children }: { children: string }) {
@@ -55,6 +51,7 @@ export function RightPropertiesSidebar() {
   const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
   const nodes = useCanvasStore((s) => s.nodes);
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
+  const updateNodeSize = useCanvasStore((s) => s.updateNodeSize);
   const setNodeZ = useCanvasStore((s) => s.setNodeZ);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
 
@@ -103,7 +100,7 @@ export function RightPropertiesSidebar() {
 
       <div className="mb-6">
         <SectionLabel>Style</SectionLabel>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-6 gap-2">
           {colors.map((color, i) => (
             <button
               key={`${color.name}-${i}`}
@@ -128,7 +125,14 @@ export function RightPropertiesSidebar() {
             <span className="text-xs text-muted-foreground">W</span>
             <input
               type="number"
-              defaultValue={240}
+              value={Math.round((selectedNode.style?.width as number) ?? 240)}
+              onChange={(e) =>
+                updateNodeSize(
+                  selectedNode.id,
+                  Number(e.target.value) || 240,
+                  Math.round((selectedNode.style?.minHeight as number) ?? 120),
+                )
+              }
               className="w-full bg-transparent py-2 text-sm text-foreground outline-none"
             />
           </label>
@@ -136,7 +140,14 @@ export function RightPropertiesSidebar() {
             <span className="text-xs text-muted-foreground">H</span>
             <input
               type="number"
-              defaultValue={120}
+              value={Math.round((selectedNode.style?.minHeight as number) ?? 120)}
+              onChange={(e) =>
+                updateNodeSize(
+                  selectedNode.id,
+                  Math.round((selectedNode.style?.width as number) ?? 240),
+                  Number(e.target.value) || 120,
+                )
+              }
               className="w-full bg-transparent py-2 text-sm text-foreground outline-none"
             />
           </label>

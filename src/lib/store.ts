@@ -15,6 +15,7 @@ import { initDB, loadNodesFromDB, saveNodesToDB, deleteNodeFromDB, type SavedNod
 interface CanvasNodeData {
   text: string;
   color: string;
+  rotation?: number;
   todos?: Array<{ label: string; done: boolean }>;
   [key: string]: unknown;
 }
@@ -28,11 +29,13 @@ interface CanvasState {
   edges: Edge[];
   selectedNodeId: string | null;
   isLoaded: boolean;
+  isSaving: boolean;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: (connection: Connection) => void;
   addNode: (type: string, position: { x: number; y: number }) => void;
   updateNodeData: (id: string, data: Partial<CanvasNodeData>) => void;
+  updateNodeSize: (id: string, width: number, height: number) => void;
   deleteNode: (id: string) => void;
   setSelected: (id: string | null) => void;
   setNodeZ: (id: string, z: number) => void;
@@ -48,93 +51,108 @@ const toSaved = (n: CanvasNode): SavedNode => ({
   data: n.data,
 });
 
-// One shared timer saves the entire board 500ms after the last change.
-let saveTimeout: ReturnType<typeof setTimeout> | undefined;
-function debouncedSave(nodes: CanvasNode[]) {
-  if (saveTimeout) clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(() => {
-    saveNodesToDB(nodes.map(toSaved));
-  }, 500);
-}
-
 const defaultColors: Record<string, string> = {
   text: "bg-card",
   sticky: "bg-note-yellow",
   todo: "bg-card",
 };
 
-export const useCanvasStore = create<CanvasState>((set, get) => ({
-  nodes: [],
-  edges: [],
-  selectedNodeId: null,
-  isLoaded: false,
+export const useCanvasStore = create<CanvasState>((set, get) => {
+  // One shared timer saves the whole board 500ms after the last change.
+  let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
-  initializeStore: async () => {
-    if (get().isLoaded) return;
-    await initDB();
-    const dbNodes = await loadNodesFromDB();
-    set({ nodes: dbNodes as CanvasNode[], isLoaded: true });
-  },
+  const scheduleSave = (nodes: CanvasNode[]) => {
+    if (saveTimer) clearTimeout(saveTimer);
+    set({ isSaving: true });
+    saveTimer = setTimeout(async () => {
+      await saveNodesToDB(nodes.map(toSaved));
+      set({ isSaving: false });
+    }, 500);
+  };
 
-  onNodesChange: (changes) => {
-    const newNodes = applyNodeChanges(changes, get().nodes) as CanvasNode[];
-    set({ nodes: newNodes });
-    const structural = changes.some((c) => c.type === "position" || c.type === "dimensions");
-    if (structural) debouncedSave(newNodes);
-  },
+  return {
+    nodes: [],
+    edges: [],
+    selectedNodeId: null,
+    isLoaded: false,
+    isSaving: false,
 
-  onEdgesChange: (changes) => {
-    set((state) => ({ edges: applyEdgeChanges(changes, state.edges) }));
-  },
+    initializeStore: async () => {
+      if (get().isLoaded) return;
+      await initDB();
+      const dbNodes = await loadNodesFromDB();
+      set({ nodes: dbNodes as CanvasNode[], isLoaded: true });
+    },
 
-  onConnect: (connection) => {
-    set((state) => ({ edges: addEdge(connection, state.edges) }));
-  },
+    onNodesChange: (changes) => {
+      const newNodes = applyNodeChanges(changes, get().nodes) as CanvasNode[];
+      set({ nodes: newNodes });
+      const structural = changes.some((c) => c.type === "position" || c.type === "dimensions");
+      if (structural) scheduleSave(newNodes);
+    },
 
-  addNode: (type, position) => {
-    const newNode: CanvasNode = {
-      id: nanoid(),
-      type,
-      position,
-      data: {
-        text: "",
-        color: defaultColors[type] ?? "bg-note-yellow",
-        ...(type === "todo"
-          ? {
-              todos: [
-                { label: "Task 1", done: false },
-                { label: "Task 2", done: false },
-                { label: "Task 3", done: false },
-              ],
-            }
-          : {}),
-      },
-      style: { width: 240, minHeight: 120 },
-    };
-    const next = [...get().nodes, newNode];
-    set({ nodes: next, selectedNodeId: newNode.id });
-    debouncedSave(next);
-  },
+    onEdgesChange: (changes) => {
+      set((state) => ({ edges: applyEdgeChanges(changes, state.edges) }));
+    },
 
-  updateNodeData: (id, data) => {
-    const newNodes = get().nodes.map((n) =>
-      n.id === id ? { ...n, data: { ...n.data, ...data } } : n,
-    ) as CanvasNode[];
-    set({ nodes: newNodes });
-    debouncedSave(newNodes);
-  },
+    onConnect: (connection) => {
+      set((state) => ({ edges: addEdge(connection, state.edges) }));
+    },
 
-  deleteNode: (id) => {
-    const newNodes = get().nodes.filter((n) => n.id !== id);
-    set({ nodes: newNodes, selectedNodeId: null });
-    deleteNodeFromDB(id);
-  },
+    addNode: (type, position) => {
+      const newNode: CanvasNode = {
+        id: nanoid(),
+        type,
+        position,
+        data: {
+          text: "",
+          color: defaultColors[type] ?? "bg-note-yellow",
+          rotation: type === "sticky" ? Number((Math.random() * 2 - 1).toFixed(2)) : 0,
+          ...(type === "todo"
+            ? {
+                todos: [
+                  { label: "Task 1", done: false },
+                  { label: "Task 2", done: false },
+                  { label: "Task 3", done: false },
+                ],
+              }
+            : {}),
+        },
+        style: { width: 240, minHeight: 120 },
+      };
+      const next = [...get().nodes, newNode];
+      set({ nodes: next, selectedNodeId: newNode.id });
+      scheduleSave(next);
+    },
 
-  setSelected: (id) => set({ selectedNodeId: id }),
+    updateNodeData: (id, data) => {
+      const newNodes = get().nodes.map((n) =>
+        n.id === id ? { ...n, data: { ...n.data, ...data } } : n,
+      ) as CanvasNode[];
+      set({ nodes: newNodes });
+      scheduleSave(newNodes);
+    },
 
-  setNodeZ: (id, z) => {
-    const newNodes = get().nodes.map((n) => (n.id === id ? { ...n, zIndex: z } : n));
-    set({ nodes: newNodes });
-    debouncedSave(newNodes);
-  },
-}));
+    updateNodeSize: (id, width, height) => {
+      const newNodes = get().nodes.map((n) =>
+        n.id === id ? { ...n, style: { ...n.style, width, minHeight: height } } : n,
+      ) as CanvasNode[];
+      set({ nodes: newNodes });
+      scheduleSave(newNodes);
+    },
+
+    deleteNode: (id) => {
+      const newNodes = get().nodes.filter((n) => n.id !== id);
+      set({ nodes: newNodes, selectedNodeId: null });
+      deleteNodeFromDB(id);
+    },
+
+    setSelected: (id) => set({ selectedNodeId: id }),
+
+    setNodeZ: (id, z) => {
+      const newNodes = get().nodes.map((n) => (n.id === id ? { ...n, zIndex: z } : n));
+      set({ nodes: newNodes });
+      scheduleSave(newNodes);
+    },
+  };
+});
