@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   BringToFront,
   SendToBack,
@@ -339,6 +339,19 @@ export function RightPropertiesSidebar() {
               } ${color.class}`}
             />
           ))}
+          <CustomColorButton
+            currentColor={(node.data.backgroundColor as string) ?? ""}
+            onPick={(hex) => {
+              // Apply custom background color via inline style.
+              const next = useCanvasStore
+                .getState()
+                .nodes.map((n) =>
+                  n.selected ? { ...n, data: { ...n.data, backgroundColor: hex } } : n,
+                ) as import("@/lib/persistence/types").CanvasNode[];
+              useCanvasStore.setState({ nodes: next });
+              useCanvasStore.getState().pushHistory();
+            }}
+          />
         </div>
       </div>
 
@@ -519,6 +532,69 @@ export function RightPropertiesSidebar() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function CustomColorButton({
+  currentColor,
+  onPick,
+}: {
+  currentColor: string;
+  onPick: (hex: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [hex, setHex] = useState(currentColor || "#c79872");
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  const applyColor = (value: string) => {
+    if (/^#[0-9a-f]{6}$/i.test(value)) {
+      onPick(value);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="aspect-square rounded-md border border-border-strong transition-all hover:scale-105"
+        style={{
+          background: currentColor || "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
+        }}
+        title="Custom color"
+        aria-label="Custom color"
+      />
+      {open && (
+        <div
+          ref={pickerRef}
+          className="absolute bottom-full left-0 z-50 mb-2 w-[200px] rounded-xl border border-border bg-popover p-3 shadow-lg"
+        >
+          <input
+            type="color"
+            value={hex}
+            onChange={(e) => {
+              setHex(e.target.value);
+              applyColor(e.target.value);
+            }}
+            className="mb-2 h-8 w-full cursor-pointer rounded border border-border"
+          />
+          <div className="flex gap-1">
+            <span className="text-[12px] text-muted-foreground">#</span>
+            <input
+              value={hex.replace("#", "")}
+              onChange={(e) => {
+                const v = "#" + e.target.value.replace(/[^0-9a-f]/gi, "").slice(0, 6);
+                setHex(v);
+                if (/^#[0-9a-f]{6}$/i.test(v)) applyColor(v);
+              }}
+              className="flex-1 bg-transparent text-[12px] font-mono text-foreground outline-none"
+              maxLength={6}
+              placeholder="c79872"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

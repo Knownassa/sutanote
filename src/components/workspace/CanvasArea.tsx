@@ -224,6 +224,18 @@ function CanvasInner() {
         canvas.selectAll();
         return;
       }
+      if (mod && k === "z" && !e.shiftKey) {
+        if (editingText) return;
+        e.preventDefault();
+        canvas.undo();
+        return;
+      }
+      if ((mod && k === "z" && e.shiftKey) || (mod && k === "y")) {
+        if (editingText) return;
+        e.preventDefault();
+        canvas.redo();
+        return;
+      }
       if (mod && k === "c") {
         if (editingText) return;
         canvas.copySelected();
@@ -370,7 +382,7 @@ function CanvasInner() {
         nodesDraggable={!handMode}
         connectionRadius={30}
       >
-        {gridVisible && <Background color="var(--canvas-dot)" gap={24} size={1.5} />}
+        {gridVisible && <Background color="var(--canvas-dot)" gap={24} size={0.8} />}
       </ReactFlow>
       <div
         className="pointer-events-none absolute inset-0 z-10"
@@ -456,7 +468,7 @@ function BottomToolbar() {
 
   return (
     <>
-      <div className="pointer-events-auto absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-border bg-popover/92 p-2 shadow-[0_8px_30px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
+      <div className="pointer-events-auto fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-border bg-popover/92 p-2 shadow-[0_8px_30px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
         <button
           type="button"
           onClick={() => setActiveTool("select")}

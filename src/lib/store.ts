@@ -17,6 +17,7 @@ import { loadEdgesByBoard } from "./persistence/edge-repository";
 import { getNodeDef } from "./node-definitions";
 import { flushBoard } from "./persistence/persistence-manager";
 import { useSettingsStore } from "./settings-store";
+import { useHistoryStore } from "./history-store";
 import {
   DEFAULT_BOARD_ID,
   type CanvasNodeData,
@@ -63,6 +64,9 @@ interface CanvasState {
   ungroupSelected: () => void;
   flushNow: () => Promise<void>;
   initializeStore: () => Promise<void>;
+  undo: () => void;
+  redo: () => void;
+  pushHistory: () => void;
 }
 
 const defaultColors: Record<string, string> = {
@@ -92,6 +96,9 @@ const deletedEdgeIds = new Set<string>();
 
 // In-memory clipboard for copy/cut/paste/duplicate (no cross-app format yet).
 let clipboard: CanvasNode[] = [];
+
+// Snapshot captured at drag/resize start for undo history.
+let dragStartSnapshot: { nodes: CanvasNode[]; edges: CanvasEdge[] } | null = null;
 
 let flushTimer: ReturnType<typeof setTimeout> | undefined;
 let flushing = false;
@@ -229,6 +236,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           lastSavedAt: Date.now(),
           pendingChanges: 0,
         });
+        // Initialize history with loaded state.
+        useHistoryStore.getState().init({
+          nodes: dbNodes as CanvasNode[],
+          edges: dbEdges as CanvasEdge[],
+        });
         return;
       }
 
@@ -324,6 +336,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       let touched = false;
       for (const c of changes) {
         if (c.type === "position") {
+          // Capture snapshot at drag start (first position change with dragging: true).
+          if (c.dragging && !dragStartSnapshot) {
+            dragStartSnapshot = { nodes: get().nodes, edges: get().edges };
+          }
+
           const node = next.find((n) => n.id === c.id);
           if (node) {
             // Group movement: propagate delta to siblings with same groupId.
@@ -366,14 +383,20 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
               }
 
               // Mark dirty with final (snapped) positions.
-              const final = next.find((n) => n.id === c.id);
-              if (final) {
-                markNodeDirty(final);
+              const finalNode = next.find((n) => n.id === c.id);
+              if (finalNode) {
+                markNodeDirty(finalNode);
                 // Also mark dirty any selected siblings (they may have moved via snap delta).
                 for (const n of next) {
                   if (n.id !== c.id && n.selected) markNodeDirty(n);
                 }
                 touched = true;
+              }
+
+              // Push history entry for this drag operation.
+              if (dragStartSnapshot) {
+                useHistoryStore.getState().push(dragStartSnapshot);
+                dragStartSnapshot = null;
               }
             }
           }
@@ -481,6 +504,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       commitNodes(next);
       markNodeDirty(newNode);
       scheduleFlush();
+      // History: push state before this node was added.
+      useHistoryStore
+        .getState()
+        .push({ nodes: get().nodes.filter((n) => n.id !== newNode.id), edges: get().edges });
     },
 
     updateNodeData: (id, data) => {
@@ -520,6 +547,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     deleteNode: (id) => {
+      // History: push state before deletion.
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       const next = get().nodes.filter((n) => n.id !== id);
       commitNodes(next);
       markNodeDeleted(id);
@@ -544,6 +573,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     deleteSelected: () => {
       const ids = new Set(get().selectedNodeIds);
       if (ids.size === 0) return;
+      // History: push state before deletion.
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       const next = get().nodes.filter((n) => !ids.has(n.id));
       commitNodes(next);
       ids.forEach(markNodeDeleted);
@@ -799,6 +830,44 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       applyToSelected((n) => {
         const { groupId, ...rest } = n.data;
         return { ...n, data: rest as CanvasNodeData };
+      });
+    },
+
+    pushHistory: () => {
+      const { nodes, edges } = get();
+      useHistoryStore.getState().push({ nodes, edges });
+    },
+
+    undo: () => {
+      const snapshot = useHistoryStore.getState().undo();
+      if (!snapshot) return;
+      set({
+        nodes: snapshot.nodes as CanvasNode[],
+        edges: snapshot.edges as CanvasEdge[],
+        selectedNodeIds: snapshot.nodes.filter((n) => n.selected).map((n) => n.id),
+      });
+      // Mark all restored nodes dirty for persistence.
+      snapshot.nodes.forEach((n) => {
+        const store = get();
+        store.onNodesChange([
+          { id: n.id, type: "position", dragging: false, position: n.position },
+        ]);
+      });
+    },
+
+    redo: () => {
+      const snapshot = useHistoryStore.getState().redo();
+      if (!snapshot) return;
+      set({
+        nodes: snapshot.nodes as CanvasNode[],
+        edges: snapshot.edges as CanvasEdge[],
+        selectedNodeIds: snapshot.nodes.filter((n) => n.selected).map((n) => n.id),
+      });
+      snapshot.nodes.forEach((n) => {
+        const store = get();
+        store.onNodesChange([
+          { id: n.id, type: "position", dragging: false, position: n.position },
+        ]);
       });
     },
   };

@@ -1,27 +1,17 @@
 import { memo } from "react";
-import { Handle, Position, NodeResizer, NodeProps } from "reactflow";
+import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { MessageCircle } from "lucide-react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { useSettingsStore } from "@/lib/settings-store";
-import { getNodeDef } from "@/lib/node-definitions";
+import { ResizeControls } from "./ResizeControls";
 
-const handleStyle = {
-  width: 8,
-  height: 8,
-  borderRadius: "9999px",
-  background: "var(--popover)",
-  border: "1px solid var(--border-strong)",
-};
-const lineStyle = { border: "none" };
-
-function CommentNode({ id, data, selected }: NodeProps) {
+function CommentNode(props: NodeProps) {
+  const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
-  const locked = (data.locked as boolean) ?? false;
-  const def = getNodeDef("comment");
   const text = (data.text as string) ?? "";
   const author = (data.author as string) ?? useSettingsStore.getState().displayName;
   const resolved = (data.resolved as boolean) ?? false;
@@ -34,24 +24,17 @@ function CommentNode({ id, data, selected }: NodeProps) {
         width: "100%",
       }}
     >
-      <NodeResizer
-        isVisible={selected && !locked}
-        minWidth={def.minWidth}
-        minHeight={def.minHeight}
-        {...(def.maxWidth ? { maxWidth: def.maxWidth } : {})}
-        handleStyle={handleStyle}
-        lineStyle={lineStyle}
-      />
+      <ResizeControls {...props} />
       <motion.div
         data-node-surface
         initial={reduce ? false : { scale: 0.9, opacity: 0 }}
-        animate={{ scale: selected ? 1.01 : 1, opacity: 1 }}
+        animate={{ scale: 1, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
         className={`relative w-full select-none rounded-xl border transition-shadow bg-card ${
           resolved ? "opacity-60" : ""
         } ${
           selected
-            ? "border-border-strong shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
+            ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
             : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]"
         }`}
         style={{ padding: "14px 18px" }}

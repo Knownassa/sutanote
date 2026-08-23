@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useCallback, useRef, useEffect } from "react";
+import { useReactFlow } from "reactflow";
 import { motion, AnimatePresence } from "motion/react";
 import { X } from "lucide-react";
 import {
@@ -13,15 +14,13 @@ import { useInteractionStore } from "@/lib/interaction-store";
 interface ToolPickerProps {
   open: boolean;
   onClose: () => void;
-  anchorRef?: React.RefObject<HTMLButtonElement | null>;
 }
-
-const categories: ItemCategory[] = ["basic", "media", "files"];
 
 export function ToolPicker({ open, onClose }: ToolPickerProps) {
   const addNode = useCanvasStore((s) => s.addNode);
   const setActiveTool = useInteractionStore((s) => s.setActiveTool);
   const panelRef = useRef<HTMLDivElement>(null);
+  const { screenToFlowPosition } = useReactFlow();
 
   // Close on outside click.
   useEffect(() => {
@@ -45,16 +44,20 @@ export function ToolPicker({ open, onClose }: ToolPickerProps) {
 
   const pick = useCallback(
     (item: ItemDefinition) => {
-      // Place at viewport center with slight random offset (same as toolbar).
-      // The store addNode handles snap-to-grid for initial position.
-      const cx = window.innerWidth / 2 + (Math.random() * 200 - 100);
-      const cy = window.innerHeight / 2 + (Math.random() * 200 - 100);
-      addNode(item.type, { x: cx, y: cy });
+      // Place at center of visible canvas area using viewport transform.
+      const pos = screenToFlowPosition({
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+      });
+      addNode(item.type, pos);
       setActiveTool("select");
       onClose();
     },
-    [addNode, setActiveTool, onClose],
+    [addNode, setActiveTool, onClose, screenToFlowPosition],
   );
+
+  // Derive categories dynamically from registry.
+  const categories = Array.from(new Set(AVAILABLE_ITEMS.map((i) => i.category))) as ItemCategory[];
 
   return (
     <AnimatePresence>
@@ -65,7 +68,7 @@ export function ToolPicker({ open, onClose }: ToolPickerProps) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 8, scale: 0.96 }}
           transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute bottom-20 left-1/2 z-30 w-[320px] -translate-x-1/2 rounded-2xl border border-border bg-popover/95 p-3 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-md"
+          className="fixed bottom-20 left-1/2 z-50 w-[320px] -translate-x-1/2 rounded-2xl border border-border bg-popover/95 p-3 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-md"
         >
           <div className="mb-2 flex items-center justify-between">
             <p className="text-[13px] font-semibold text-foreground">Add item</p>

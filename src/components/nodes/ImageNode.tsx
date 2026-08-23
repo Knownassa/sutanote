@@ -1,27 +1,18 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { NodeProps, NodeResizer } from "reactflow";
+import { NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { getAssetUrl, storeImageAsset, replaceImageAsset } from "@/lib/asset-store";
 import { getNodeDef } from "@/lib/node-definitions";
 import { ImageIcon, Replace } from "lucide-react";
+import { ResizeControls } from "./ResizeControls";
 
-const handleStyle = {
-  width: 8,
-  height: 8,
-  borderRadius: "9999px",
-  background: "var(--popover)",
-  border: "1px solid var(--border-strong)",
-};
-
-const lineStyle = { border: "none" };
-
-function ImageNode({ id, data, selected }: NodeProps) {
+function ImageNode(props: NodeProps) {
+  const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const reduce = useReducedMotion();
   const fileRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState<string>("");
-  const locked = (data.locked as boolean) ?? false;
   const def = getNodeDef("image");
 
   const assetId = (data.assetId as string) ?? "";
@@ -59,24 +50,17 @@ function ImageNode({ id, data, selected }: NodeProps) {
 
   return (
     <>
-      <NodeResizer
-        isVisible={selected && !locked}
-        minWidth={def.minWidth}
-        minHeight={def.minHeight}
-        {...(def.maxWidth ? { maxWidth: def.maxWidth } : {})}
-        {...(def.maxHeight ? { maxHeight: def.maxHeight } : {})}
-        keepAspectRatio
-        handleStyle={handleStyle}
-        lineStyle={lineStyle}
-      />
+      <ResizeControls {...props} />
       <motion.div
         data-node-surface
         initial={reduce ? false : { scale: 0.9, opacity: 0 }}
-        animate={{ scale: selected ? 1.01 : 1, opacity: 1 }}
+        animate={{ scale: 1, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
         className={`relative w-full select-none overflow-hidden rounded-xl border transition-shadow ${
+          (data.backgroundColor as string) || ""
+        } ${
           selected
-            ? "border-border-strong shadow-[0_12px_40px_rgba(0,0,0,0.1)]"
+            ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
             : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
         }`}
         style={{ maxWidth: 360 }}

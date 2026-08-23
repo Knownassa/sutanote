@@ -92,7 +92,7 @@
   --ring: oklch(0.7161 0.0091 106.5);
   /* stone-50 */
   --canvas: oklch(0.9846 0.0017 106.42);
-  --canvas-dot: oklch(0.2166 0.0045 106.5 / 12%);
+  --canvas-dot: oklch(0.2166 0.0045 106.5 / 8%);
   --surface: oklch(0.9846 0.0017 106.42);
   --surface-hover: oklch(0.9702 0.0026 106.42);
   --surface-active: oklch(0.9232 0.0026 106.42);
@@ -173,15 +173,20 @@
 
 /* Hide ReactFlow attribution watermark */
 .react-flow__attribution { display: none !important; }
+
+/* Temporary marquee selection — visible during drag, hidden after. */
 .react-flow__selection {
-  background: oklch(0.9232 0.0026 106.42 / 0.12) !important;
-  border: 1px dashed oklch(0.8695 0.0036 106.42) !important;
+  background: oklch(0.9232 0.0026 106.42 / 0.10) !important;
+  border: 1px dashed oklch(0.8695 0.0036 106.42 / 0.6) !important;
   border-radius: 6px;
 }
+
+/* Persistent multi-selection rectangle — must NOT render. */
 .react-flow__nodesselection-rect {
-  background: oklch(0.9232 0.0026 106.42 / 0.08) !important;
-  border: 1px dashed oklch(0.8695 0.0036 106.42) !important;
-  border-radius: 12px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  pointer-events: none;
 }
 .react-flow__edge-path {
   stroke: oklch(0.5534 0.0117 106.5) !important;
@@ -221,13 +226,32 @@
 .react-flow__node.dragging { cursor: grabbing; }
 .react-flow__node.locked { cursor: not-allowed; }
 
-/* Resize corner handles: subtle Sutonote dots (no bounding rectangle). */
+/* Resize corner handles: refined 5px dots with generous hit area. */
 .react-flow__resize-control.handle {
   background: var(--popover) !important;
   border: 1px solid var(--border-strong) !important;
   border-radius: 9999px !important;
-  width: 8px !important;
-  height: 8px !important;
+  width: 5px !important;
+  height: 5px !important;
+}
+/* Enlarge mouse hit target without changing visual size. */
+.react-flow__resize-control {
+  min-width: 16px !important;
+  min-height: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  background: transparent !important;
+  border: none !important;
+}
+.react-flow__resize-control.handle {
+  position: absolute !important;
+  width: 5px !important;
+  height: 5px !important;
+  min-width: unset !important;
+  min-height: unset !important;
+  background: var(--popover) !important;
+  border: 1px solid var(--border-strong) !important;
+  border-radius: 9999px !important;
 }
 .react-flow__resize-control.line { display: none !important; }
 .react-flow__background { opacity: 1 !important; }
@@ -244,7 +268,7 @@ body::after {
   inset: 0;
   z-index: 9999;
   pointer-events: none;
-  opacity: 0.015;
+  opacity: 0.007;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }
 

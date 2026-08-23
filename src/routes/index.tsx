@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PanelLeftOpen } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import { CanvasArea } from "@/components/workspace/CanvasArea";
@@ -51,16 +51,32 @@ function Workspace() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background">
-      <WorkspaceSidebar
-        open={sidebarOpen}
-        onToggle={toggleSidebar}
-        onOpenPalette={() => setPaletteOpen(true)}
-      />
+  const rightPanelOpen = selectedNodeIds.length > 0;
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center">
+  return (
+    <div
+      className="grid h-screen w-screen overflow-hidden bg-background"
+      style={{
+        gridTemplateColumns: sidebarOpen ? "240px minmax(0, 1fr) 0px" : "0px minmax(0, 1fr) 0px",
+        gridTemplateRows: "48px minmax(0, 1fr)",
+        transition: "grid-template-columns 160ms ease",
+      }}
+    >
+      {/* Left sidebar — row 1-2, col 1 */}
+      <div
+        className="col-start-1 row-span-2 overflow-hidden border-r border-sidebar-border bg-sidebar"
+        style={{ minWidth: sidebarOpen ? 240 : 0 }}
+      >
+        <WorkspaceSidebar
+          open={sidebarOpen}
+          onToggle={toggleSidebar}
+          onOpenPalette={() => setPaletteOpen(true)}
+        />
+      </div>
+
+      {/* Header — row 1, col 2 */}
+      <div className="col-start-2 row-start-1 min-w-0">
+        <div className="flex h-12 items-center">
           {!sidebarOpen && (
             <button
               type="button"
@@ -75,20 +91,22 @@ function Workspace() {
             <WorkspaceHeader />
           </div>
         </div>
-
-        <main className="flex min-h-0 flex-1 flex-col">
-          <CanvasArea />
-        </main>
       </div>
 
+      {/* Canvas — row 2, col 2 */}
+      <div className="col-start-2 row-start-2 min-h-0 min-w-0">
+        <CanvasArea />
+      </div>
+
+      {/* Right properties — row 1-2, col 3 (animated) */}
       <AnimatePresence initial={false}>
-        {selectedNodeIds.length > 0 && (
+        {rightPanelOpen && (
           <motion.div
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: 260, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="h-screen shrink-0 overflow-hidden border-l border-border bg-popover"
+            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+            className="col-start-3 row-span-2 shrink-0 overflow-hidden border-l border-border bg-popover"
           >
             <RightPropertiesSidebar />
           </motion.div>

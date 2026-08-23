@@ -22,6 +22,8 @@ export interface CanvasNodeData {
   italic?: boolean;
   textColor?: string;
   showCompleted?: boolean;
+  // Custom color support.
+  backgroundColor?: string;
   // Link node fields.
   url?: string;
   description?: string;

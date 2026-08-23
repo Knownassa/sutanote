@@ -10,6 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useCanvasStore } from "@/lib/store";
+import { useHistoryStore } from "@/lib/history-store";
 import { SettingsDialog } from "./SettingsDialog";
 
 const crumbs = ["Workspace", "Studio Rebrand", "Moodboard"];
@@ -68,6 +69,10 @@ function SaveStatus() {
 
 export function WorkspaceHeader() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const canUndo = useHistoryStore((s) => s.canUndo);
+  const canRedo = useHistoryStore((s) => s.canRedo);
+  const undo = useCanvasStore((s) => s.undo);
+  const redo = useCanvasStore((s) => s.redo);
 
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b border-border pl-5 pr-3">
@@ -90,8 +95,12 @@ export function WorkspaceHeader() {
 
       <div className="flex items-center gap-1.5">
         <SaveStatus />
-        <IconButton label="Undo" disabled />
-        <IconButton label="Redo" disabled />
+        <IconButton label="Undo" disabled={!canUndo} onClick={undo}>
+          <Undo2 className="h-4 w-4" />
+        </IconButton>
+        <IconButton label="Redo" disabled={!canRedo} onClick={redo}>
+          <Redo2 className="h-4 w-4" />
+        </IconButton>
         <span className="mx-1 h-4 w-px bg-border" />
         <IconButton label="Settings" onClick={() => setSettingsOpen(true)}>
           <Settings className="h-4 w-4" />
