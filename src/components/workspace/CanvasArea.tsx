@@ -1,14 +1,23 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import ReactFlow, {
   Background,
-  Controls,
   useReactFlow,
+  useViewport,
   NodeTypes,
   ReactFlowProvider,
   type Node,
   type Viewport,
 } from "reactflow";
 import { AnimatePresence, motion } from "motion/react";
+import {
+  MousePointer2,
+  ZoomIn,
+  ZoomOut,
+  Type,
+  StickyNote,
+  CheckSquare,
+  ImageIcon,
+} from "lucide-react";
 import "reactflow/dist/style.css";
 import { useCanvasStore } from "@/lib/store";
 import { useSettingsStore } from "@/lib/settings-store";
@@ -17,11 +26,13 @@ import { loadViewport, saveViewport } from "@/lib/viewport";
 import StickyNoteNode from "@/components/nodes/StickyNoteNode";
 import TextNode from "@/components/nodes/TextNode";
 import TodoNode from "@/components/nodes/TodoNode";
+import ImageNode from "@/components/nodes/ImageNode";
 
 const nodeTypes: NodeTypes = {
   sticky: StickyNoteNode,
   text: TextNode,
   todo: TodoNode,
+  image: ImageNode,
 };
 
 function centerViewport(): Viewport {
@@ -194,12 +205,6 @@ function CanvasInner() {
         connectionRadius={30}
       >
         {gridVisible && <Background color="var(--canvas-dot)" gap={24} size={1.5} />}
-        <Controls
-          className="bg-popover border-border rounded-lg shadow-lg"
-          showZoom={true}
-          showFitView={true}
-          showInteractive={true}
-        />
       </ReactFlow>
       {/* vignette */}
       <div
@@ -236,11 +241,7 @@ function CanvasOverlay() {
           className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
         >
           <p className="font-serif text-sm text-muted-foreground/70">
-            Click a tool below to begin, or press{" "}
-            <kbd className="rounded bg-surface px-1.5 py-0.5 font-mono text-[10px] text-foreground/70">
-              T
-            </kbd>{" "}
-            for a text note
+            Click a tool below to begin — or drag to explore the canvas.
           </p>
         </motion.div>
       )}
@@ -248,135 +249,104 @@ function CanvasOverlay() {
   );
 }
 
-const btnBase =
-  "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-[transform,background-color,color,box-shadow] hover:bg-surface-hover hover:text-foreground active:scale-95 disabled:opacity-40 disabled:hover:bg-transparent disabled:active:scale-100";
+const toolBtn = (active: boolean) =>
+  `flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-all hover:bg-surface-hover hover:text-foreground active:scale-95 ${
+    active ? "bg-surface-active text-foreground" : ""
+  }`;
 
 function BottomToolbar() {
   const addNode = useCanvasStore((state) => state.addNode);
-  const { getViewport } = useReactFlow();
-
+  const { getViewport, zoomIn, zoomOut } = useReactFlow();
+  const { zoom } = useViewport();
   const [activeTool, setActiveTool] = useState("select");
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const handleAdd = (type: string) => addAtViewportCenter(getViewport, addNode, type);
 
+  const onImagePicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    addAtViewportCenter(getViewport, addNode, "image");
+    const id = useCanvasStore.getState().selectedNodeId;
+    if (id) {
+      useCanvasStore.getState().updateNodeData(id, {
+        src: URL.createObjectURL(file),
+        caption: file.name,
+      });
+    }
+    e.target.value = "";
+  };
+
+  const tools = [
+    { type: "text", label: "Text", icon: Type },
+    { type: "sticky", label: "Sticky", icon: StickyNote },
+    { type: "todo", label: "To-do", icon: CheckSquare },
+  ];
+
   return (
-    <div className="pointer-events-auto absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-border bg-popover/90 p-2 shadow-[0_8px_30px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
+    <div className="pointer-events-auto absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-border bg-popover/92 p-2 shadow-[0_8px_30px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
       <button
         type="button"
+        onClick={() => setActiveTool("select")}
+        className={toolBtn(activeTool === "select")}
         aria-label="Select"
-        className={`${btnBase} ${activeTool === "select" ? "bg-surface-active text-foreground" : ""}`}
       >
-        <svg
-          className="h-[18px] w-[18px]"
-          strokeWidth={1.75}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path
-            d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path d="M13 13l6 6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <MousePointer2 className="h-[18px] w-[18px]" strokeWidth={1.75} />
       </button>
+
       <span className="mx-1 h-6 w-px bg-border" />
+
+      {tools.map(({ type, label, icon: Icon }) => (
+        <button
+          key={type}
+          type="button"
+          onClick={() => {
+            setActiveTool(type);
+            handleAdd(type);
+          }}
+          className={toolBtn(activeTool === type)}
+          aria-label={label}
+        >
+          <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+        </button>
+      ))}
+
       <button
         type="button"
-        onClick={() => {
-          setActiveTool("text");
-          handleAdd("text");
-        }}
-        aria-label="Text"
-        className={`${btnBase} ${activeTool === "text" ? "bg-surface-active text-foreground" : ""}`}
+        onClick={() => fileRef.current?.click()}
+        className={toolBtn(activeTool === "image")}
+        aria-label="Image"
       >
-        <svg
-          className="h-[18px] w-[18px]"
-          strokeWidth={1.75}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <polyline points="4 7 4 4 20 4 20 7" strokeLinecap="round" strokeLinejoin="round" />
-          <line x1="9" y1="20" x2="15" y2="20" strokeLinecap="round" strokeLinejoin="round" />
-          <line x1="12" y1="4" x2="12" y2="20" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <ImageIcon className="h-[18px] w-[18px]" strokeWidth={1.75} />
       </button>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={onImagePicked}
+      />
+
+      <span className="mx-1 h-6 w-px bg-border" />
+
       <button
         type="button"
-        onClick={() => {
-          setActiveTool("sticky");
-          handleAdd("sticky");
-        }}
-        aria-label="Sticky note"
-        className={`${btnBase} ${activeTool === "sticky" ? "bg-surface-active text-foreground" : ""}`}
+        onClick={() => zoomOut()}
+        className={toolBtn(false)}
+        aria-label="Zoom out"
       >
-        <svg
-          className="h-[18px] w-[18px]"
-          strokeWidth={1.75}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path
-            d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3z"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <polyline points="15 3 15 9 21 9" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <ZoomOut className="h-[18px] w-[18px]" strokeWidth={1.75} />
       </button>
+      <span className="min-w-[40px] text-center text-[11px] font-mono tabular-nums text-muted-foreground">
+        {Math.round(zoom * 100)}%
+      </span>
       <button
         type="button"
-        onClick={() => {
-          setActiveTool("todo");
-          handleAdd("todo");
-        }}
-        aria-label="To-do list"
-        className={`${btnBase} ${activeTool === "todo" ? "bg-surface-active text-foreground" : ""}`}
+        onClick={() => zoomIn()}
+        className={toolBtn(false)}
+        aria-label="Zoom in"
       >
-        <svg
-          className="h-[18px] w-[18px]"
-          strokeWidth={1.75}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path d="M9 11l3 3L22 4" strokeLinecap="round" strokeLinejoin="round" />
-          <path
-            d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
-      <button
-        type="button"
-        disabled
-        aria-label="Image (coming soon)"
-        className={`${btnBase} ${activeTool === "image" ? "bg-surface-active text-foreground" : ""}`}
-      >
-        <svg
-          className="h-[18px] w-[18px]"
-          strokeWidth={1.75}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <rect
-            x="3"
-            y="3"
-            width="18"
-            height="18"
-            rx="2"
-            ry="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <circle cx="8.5" cy="8.5" r="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          <polyline points="21 15 16 10 5 21" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <ZoomIn className="h-[18px] w-[18px]" strokeWidth={1.75} />
       </button>
     </div>
   );

@@ -174,14 +174,14 @@
 /* Hide ReactFlow attribution watermark */
 .react-flow__attribution { display: none !important; }
 .react-flow__selection {
-  background: oklch(0.9232 0.0026 106.42 / 0.15) !important;
-  border: 1px dashed oklch(0.8695 0.0036 106.42) !important;
-  border-radius: 4px;
-}
-.react-flow__nodesselection-rect {
   background: oklch(0.9232 0.0026 106.42 / 0.12) !important;
   border: 1px dashed oklch(0.8695 0.0036 106.42) !important;
-  border-radius: 8px;
+  border-radius: 6px;
+}
+.react-flow__nodesselection-rect {
+  background: oklch(0.9232 0.0026 106.42 / 0.08) !important;
+  border: 1px dashed oklch(0.8695 0.0036 106.42) !important;
+  border-radius: 12px;
 }
 .react-flow__edge-path {
   stroke: oklch(0.5534 0.0117 106.5) !important;
@@ -198,6 +198,9 @@
   stroke-dasharray: 4 4;
 }
 .react-flow__node.selected { outline: none !important; box-shadow: none !important; }
+
+/* Hide handles completely — cards, not graph nodes */
+.react-flow__handle { opacity: 0 !important; width: 0 !important; height: 0 !important; }
 .react-flow__background { opacity: 1 !important; }
 .react-flow__minimap {
   background: var(--color-popover) !important;

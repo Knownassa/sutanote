@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
-import { CheckCircle2, Circle } from "lucide-react";
+import { Plus } from "lucide-react";
 
 interface Todo {
   label: string;
@@ -25,133 +25,100 @@ function TodoNode({ id, data, selected }: NodeProps) {
   const setTodos = (next: Todo[]) => updateNodeData(id, { todos: next });
   const toggle = (i: number) =>
     setTodos(todos.map((t, idx) => (idx === i ? { ...t, done: !t.done } : t)));
-  const remove = (i: number) => setTodos(todos.filter((_, idx) => idx !== i));
   const add = (label: string) => setTodos([...todos, { label, done: false }]);
 
   return (
-    <div style={{ transform: `rotate(${rotation}deg)`, transformOrigin: "center" }}>
+    <div
+      style={{
+        transform: `rotate(${rotation}deg)`,
+        transformOrigin: "center",
+        width: "100%",
+      }}
+    >
       <motion.div
         initial={reduce ? false : { scale: 0.9, opacity: 0 }}
-        animate={{ scale: selected ? 1.02 : 1, opacity: 1 }}
+        animate={{ scale: selected ? 1.01 : 1, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
-        className={`relative w-full select-none rounded-xl border p-5 transition-[box-shadow,border-color] ${
+        className={`relative w-full select-none rounded-xl border transition-all ${
           data.color ?? "bg-card"
-        } ${selected ? "border-border-strong shadow-[0_8px_30px_rgba(0,0,0,0.08)]" : "border-border hover:shadow-md"}`}
+        } ${
+          selected
+            ? "border-border-strong shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
+            : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]"
+        }`}
+        style={{ maxWidth: 380, padding: "18px 20px" }}
       >
-        <Handle
-          type="target"
-          position={Position.Top}
-          className="h-3 w-3 bg-transparent opacity-0"
-        />
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          className="h-3 w-3 bg-transparent opacity-0"
-        />
-        <Handle
-          type="source"
-          position={Position.Left}
-          className="h-3 w-3 bg-transparent opacity-0"
-        />
-        <Handle
-          type="source"
-          position={Position.Right}
-          className="h-3 w-3 bg-transparent opacity-0"
+        <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
+        <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
+        <Handle type="source" position={Position.Left} className="!h-0 !w-0 !opacity-0" />
+        <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
+
+        <input
+          value={(data.title as string) ?? "To-do"}
+          onChange={(e) => updateNodeData(id, { title: e.target.value })}
+          className="mb-3 w-full bg-transparent text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/80 outline-none focus:ring-0"
         />
 
         <div className="space-y-2">
           {todos.map((todo, i) => (
             <div
               key={i}
-              className={`flex items-center gap-2.5 text-sm transition-all ${
-                todo.done ? "scale-[0.98] opacity-60" : ""
+              className={`flex items-center gap-3 text-[13px] transition-all ${
+                todo.done ? "scale-[0.98] opacity-50" : ""
               }`}
             >
               <button
                 type="button"
                 onClick={() => toggle(i)}
-                className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border transition-colors hover:border-primary"
+                className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[4px] border transition-colors ${
+                  todo.done
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border hover:border-primary/60"
+                }`}
+                aria-label={todo.done ? "Mark incomplete" : "Mark complete"}
               >
-                {todo.done ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" strokeWidth={2} />
-                ) : (
-                  <div className="h-3.5 w-3.5 rounded border border-border" />
+                {todo.done && (
+                  <svg
+                    className="h-3 w-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 )}
               </button>
               <span
-                className={`flex-1 truncate ${todo.done ? "text-muted-foreground line-through" : "text-foreground"}`}
+                className={`flex-1 truncate ${
+                  todo.done ? "text-muted-foreground line-through" : "text-foreground"
+                }`}
               >
                 {todo.label}
               </span>
-              <button
-                type="button"
-                onClick={() => remove(i)}
-                className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground/50 opacity-0 transition-colors hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-                aria-label="Remove task"
-              >
-                <svg
-                  className="h-3 w-3"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                >
-                  <line
-                    x1="18"
-                    y1="6"
-                    x2="6"
-                    y2="18"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <line
-                    x1="6"
-                    y1="6"
-                    x2="18"
-                    y2="18"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
             </div>
           ))}
-
-          <form
-            className="mt-2 flex items-center gap-2 border-t border-border pt-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const input = e.currentTarget.elements.namedItem("task") as HTMLInputElement;
-              if (input.value.trim()) {
-                add(input.value.trim());
-                input.value = "";
-              }
-            }}
-          >
-            <input
-              name="task"
-              type="text"
-              placeholder="Add task..."
-              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-0"
-            />
-            <button
-              type="submit"
-              className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
-              aria-label="Add task"
-            >
-              <svg
-                className="h-3.5 w-3.5"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" strokeLinecap="round" strokeLinejoin="round" />
-                <line x1="5" y1="12" x2="19" y2="12" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </form>
         </div>
+
+        <form
+          className="mt-3 flex items-center gap-2 border-t border-border/60 pt-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const input = e.currentTarget.elements.namedItem("task") as HTMLInputElement;
+            if (input.value.trim()) {
+              add(input.value.trim());
+              input.value = "";
+            }
+          }}
+        >
+          <Plus className="h-3.5 w-3.5 text-muted-foreground/50" />
+          <input
+            name="task"
+            type="text"
+            placeholder="Add a task"
+            className="flex-1 bg-transparent text-[13px] text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/50"
+          />
+        </form>
       </motion.div>
     </div>
   );

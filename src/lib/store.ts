@@ -50,6 +50,7 @@ const defaultColors: Record<string, string> = {
   text: "bg-card",
   sticky: "bg-note-yellow",
   todo: "bg-card",
+  image: "bg-card",
 };
 
 const SAVE_DELAY = 500;
@@ -211,6 +212,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           position: { x: 160, y: -60 },
           zIndex: 2,
           data: {
+            title: "",
             text: "Press T to add a text note, S for a sticky, D for a todo list. Arrow keys nudge selected items.",
             color: "bg-card",
             rotation: 0,
@@ -316,6 +318,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         zIndex: maxZ + 1,
         data: {
           text: "",
+          title: type === "text" ? "" : type === "todo" ? "To-do" : "",
           color: defaultColors[type] ?? "bg-note-yellow",
           rotation: type === "sticky" ? Number((Math.random() * 2 - 1).toFixed(2)) : 0,
           ...(type === "todo"
@@ -325,6 +328,12 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
                   { label: "Task 2", done: false },
                   { label: "Task 3", done: false },
                 ],
+              }
+            : {}),
+          ...(type === "image"
+            ? {
+                src: "",
+                caption: "",
               }
             : {}),
         },
