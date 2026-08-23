@@ -41,7 +41,6 @@ function CanvasInner() {
   const onEdgesChange = useCanvasStore((s) => s.onEdgesChange);
   const onConnect = useCanvasStore((s) => s.onConnect);
   const setSelected = useCanvasStore((s) => s.setSelected);
-  const addNode = useCanvasStore((s) => s.addNode);
   const initializeStore = useCanvasStore((s) => s.initializeStore);
   const { fitView, getViewport } = useReactFlow();
 
@@ -59,14 +58,69 @@ function CanvasInner() {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-      if ((e.key === "t" || e.key === "T") && !e.metaKey && !e.ctrlKey) {
+
+      const store = useCanvasStore.getState();
+      const mod = e.metaKey || e.ctrlKey;
+
+      // Node creation shortcuts
+      if (!mod && (e.key === "t" || e.key === "T")) {
         e.preventDefault();
-        addAtViewportCenter(getViewport, addNode, "text");
+        addAtViewportCenter(getViewport, store.addNode, "text");
+        return;
+      }
+      if (!mod && (e.key === "s" || e.key === "S")) {
+        e.preventDefault();
+        addAtViewportCenter(getViewport, store.addNode, "sticky");
+        return;
+      }
+      if (!mod && (e.key === "d" || e.key === "D")) {
+        e.preventDefault();
+        addAtViewportCenter(getViewport, store.addNode, "todo");
+        return;
+      }
+      if (!mod && (e.key === "i" || e.key === "I")) {
+        e.preventDefault();
+        addAtViewportCenter(getViewport, store.addNode, "text");
+        const id = useCanvasStore.getState().selectedNodeId;
+        if (id) store.updateNodeData(id, { text: "Image placeholder" });
+        return;
+      }
+
+      // Nudge selected node with arrow keys
+      if (store.selectedNodeId) {
+        const node = store.nodes.find((n) => n.id === store.selectedNodeId);
+        if (node) {
+          const step = e.shiftKey ? 10 : 1;
+          let dx = 0;
+          let dy = 0;
+          if (e.key === "ArrowUp") dy = -step;
+          else if (e.key === "ArrowDown") dy = step;
+          else if (e.key === "ArrowLeft") dx = -step;
+          else if (e.key === "ArrowRight") dx = step;
+          if (dx !== 0 || dy !== 0) {
+            e.preventDefault();
+            store.onNodesChange([
+              {
+                id: node.id,
+                type: "position",
+                position: { x: node.position.x + dx, y: node.position.y + dy },
+                dragging: false,
+              },
+            ]);
+            return;
+          }
+        }
+      }
+
+      // Delete selected node (kept in sync with the DB)
+      if ((e.key === "Delete" || e.key === "Backspace") && store.selectedNodeId) {
+        e.preventDefault();
+        store.deleteNode(store.selectedNodeId);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [getViewport, addNode]);
+  }, [getViewport]);
 
   const handleNodeClick = useCallback(
     (_e: React.MouseEvent, node: Node) => setSelected(node.id),

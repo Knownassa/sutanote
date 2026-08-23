@@ -128,10 +128,6 @@ export function WorkspaceSidebar({
             </nav>
 
             <div className="shrink-0 border-t border-sidebar-border p-3">
-              <div className="flex items-center gap-2 px-2 py-1.5">
-                <span className="h-2 w-2 rounded-full bg-sync" />
-                <span className="text-xs text-muted-foreground">Saved locally</span>
-              </div>
               <button
                 type="button"
                 className="mt-1 flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface-hover"

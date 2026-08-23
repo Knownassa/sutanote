@@ -51,7 +51,6 @@ export function RightPropertiesSidebar() {
   const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
   const nodes = useCanvasStore((s) => s.nodes);
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
-  const updateNodeSize = useCanvasStore((s) => s.updateNodeSize);
   const setNodeZ = useCanvasStore((s) => s.setNodeZ);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
 
@@ -115,42 +114,6 @@ export function RightPropertiesSidebar() {
               } ${color.class}`}
             />
           ))}
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <SectionLabel>Size</SectionLabel>
-        <div className="flex gap-2">
-          <label className="flex flex-1 items-center gap-2 rounded-md border border-border px-2">
-            <span className="text-xs text-muted-foreground">W</span>
-            <input
-              type="number"
-              value={Math.round((selectedNode.style?.width as number) ?? 240)}
-              onChange={(e) =>
-                updateNodeSize(
-                  selectedNode.id,
-                  Number(e.target.value) || 240,
-                  Math.round((selectedNode.style?.minHeight as number) ?? 120),
-                )
-              }
-              className="w-full bg-transparent py-2 text-sm text-foreground outline-none"
-            />
-          </label>
-          <label className="flex flex-1 items-center gap-2 rounded-md border border-border px-2">
-            <span className="text-xs text-muted-foreground">H</span>
-            <input
-              type="number"
-              value={Math.round((selectedNode.style?.minHeight as number) ?? 120)}
-              onChange={(e) =>
-                updateNodeSize(
-                  selectedNode.id,
-                  Math.round((selectedNode.style?.width as number) ?? 240),
-                  Number(e.target.value) || 120,
-                )
-              }
-              className="w-full bg-transparent py-2 text-sm text-foreground outline-none"
-            />
-          </label>
         </div>
       </div>
     </div>

@@ -9,7 +9,7 @@ function StickyNoteNode({ id, data, selected }: NodeProps) {
   const rotation = (data.rotation as number) ?? 0;
 
   return (
-    <div style={{ transform: `rotate(${rotation}deg)`, transformOrigin: "center" }}>
+    <div>
       <motion.div
         initial={reduce ? false : { scale: 0.9, opacity: 0 }}
         animate={{ scale: selected ? 1.02 : 1, opacity: 1 }}
@@ -19,7 +19,13 @@ function StickyNoteNode({ id, data, selected }: NodeProps) {
         } ${
           selected ? "border-border-strong shadow-lg" : "border-note-foreground/10 hover:shadow-md"
         }`}
-        style={{ minWidth: 200, maxWidth: 320, minHeight: 140 }}
+        style={{
+          transform: `rotate(${rotation}deg)`,
+          transformOrigin: "center",
+          minWidth: 200,
+          maxWidth: 320,
+          minHeight: 140,
+        }}
       >
         <Handle
           type="target"
@@ -43,7 +49,7 @@ function StickyNoteNode({ id, data, selected }: NodeProps) {
         />
 
         <textarea
-          defaultValue={(data.text as string) ?? ""}
+          value={(data.text as string) ?? ""}
           onChange={(e) => updateNodeData(id, { text: e.target.value })}
           placeholder="Type something..."
           className="h-full min-h-[80px] w-full resize-none bg-transparent font-serif text-sm leading-relaxed text-note-foreground placeholder:text-note-foreground/50 outline-none focus:ring-0"

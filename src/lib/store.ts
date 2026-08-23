@@ -81,7 +81,54 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       if (get().isLoaded) return;
       await initDB();
       const dbNodes = await loadNodesFromDB();
-      set({ nodes: dbNodes as CanvasNode[], isLoaded: true });
+      if (dbNodes.length > 0) {
+        set({ nodes: dbNodes as CanvasNode[], isLoaded: true });
+        return;
+      }
+
+      const seeded: CanvasNode[] = [
+        {
+          id: nanoid(),
+          type: "sticky",
+          position: { x: -120, y: -80 },
+          data: {
+            text: "Welcome to Sutonote. This canvas is yours — infinite, private, and local.",
+            color: "bg-note-yellow",
+            rotation: -0.8,
+          },
+          style: { width: 240, minHeight: 120 },
+        },
+        {
+          id: nanoid(),
+          type: "text",
+          position: { x: 160, y: -60 },
+          data: {
+            text: "Press T to add a text note, S for a sticky, D for a todo list. Arrow keys nudge selected items.",
+            color: "bg-card",
+            rotation: 0,
+          },
+          style: { width: 240, minHeight: 120 },
+        },
+        {
+          id: nanoid(),
+          type: "todo",
+          position: { x: -40, y: 120 },
+          data: {
+            text: "",
+            color: "bg-card",
+            rotation: 0,
+            todos: [
+              { label: "Try dragging this card around", done: false },
+              { label: "Click the canvas to deselect", done: false },
+              { label: "Press Delete to remove a card", done: false },
+            ],
+          },
+          style: { width: 240, minHeight: 120 },
+        },
+      ];
+
+      set({ nodes: seeded, isLoaded: true });
+      await saveNodesToDB(seeded.map(toSaved));
     },
 
     onNodesChange: (changes) => {

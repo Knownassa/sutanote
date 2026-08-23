@@ -43,7 +43,7 @@ function TextNode({ id, data, selected }: NodeProps) {
         />
 
         <textarea
-          defaultValue={(data.text as string) ?? ""}
+          value={(data.text as string) ?? ""}
           onChange={(e) => updateNodeData(id, { text: e.target.value })}
           placeholder="Start writing..."
           className="min-h-[60px] w-full resize-none bg-transparent font-serif text-base leading-[1.65] text-foreground placeholder:text-muted-foreground outline-none focus:ring-0"
