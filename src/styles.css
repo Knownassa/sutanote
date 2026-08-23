@@ -201,6 +201,35 @@
 
 /* Hide handles completely — cards, not graph nodes */
 .react-flow__handle { opacity: 0 !important; width: 0 !important; height: 0 !important; }
+
+/* While dragging, kill expensive animations so the node tracks the cursor. */
+.react-flow__node.dragging [data-node-surface],
+.react-flow__node.dragging .react-flow__node-dragwrapper {
+  transition: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+/* Cursor system — toolbar/tool state drives pane cursor. */
+.sut-cursor-default .react-flow__pane { cursor: default; }
+.sut-cursor-grab .react-flow__pane { cursor: grab; }
+.sut-cursor-grabbing .react-flow__pane { cursor: grabbing; }
+.sut-cursor-crosshair .react-flow__pane { cursor: crosshair; }
+
+/* Hovering a movable node shows grab; dragging shows grabbing. */
+.react-flow__node:not(.locked) { cursor: grab; }
+.react-flow__node.dragging { cursor: grabbing; }
+.react-flow__node.locked { cursor: not-allowed; }
+
+/* Resize corner handles: subtle Sutonote dots (no bounding rectangle). */
+.react-flow__resize-control.handle {
+  background: var(--popover) !important;
+  border: 1px solid var(--border-strong) !important;
+  border-radius: 9999px !important;
+  width: 8px !important;
+  height: 8px !important;
+}
+.react-flow__resize-control.line { display: none !important; }
 .react-flow__background { opacity: 1 !important; }
 .react-flow__minimap {
   background: var(--color-popover) !important;

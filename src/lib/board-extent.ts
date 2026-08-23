@@ -29,52 +29,71 @@ function nodeBounds(nodes: CanvasNode[]) {
 }
 
 /**
- * Monotonic expansion. Returns the same reference when nothing needs to grow so
- * React state updates stay no-ops. Expansion never shrinks.
+ * Full recompute from all nodes. Only call on load / board switch / bulk
+ * operations — never on every drag frame.
  */
-export function computeExtent(prev: BoardExtent, nodes: CanvasNode[]): BoardExtent {
+export function computeExtentForAllNodes(nodes: CanvasNode[]): BoardExtent {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const n of nodes) {
+    const w = (n.style?.width as number) ?? 200;
+    const h = (n.style?.minHeight as number) ?? 120;
+    minX = Math.min(minX, n.position.x - w / 2 - CONTENT_PADDING);
+    minY = Math.min(minY, n.position.y - h / 2 - CONTENT_PADDING);
+    maxX = Math.max(maxX, n.position.x + w / 2 + CONTENT_PADDING);
+    maxY = Math.max(maxY, n.position.y + h / 2 + CONTENT_PADDING);
+  }
+  if (!Number.isFinite(minX)) {
+    return [
+      [-800, -600],
+      [800, 600],
+    ];
+  }
+  return [
+    [minX, minY],
+    [maxX, maxY],
+  ];
+}
+
+/**
+ * O(1) incremental expansion for a single node during drag/resize.
+ * `x`/`y` are the node center (nodeOrigin 0.5). Returns the same reference
+ * when no edge is approached, so React state updates stay no-ops.
+ */
+export function ensureExtentForNode(
+  prev: BoardExtent,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): BoardExtent {
   const [min, max] = prev;
   let [minX, minY] = min;
   let [maxX, maxY] = max;
   let changed = false;
 
-  // Content-bounds safety: always contain all nodes + padding.
-  const b = nodeBounds(nodes);
-  if (b.minX - CONTENT_PADDING < minX) {
-    minX = b.minX - CONTENT_PADDING;
-    changed = true;
-  }
-  if (b.minY - CONTENT_PADDING < minY) {
-    minY = b.minY - CONTENT_PADDING;
-    changed = true;
-  }
-  if (b.maxX + CONTENT_PADDING > maxX) {
-    maxX = b.maxX + CONTENT_PADDING;
-    changed = true;
-  }
-  if (b.maxY + CONTENT_PADDING > maxY) {
-    maxY = b.maxY + CONTENT_PADDING;
-    changed = true;
-  }
+  const left = x - w / 2;
+  const right = x + w / 2;
+  const top = y - h / 2;
+  const bottom = y + h / 2;
 
-  // Threshold-based chunked expansion as content approaches an edge.
-  for (const n of nodes) {
-    if (n.position.x < minX + BOARD_EDGE_THRESHOLD && minX > -Infinity) {
-      minX -= BOARD_EXPAND_STEP;
-      changed = true;
-    }
-    if (n.position.x > maxX - BOARD_EDGE_THRESHOLD) {
-      maxX += BOARD_EXPAND_STEP;
-      changed = true;
-    }
-    if (n.position.y < minY + BOARD_EDGE_THRESHOLD) {
-      minY -= BOARD_EXPAND_STEP;
-      changed = true;
-    }
-    if (n.position.y > maxY - BOARD_EDGE_THRESHOLD) {
-      maxY += BOARD_EXPAND_STEP;
-      changed = true;
-    }
+  if (left < minX + BOARD_EDGE_THRESHOLD) {
+    minX -= BOARD_EXPAND_STEP;
+    changed = true;
+  }
+  if (top < minY + BOARD_EDGE_THRESHOLD) {
+    minY -= BOARD_EXPAND_STEP;
+    changed = true;
+  }
+  if (right > maxX - BOARD_EDGE_THRESHOLD) {
+    maxX += BOARD_EXPAND_STEP;
+    changed = true;
+  }
+  if (bottom > maxY - BOARD_EDGE_THRESHOLD) {
+    maxY += BOARD_EXPAND_STEP;
+    changed = true;
   }
 
   return changed

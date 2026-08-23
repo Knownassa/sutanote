@@ -34,7 +34,7 @@ export const Route = createFileRoute("/")({
 
 function Workspace() {
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
+  const selectedNodeIds = useCanvasStore((s) => s.selectedNodeIds);
   const sidebarOpen = useSettingsStore((s) => s.leftSidebarOpen);
   const toggleSidebar = useSettingsStore((s) => s.toggleLeftSidebar);
   const setSidebarOpen = useSettingsStore((s) => s.setLeftSidebarOpen);
@@ -82,7 +82,7 @@ function Workspace() {
       </div>
 
       <AnimatePresence initial={false}>
-        {selectedNodeId && (
+        {selectedNodeIds.length > 0 && (
           <motion.div
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: 260, opacity: 1 }}

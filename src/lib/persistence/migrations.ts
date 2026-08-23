@@ -81,6 +81,21 @@ const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 3,
+    name: "003_asset_metadata",
+    up: async () => {
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS canvas_assets (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          mime TEXT NOT NULL,
+          size INT NOT NULL DEFAULT 0,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+      `);
+    },
+  },
 ];
 
 export async function runMigrations(): Promise<void> {

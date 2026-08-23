@@ -26,7 +26,7 @@ import {
 interface CanvasState {
   nodes: CanvasNode[];
   edges: CanvasEdge[];
-  selectedNodeId: string | null;
+  selectedNodeIds: string[];
   isLoaded: boolean;
   persistenceStatus: PersistenceStatus;
   lastSavedAt: number | null;
@@ -38,10 +38,27 @@ interface CanvasState {
   addNode: (type: string, position: { x: number; y: number }) => void;
   updateNodeData: (id: string, data: Partial<CanvasNodeData>) => void;
   updateNodeSize: (id: string, width: number, height: number) => void;
+  updateNodePosition: (id: string, x: number, y: number) => void;
   deleteNode: (id: string) => void;
-  setSelected: (id: string | null) => void;
+  setSelectedIds: (ids: string[]) => void;
+  selectAll: () => void;
+  clearSelection: () => void;
+  deleteSelected: () => void;
+  duplicateSelected: () => void;
+  copySelected: () => void;
+  cutSelected: () => void;
+  pasteAt: (position: { x: number; y: number }) => void;
   bringToFront: (id: string) => void;
   sendToBack: (id: string) => void;
+  bringForward: (id: string) => void;
+  sendBackward: (id: string) => void;
+  alignSelected: (edge: "left" | "centerX" | "right" | "top" | "centerY" | "bottom") => void;
+  distributeSelected: (axis: "horizontal" | "vertical") => void;
+  matchSizeSelected: (dim: "width" | "height") => void;
+  setColorSelected: (color: string) => void;
+  setLockedSelected: (locked: boolean) => void;
+  groupSelected: () => void;
+  ungroupSelected: () => void;
   flushNow: () => Promise<void>;
   initializeStore: () => Promise<void>;
 }
@@ -65,8 +82,19 @@ const deletedNodeIds = new Set<string>();
 const dirtyEdges = new Map<string, CanvasEdge>();
 const deletedEdgeIds = new Set<string>();
 
+// In-memory clipboard for copy/cut/paste/duplicate (no cross-app format yet).
+let clipboard: CanvasNode[] = [];
+
 let flushTimer: ReturnType<typeof setTimeout> | undefined;
 let flushing = false;
+
+function syncSelected(ids: string[]): { selectedNodeIds: string[] } {
+  return { selectedNodeIds: ids };
+}
+
+function computeSelectedIds(nodes: CanvasNode[]): string[] {
+  return nodes.filter((n) => n.selected).map((n) => n.id);
+}
 
 export const useCanvasStore = create<CanvasState>((set, get) => {
   const markNodeDirty = (node: CanvasNode) => {
@@ -77,7 +105,6 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
   const markNodeDeleted = (id: string) => {
     dirtyNodes.delete(id);
     deletedNodeIds.add(id);
-    // Cascade: any edge touching this node must also go.
     const edges = get().edges;
     for (const e of edges) {
       if (e.source === id || e.target === id) {
@@ -99,19 +126,32 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
 
   const scheduleFlush = () => {
     set({ persistenceStatus: "dirty", pendingChanges: queueSize() });
-    // If a flush is already scheduled, let it run — do not stack timers.
     if (flushTimer) return;
     flushTimer = setTimeout(async () => {
-      // Reset first so mutations during the flush can reschedule cleanly.
       flushTimer = undefined;
       await get().flushNow();
     }, SAVE_DELAY);
   };
 
+  const commitNodes = (next: CanvasNode[]) => {
+    set({ nodes: next, ...syncSelected(computeSelectedIds(next)) });
+  };
+
+  const applyToSelected = (fn: (n: CanvasNode) => CanvasNode) => {
+    const next = get().nodes.map((n) => (n.selected ? fn(n) : n)) as CanvasNode[];
+    commitNodes(next);
+    next
+      .filter((n) => n.selected)
+      .forEach((n) => {
+        markNodeDirty(n);
+        scheduleFlush();
+      });
+  };
+
   return {
     nodes: [],
     edges: [],
-    selectedNodeId: null,
+    selectedNodeIds: [],
     isLoaded: false,
     persistenceStatus: "clean",
     lastSavedAt: null,
@@ -120,8 +160,6 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
 
     flushNow: async () => {
       if (flushing) return;
-      // Snapshot the current queue. Mutations during the flush create NEW
-      // entries/objects, so we must not clear anything that changed.
       const dn = new Map(dirtyNodes);
       const dd = new Set(deletedNodeIds);
       const de = new Map(dirtyEdges);
@@ -135,13 +173,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       set({ persistenceStatus: "saving" });
       try {
         await flushBoard(DEFAULT_BOARD_ID, dn, dd, de, dde);
-        // Clear only entries that are still exactly what we flushed. Anything
-        // replaced mid-flush (reference differs) stays dirty and re-flushes.
         for (const [id, snap] of dn) {
           if (dirtyNodes.get(id) === snap) dirtyNodes.delete(id);
         }
         for (const id of dd) {
-          // Keep it deleted only if it wasn't re-created during the flush.
           if (deletedNodeIds.has(id) && !dirtyNodes.has(id)) deletedNodeIds.delete(id);
         }
         for (const [id, snap] of de) {
@@ -165,7 +200,6 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         });
       } finally {
         flushing = false;
-        // If new changes arrived during the flush, keep the cycle alive.
         if (queueSize() > 0 && !flushTimer) {
           flushTimer = setTimeout(() => void get().flushNow(), SAVE_DELAY);
         }
@@ -182,6 +216,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         set({
           nodes: dbNodes as CanvasNode[],
           edges: dbEdges as CanvasEdge[],
+          selectedNodeIds: [],
           isLoaded: true,
           persistenceStatus: "saved",
           lastSavedAt: Date.now(),
@@ -213,7 +248,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           zIndex: 2,
           data: {
             title: "",
-            text: "Press T to add a text note, S for a sticky, D for a todo list. Arrow keys nudge selected items.",
+            text: "Click a tool below to begin — or drag to explore the canvas.",
             color: "bg-card",
             rotation: 0,
           },
@@ -247,6 +282,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       set({
         nodes: seeded,
         edges: dbEdges as CanvasEdge[],
+        selectedNodeIds: [],
         isLoaded: true,
         persistenceStatus: "dirty",
         pendingChanges: seeded.length,
@@ -256,14 +292,50 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     onNodesChange: (changes) => {
-      const newNodes = applyNodeChanges(changes, get().nodes) as CanvasNode[];
-      set({ nodes: newNodes });
+      const prev = get().nodes;
+      let next = applyNodeChanges(changes, prev) as CanvasNode[];
 
       let touched = false;
       for (const c of changes) {
-        if (c.type === "position" || c.type === "dimensions") {
-          const node = newNodes.find((n) => n.id === c.id);
+        if (c.type === "position") {
+          const node = next.find((n) => n.id === c.id);
           if (node) {
+            const gid = node.data.groupId as string | undefined;
+            if (gid && c.dragging) {
+              const oldNode = prev.find((n) => n.id === c.id);
+              if (oldNode && c.position) {
+                const dx = c.position.x - oldNode.position.x;
+                const dy = c.position.y - oldNode.position.y;
+                if (dx !== 0 || dy !== 0) {
+                  next = next.map((n) =>
+                    n.id !== c.id && n.data.groupId === gid
+                      ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } }
+                      : n,
+                  ) as CanvasNode[];
+                }
+              }
+            }
+            if (c.dragging === false && node) {
+              markNodeDirty(node);
+              touched = true;
+            }
+          }
+        } else if (c.type === "dimensions") {
+          const node = next.find((n) => n.id === c.id);
+          if (node && c.dimensions) {
+            next = next.map((n) =>
+              n.id === c.id
+                ? {
+                    ...n,
+                    style: {
+                      ...n.style,
+                      width: c.dimensions!.width ?? n.style?.width,
+                      minHeight: c.dimensions!.height ?? n.style?.minHeight,
+                    },
+                  }
+                : n,
+            ) as CanvasNode[];
+            // Coalesced into a single flush by the 500ms debounce (one save after resize stops).
             markNodeDirty(node);
             touched = true;
           }
@@ -272,6 +344,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           touched = true;
         }
       }
+
+      commitNodes(next);
       if (touched) scheduleFlush();
     },
 
@@ -316,6 +390,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         type,
         position,
         zIndex: maxZ + 1,
+        selected: true,
         data: {
           text: "",
           title: type === "text" ? "" : type === "todo" ? "To-do" : "",
@@ -330,27 +405,22 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
                 ],
               }
             : {}),
-          ...(type === "image"
-            ? {
-                src: "",
-                caption: "",
-              }
-            : {}),
+          ...(type === "image" ? { src: "", caption: "", assetId: "" } : {}),
         },
         style: { width: def.defaultWidth, minHeight: def.defaultHeight },
       };
-      const next = [...get().nodes, newNode];
-      set({ nodes: next, selectedNodeId: newNode.id });
+      const next = [...get().nodes.map((n) => ({ ...n, selected: false })), newNode];
+      commitNodes(next);
       markNodeDirty(newNode);
       scheduleFlush();
     },
 
     updateNodeData: (id, data) => {
-      const newNodes = get().nodes.map((n) =>
+      const next = get().nodes.map((n) =>
         n.id === id ? { ...n, data: { ...n.data, ...data } } : n,
       ) as CanvasNode[];
-      set({ nodes: newNodes });
-      const node = newNodes.find((n) => n.id === id);
+      commitNodes(next);
+      const node = next.find((n) => n.id === id);
       if (node) {
         markNodeDirty(node);
         scheduleFlush();
@@ -358,11 +428,23 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     updateNodeSize: (id, width, height) => {
-      const newNodes = get().nodes.map((n) =>
+      const next = get().nodes.map((n) =>
         n.id === id ? { ...n, style: { ...n.style, width, minHeight: height } } : n,
       ) as CanvasNode[];
-      set({ nodes: newNodes });
-      const node = newNodes.find((n) => n.id === id);
+      commitNodes(next);
+      const node = next.find((n) => n.id === id);
+      if (node) {
+        markNodeDirty(node);
+        scheduleFlush();
+      }
+    },
+
+    updateNodePosition: (id, x, y) => {
+      const next = get().nodes.map((n) =>
+        n.id === id ? { ...n, position: { x, y } } : n,
+      ) as CanvasNode[];
+      commitNodes(next);
+      const node = next.find((n) => n.id === id);
       if (node) {
         markNodeDirty(node);
         scheduleFlush();
@@ -370,21 +452,135 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     deleteNode: (id) => {
-      const newNodes = get().nodes.filter((n) => n.id !== id);
-      set({ nodes: newNodes, selectedNodeId: null });
+      const next = get().nodes.filter((n) => n.id !== id);
+      commitNodes(next);
       markNodeDeleted(id);
       scheduleFlush();
     },
 
-    setSelected: (id) => set({ selectedNodeId: id }),
+    setSelectedIds: (ids) => {
+      const next = get().nodes.map((n) => ({ ...n, selected: ids.includes(n.id) }));
+      commitNodes(next);
+    },
+
+    selectAll: () => {
+      const next = get().nodes.map((n) => ({ ...n, selected: true }));
+      commitNodes(next);
+    },
+
+    clearSelection: () => {
+      const next = get().nodes.map((n) => (n.selected ? { ...n, selected: false } : n));
+      commitNodes(next);
+    },
+
+    deleteSelected: () => {
+      const ids = new Set(get().selectedNodeIds);
+      if (ids.size === 0) return;
+      const next = get().nodes.filter((n) => !ids.has(n.id));
+      commitNodes(next);
+      ids.forEach(markNodeDeleted);
+      const remainingEdges = get().edges.filter((e) => !ids.has(e.source) && !ids.has(e.target));
+      const removedEdges = get().edges.filter((e) => ids.has(e.source) || ids.has(e.target));
+      set({ edges: remainingEdges });
+      removedEdges.forEach((e) => markEdgeDeleted(e.id));
+      scheduleFlush();
+    },
+
+    copySelected: () => {
+      const sel = get().nodes.filter((n) => n.selected);
+      clipboard = sel.map((n) => ({
+        ...n,
+        id: `${n.id}__copy`,
+        selected: false,
+        data: { ...n.data },
+        style: { ...n.style },
+      }));
+    },
+
+    cutSelected: () => {
+      get().copySelected();
+      get().deleteSelected();
+    },
+
+    duplicateSelected: () => {
+      const sel = get().nodes.filter((n) => n.selected);
+      if (sel.length === 0) return;
+      const idMap = new Map<string, string>();
+      const clones = sel.map((n) => {
+        const newId = nanoid();
+        idMap.set(n.id, newId);
+        return {
+          ...n,
+          id: newId,
+          selected: true,
+          position: { x: n.position.x + 24, y: n.position.y + 24 },
+          data: { ...n.data },
+          style: { ...n.style },
+        } as CanvasNode;
+      });
+      const others = get().nodes.map((n) => ({ ...n, selected: false }));
+      const next = [...others, ...clones];
+      commitNodes(next);
+      const selIds = new Set(sel.map((n) => n.id));
+      const newEdges = get()
+        .edges.filter((e) => selIds.has(e.source) && selIds.has(e.target))
+        .map((e) => ({
+          ...e,
+          id: nanoid(),
+          source: idMap.get(e.source)!,
+          target: idMap.get(e.target)!,
+          selected: false,
+        }));
+      if (newEdges.length) set({ edges: [...get().edges, ...newEdges] });
+      clones.forEach((n) => {
+        markNodeDirty(n);
+      });
+      newEdges.forEach((e) => markEdgeDirty(e));
+      scheduleFlush();
+    },
+
+    pasteAt: (position) => {
+      if (clipboard.length === 0) return;
+      const idMap = new Map<string, string>();
+      const clones = clipboard.map((n) => {
+        const newId = nanoid();
+        idMap.set(n.id, newId);
+        return {
+          ...n,
+          id: newId,
+          selected: true,
+          position: {
+            x: position.x + (n.position.x - clipboard[0]!.position.x),
+            y: position.y + (n.position.y - clipboard[0]!.position.y),
+          },
+          data: { ...n.data },
+          style: { ...n.style },
+        } as CanvasNode;
+      });
+      const others = get().nodes.map((n) => ({ ...n, selected: false }));
+      const next = [...others, ...clones];
+      commitNodes(next);
+      const clipboardIds = new Set(clipboard.map((n) => n.id));
+      const newEdges = get()
+        .edges.filter((e) => clipboardIds.has(e.source) && clipboardIds.has(e.target))
+        .map((e) => ({
+          ...e,
+          id: nanoid(),
+          source: idMap.get(e.source)!,
+          target: idMap.get(e.target)!,
+          selected: false,
+        }));
+      if (newEdges.length) set({ edges: [...get().edges, ...newEdges] });
+      clones.forEach((n) => markNodeDirty(n));
+      newEdges.forEach((e) => markEdgeDirty(e));
+      scheduleFlush();
+    },
 
     bringToFront: (id) => {
       const maxZ = get().nodes.reduce((m, n) => Math.max(m, n.zIndex ?? 0), 0);
-      const newNodes = get().nodes.map((n) =>
-        n.id === id ? { ...n, zIndex: maxZ + 1 } : n,
-      ) as CanvasNode[];
-      set({ nodes: newNodes });
-      const node = newNodes.find((n) => n.id === id);
+      const next = get().nodes.map((n) => (n.id === id ? { ...n, zIndex: maxZ + 1 } : n));
+      commitNodes(next);
+      const node = next.find((n) => n.id === id);
       if (node) {
         markNodeDirty(node);
         scheduleFlush();
@@ -397,15 +593,147 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         Number.POSITIVE_INFINITY,
       );
       const base = Number.isFinite(minZ) ? minZ - 1 : -1;
-      const newNodes = get().nodes.map((n) =>
-        n.id === id ? { ...n, zIndex: base } : n,
-      ) as CanvasNode[];
-      set({ nodes: newNodes });
-      const node = newNodes.find((n) => n.id === id);
+      const next = get().nodes.map((n) => (n.id === id ? { ...n, zIndex: base } : n));
+      commitNodes(next);
+      const node = next.find((n) => n.id === id);
       if (node) {
         markNodeDirty(node);
         scheduleFlush();
       }
     },
+
+    bringForward: (id) => {
+      const sorted = [...get().nodes].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+      const idx = sorted.findIndex((n) => n.id === id);
+      if (idx < 0 || idx === sorted.length - 1) return;
+      const swap = sorted[idx + 1];
+      if (!swap) return;
+      const cur = sorted[idx]!;
+      const next = get().nodes.map((n) => {
+        if (n.id === id) return { ...n, zIndex: swap.zIndex ?? 0 };
+        if (n.id === swap.id) return { ...n, zIndex: cur.zIndex ?? 0 };
+        return n;
+      }) as CanvasNode[];
+      commitNodes(next);
+      next
+        .filter((n) => n.id === id || n.id === swap.id)
+        .forEach((n) => {
+          markNodeDirty(n);
+          scheduleFlush();
+        });
+    },
+
+    sendBackward: (id) => {
+      const sorted = [...get().nodes].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+      const idx = sorted.findIndex((n) => n.id === id);
+      if (idx <= 0) return;
+      const swap = sorted[idx - 1];
+      if (!swap) return;
+      const cur = sorted[idx]!;
+      const next = get().nodes.map((n) => {
+        if (n.id === id) return { ...n, zIndex: swap.zIndex ?? 0 };
+        if (n.id === swap.id) return { ...n, zIndex: cur.zIndex ?? 0 };
+        return n;
+      }) as CanvasNode[];
+      commitNodes(next);
+      next
+        .filter((n) => n.id === id || n.id === swap.id)
+        .forEach((n) => {
+          markNodeDirty(n);
+          scheduleFlush();
+        });
+    },
+
+    alignSelected: (edge) => {
+      const sel = get().nodes.filter((n) => n.selected);
+      if (sel.length < 2) return;
+      const left = (n: CanvasNode) => n.position.x - (n.style?.width as number) / 2;
+      const right = (n: CanvasNode) => n.position.x + (n.style?.width as number) / 2;
+      const top = (n: CanvasNode) => n.position.y - (n.style?.minHeight as number) / 2;
+      const bottom = (n: CanvasNode) => n.position.y + (n.style?.minHeight as number) / 2;
+
+      const targets = {
+        left: Math.min(...sel.map(left)),
+        right: Math.max(...sel.map(right)),
+        top: Math.min(...sel.map(top)),
+        bottom: Math.max(...sel.map(bottom)),
+        centerX: (Math.min(...sel.map(left)) + Math.max(...sel.map(right))) / 2,
+        centerY: (Math.min(...sel.map(top)) + Math.max(...sel.map(bottom))) / 2,
+      }[edge];
+
+      applyToSelected((n) => {
+        let { x, y } = n.position;
+        const w = n.style?.width as number;
+        const h = n.style?.minHeight as number;
+        if (edge === "left") x = (targets as number) + w / 2;
+        else if (edge === "right") x = (targets as number) - w / 2;
+        else if (edge === "centerX") x = targets as number;
+        else if (edge === "top") y = (targets as number) + h / 2;
+        else if (edge === "bottom") y = (targets as number) - h / 2;
+        else if (edge === "centerY") y = targets as number;
+        return { ...n, position: { x, y } };
+      });
+    },
+
+    distributeSelected: (axis) => {
+      const sel = get()
+        .nodes.filter((n) => n.selected)
+        .sort((a, b) =>
+          axis === "horizontal" ? a.position.x - b.position.x : a.position.y - b.position.y,
+        );
+      if (sel.length < 3) return;
+      const span =
+        axis === "horizontal"
+          ? sel[sel.length - 1]!.position.x - sel[0]!.position.x
+          : sel[sel.length - 1]!.position.y - sel[0]!.position.y;
+      const step = span / (sel.length - 1);
+      const first = sel[0]!.position;
+      applyToSelected((n) => {
+        const i = sel.findIndex((s) => s.id === n.id);
+        if (i <= 0 || i >= sel.length - 1) return n;
+        if (axis === "horizontal") {
+          return { ...n, position: { x: first.x + step * i, y: n.position.y } };
+        }
+        return { ...n, position: { x: n.position.x, y: first.y + step * i } };
+      });
+    },
+
+    matchSizeSelected: (dim) => {
+      const sel = get().nodes.filter((n) => n.selected);
+      if (sel.length < 2) return;
+      const ref =
+        dim === "width" ? (sel[0]!.style?.width as number) : (sel[0]!.style?.minHeight as number);
+      applyToSelected((n) => ({
+        ...n,
+        style: {
+          ...n.style,
+          ...(dim === "width" ? { width: ref } : { minHeight: ref }),
+        },
+      }));
+    },
+
+    setColorSelected: (color) => {
+      applyToSelected((n) => ({ ...n, data: { ...n.data, color } }));
+    },
+
+    setLockedSelected: (locked) => {
+      applyToSelected((n) => ({ ...n, data: { ...n.data, locked } }));
+    },
+
+    groupSelected: () => {
+      const sel = get().nodes.filter((n) => n.selected);
+      if (sel.length < 2) return;
+      const groupId = nanoid();
+      applyToSelected((n) => ({ ...n, data: { ...n.data, groupId } }));
+    },
+
+    ungroupSelected: () => {
+      applyToSelected((n) => {
+        const { groupId, ...rest } = n.data;
+        return { ...n, data: rest as CanvasNodeData };
+      });
+    },
   };
 });
+
+export const getSelectedNodes = () => useCanvasStore.getState().nodes.filter((n) => n.selected);

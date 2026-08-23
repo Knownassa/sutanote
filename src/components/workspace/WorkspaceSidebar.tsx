@@ -8,7 +8,9 @@ import {
   FileText,
   UserRound,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSettingsStore } from "@/lib/settings-store";
+import { getAssetUrl } from "@/lib/asset-store";
 
 type Board = { name: string };
 type Group = { name: string; boards: Board[] };
@@ -39,6 +41,22 @@ export function WorkspaceSidebar({
 }) {
   const [active, setActive] = useState("Moodboard");
   const [collapsed, setCollapsed] = useState<string[]>([]);
+  const displayName = useSettingsStore((s) => s.displayName);
+  const vaultName = useSettingsStore((s) => s.vaultName);
+  const avatarAssetId = useSettingsStore((s) => s.avatarAssetId);
+  const [avatarUrl, setAvatarUrl] = useState("");
+
+  useEffect(() => {
+    if (!avatarAssetId) {
+      setAvatarUrl("");
+      return;
+    }
+    let activeFn = true;
+    getAssetUrl(avatarAssetId).then((u) => activeFn && setAvatarUrl(u ?? ""));
+    return () => {
+      activeFn = false;
+    };
+  }, [avatarAssetId]);
 
   const toggleGroup = (name: string) =>
     setCollapsed((c) => (c.includes(name) ? c.filter((n) => n !== name) : [...c, name]));
@@ -48,7 +66,7 @@ export function WorkspaceSidebar({
       {open && (
         <motion.aside
           initial={{ width: 0, opacity: 0 }}
-          animate={{ width: 260, opacity: 1 }}
+          animate={{ width: 240, opacity: 1 }}
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
           className="shrink-0 overflow-hidden border-r border-sidebar-border bg-sidebar"
@@ -132,12 +150,16 @@ export function WorkspaceSidebar({
                 type="button"
                 className="mt-1 flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface-hover"
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-sidebar-border bg-surface">
-                  <UserRound className="h-4 w-4 text-muted-foreground" />
+                <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg border border-sidebar-border bg-surface">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                  ) : (
+                    <UserRound className="h-4 w-4 text-muted-foreground" />
+                  )}
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium">Rifat Ahmed</span>
-                  <span className="block truncate text-xs text-muted-foreground">Local vault</span>
+                  <span className="block truncate text-sm font-medium">{displayName}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{vaultName}</span>
                 </span>
               </button>
             </div>

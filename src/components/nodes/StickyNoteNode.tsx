@@ -1,12 +1,26 @@
 import { memo } from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { Handle, Position, NodeResizer, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
+import { useInteractionStore } from "@/lib/interaction-store";
+import { getNodeDef } from "@/lib/node-definitions";
+
+const handleStyle = {
+  width: 8,
+  height: 8,
+  borderRadius: "9999px",
+  background: "var(--popover)",
+  border: "1px solid var(--border-strong)",
+};
+
+const lineStyle = { border: "none" };
 
 function StickyNoteNode({ id, data, selected }: NodeProps) {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
+  const locked = (data.locked as boolean) ?? false;
+  const def = getNodeDef("sticky");
 
   return (
     <div
@@ -16,11 +30,20 @@ function StickyNoteNode({ id, data, selected }: NodeProps) {
         width: "100%",
       }}
     >
+      <NodeResizer
+        isVisible={selected && !locked}
+        minWidth={def.minWidth}
+        minHeight={def.minHeight}
+        {...(def.maxWidth ? { maxWidth: def.maxWidth } : {})}
+        handleStyle={handleStyle}
+        lineStyle={lineStyle}
+      />
       <motion.div
+        data-node-surface
         initial={reduce ? false : { scale: 0.9, opacity: 0 }}
         animate={{ scale: selected ? 1.02 : 1, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
-        className={`relative w-full select-none rounded-lg transition-all ${
+        className={`relative w-full select-none rounded-lg transition-shadow ${
           data.color ?? "bg-note-yellow"
         } ${
           selected
@@ -28,7 +51,6 @@ function StickyNoteNode({ id, data, selected }: NodeProps) {
             : "shadow-[0_3px_10px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.09)]"
         }`}
         style={{
-          maxWidth: 300,
           minHeight: 160,
           padding: "18px",
           border: "1px solid rgba(0,0,0,0.04)",
@@ -41,8 +63,11 @@ function StickyNoteNode({ id, data, selected }: NodeProps) {
         <textarea
           value={(data.text as string) ?? ""}
           onChange={(e) => updateNodeData(id, { text: e.target.value })}
+          onFocus={() => useInteractionStore.getState().setEditingText(true)}
+          onBlur={() => useInteractionStore.getState().setEditingText(false)}
           placeholder="Jot something down..."
-          className="h-full min-h-[100px] w-full resize-none bg-transparent font-serif text-[14px] leading-[1.6] text-note-foreground outline-none focus:ring-0 placeholder:text-note-foreground/40"
+          className="h-full min-h-[100px] w-full cursor-text resize-none bg-transparent font-serif leading-[1.6] text-note-foreground outline-none focus:ring-0 placeholder:text-note-foreground/40"
+          style={{ fontSize: (data.fontSize as number) ?? 14 }}
         />
       </motion.div>
     </div>

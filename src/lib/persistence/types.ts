@@ -7,6 +7,21 @@ export interface CanvasNodeData {
   color: string;
   rotation?: number;
   todos?: Array<{ label: string; done: boolean }>;
+  // Optional domain fields used by the workspace UI.
+  title?: string;
+  src?: string;
+  caption?: string;
+  captionVisible?: boolean;
+  alt?: string;
+  assetId?: string;
+  locked?: boolean;
+  groupId?: string;
+  fontSize?: number;
+  textAlign?: "left" | "center" | "right";
+  bold?: boolean;
+  italic?: boolean;
+  textColor?: string;
+  showCompleted?: boolean;
   [key: string]: unknown;
 }
 

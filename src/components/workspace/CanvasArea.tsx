@@ -11,6 +11,7 @@ import ReactFlow, {
 import { AnimatePresence, motion } from "motion/react";
 import {
   MousePointer2,
+  Hand,
   ZoomIn,
   ZoomOut,
   Type,
@@ -21,7 +22,13 @@ import {
 import "reactflow/dist/style.css";
 import { useCanvasStore } from "@/lib/store";
 import { useSettingsStore } from "@/lib/settings-store";
-import { computeExtent, type BoardExtent } from "@/lib/board-extent";
+import { useInteractionStore } from "@/lib/interaction-store";
+import { storeImageAsset } from "@/lib/asset-store";
+import {
+  computeExtentForAllNodes,
+  ensureExtentForNode,
+  type BoardExtent,
+} from "@/lib/board-extent";
 import { loadViewport, saveViewport } from "@/lib/viewport";
 import StickyNoteNode from "@/components/nodes/StickyNoteNode";
 import TextNode from "@/components/nodes/TextNode";
@@ -57,18 +64,21 @@ const addAtViewportCenter = (
 function CanvasInner() {
   const nodes = useCanvasStore((s) => s.nodes);
   const edges = useCanvasStore((s) => s.edges);
+  const isLoaded = useCanvasStore((s) => s.isLoaded);
   const onNodesChange = useCanvasStore((s) => s.onNodesChange);
   const onEdgesChange = useCanvasStore((s) => s.onEdgesChange);
   const onConnect = useCanvasStore((s) => s.onConnect);
-  const setSelected = useCanvasStore((s) => s.setSelected);
   const initializeStore = useCanvasStore((s) => s.initializeStore);
   const gridVisible = useSettingsStore((s) => s.gridVisible);
   const snapToGrid = useSettingsStore((s) => s.snapToGrid);
-  const { getViewport } = useReactFlow();
+  const activeTool = useInteractionStore((s) => s.activeTool);
+  const spaceHeld = useInteractionStore((s) => s.spaceHeld);
+  const isDragging = useInteractionStore((s) => s.isDragging);
+  const { getViewport, screenToFlowPosition } = useReactFlow();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [defaultViewport] = useState<Viewport>(() => loadViewport() ?? centerViewport());
-  const [extent, setExtent] = useState<BoardExtent>(
+  const extentRef = useRef<BoardExtent>(
     typeof window === "undefined"
       ? [
           [-800, -600],
@@ -79,134 +89,281 @@ function CanvasInner() {
           [window.innerWidth, window.innerHeight],
         ],
   );
+  const [extent, setExtent] = useState<BoardExtent>(extentRef.current);
 
   useEffect(() => {
-    let active = true;
     initializeStore();
-    return () => {
-      active = false;
-    };
   }, [initializeStore]);
 
-  // Establish a bounded working area from the visible viewport (+padding) once.
+  // Establish a bounded working area once content is known (no per-frame scan).
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const vp = getViewport();
-    const z = vp.zoom || 1;
-    const tlX = (0 - vp.x) / z;
-    const tlY = (0 - vp.y) / z;
-    const brX = (rect.width - vp.x) / z;
-    const brY = (rect.height - vp.y) / z;
-    const pad = 400;
-    setExtent([
-      [tlX - pad, tlY - pad],
-      [brX + pad, brY + pad],
-    ]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!isLoaded) return;
+    const full = computeExtentForAllNodes(useCanvasStore.getState().nodes);
+    extentRef.current = full;
+    setExtent(full);
+  }, [isLoaded]);
+
+  // Reset drag/resize interaction flags on any pointer release.
+  useEffect(() => {
+    const up = () => {
+      useInteractionStore.getState().setDragging(false);
+      useInteractionStore.getState().setResizing(false);
+      useInteractionStore.getState().setPanning(false);
+    };
+    window.addEventListener("mouseup", up);
+    window.addEventListener("touchend", up);
+    return () => {
+      window.removeEventListener("mouseup", up);
+      window.removeEventListener("touchend", up);
+    };
   }, []);
 
-  // Monotonic, seamless expansion as content approaches the working boundary.
-  useEffect(() => {
-    setExtent((prev) => computeExtent(prev, nodes));
-  }, [nodes]);
+  const handMode = activeTool === "hand" || spaceHeld;
 
+  const displayNodes = React.useMemo(
+    () =>
+      nodes.map((n) => ({
+        ...n,
+        draggable: !handMode && !n.data?.locked,
+        className: n.data?.locked ? "locked" : "",
+      })),
+    [nodes, handMode],
+  );
+
+  const handleNodeDragStart = useCallback(() => {
+    useInteractionStore.getState().setDragging(true);
+  }, []);
+
+  const handleNodeDrag = useCallback((_e: unknown, _node: Node, dragged: Node[]) => {
+    let nextExtent = extentRef.current;
+    for (const n of dragged) {
+      const w = (n.width as number) ?? (n.style?.width as number) ?? 200;
+      const h = (n.height as number) ?? (n.style?.minHeight as number) ?? 120;
+      nextExtent = ensureExtentForNode(nextExtent, n.position.x, n.position.y, w, h);
+    }
+    if (nextExtent !== extentRef.current) {
+      extentRef.current = nextExtent;
+      setExtent(nextExtent);
+    }
+  }, []);
+
+  const handleNodeDragStop = useCallback(() => {
+    useInteractionStore.getState().setDragging(false);
+  }, []);
+
+  const expandFor = useCallback(
+    (x: number, y: number, w: number | undefined, h: number | undefined) => {
+      const next = ensureExtentForNode(extentRef.current, x, y, w ?? 200, h ?? 120);
+      if (next !== extentRef.current) {
+        extentRef.current = next;
+        setExtent(next);
+      }
+    },
+    [],
+  );
+
+  // Expand the board only for the actively changed node (O(1)), never a full scan.
+  const handleNodesChange: typeof onNodesChange = useCallback(
+    (changes) => {
+      onNodesChange(changes);
+      const state = useCanvasStore.getState();
+      for (const c of changes) {
+        if (c.type === "position" && c.position) {
+          const n = state.nodes.find((x) => x.id === c.id);
+          if (n)
+            expandFor(
+              c.position.x,
+              c.position.y,
+              n.style?.width as number,
+              n.style?.minHeight as number,
+            );
+        } else if (c.type === "dimensions" && c.dimensions) {
+          const n = state.nodes.find((x) => x.id === c.id);
+          if (n)
+            expandFor(
+              n.position.x,
+              n.position.y,
+              c.dimensions.width ?? (n.style?.width as number),
+              c.dimensions.height ?? (n.style?.minHeight as number),
+            );
+        }
+      }
+    },
+    [onNodesChange, expandFor],
+  );
+
+  // Keyboard interaction layer (tools, selection, clipboard, nudge, delete).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      const editingText =
+        !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
 
-      const store = useCanvasStore.getState();
+      if (e.code === "Space" && !editingText) {
+        e.preventDefault();
+        if (!useInteractionStore.getState().spaceHeld)
+          useInteractionStore.getState().setSpaceHeld(true);
+        return;
+      }
+
+      const canvas = useCanvasStore.getState();
       const mod = e.metaKey || e.ctrlKey;
+      const k = e.key.toLowerCase();
 
-      if (!mod && (e.key === "t" || e.key === "T")) {
+      if (mod && k === "a") {
+        if (editingText) return;
         e.preventDefault();
-        addAtViewportCenter(getViewport, store.addNode, "text");
+        canvas.selectAll();
         return;
       }
-      if (!mod && (e.key === "s" || e.key === "S")) {
-        e.preventDefault();
-        addAtViewportCenter(getViewport, store.addNode, "sticky");
+      if (mod && k === "c") {
+        if (editingText) return;
+        canvas.copySelected();
         return;
       }
-      if (!mod && (e.key === "d" || e.key === "D")) {
-        e.preventDefault();
-        addAtViewportCenter(getViewport, store.addNode, "todo");
+      if (mod && k === "x") {
+        if (editingText) return;
+        canvas.cutSelected();
         return;
       }
+      if (mod && k === "v") {
+        if (editingText) return;
+        e.preventDefault();
+        const vp = getViewport();
+        const pos = {
+          x: (window.innerWidth / 2 - vp.x) / vp.zoom,
+          y: (window.innerHeight / 2 - vp.y) / vp.zoom,
+        };
+        canvas.pasteAt(pos);
+        return;
+      }
+      if (mod && k === "d") {
+        if (editingText) return;
+        e.preventDefault();
+        canvas.duplicateSelected();
+        return;
+      }
+      if (mod) return;
 
-      if (store.selectedNodeId) {
-        const node = store.nodes.find((n) => n.id === store.selectedNodeId);
-        if (node) {
-          const step = e.shiftKey ? 10 : 1;
-          let dx = 0;
-          let dy = 0;
-          if (e.key === "ArrowUp") dy = -step;
-          else if (e.key === "ArrowDown") dy = step;
-          else if (e.key === "ArrowLeft") dx = -step;
-          else if (e.key === "ArrowRight") dx = step;
-          if (dx !== 0 || dy !== 0) {
-            e.preventDefault();
-            store.onNodesChange([
-              {
-                id: node.id,
-                type: "position",
-                position: { x: node.position.x + dx, y: node.position.y + dy },
-                dragging: false,
-              },
-            ]);
-            return;
-          }
+      if (editingText) return;
+
+      if (k === "v") {
+        useInteractionStore.getState().setActiveTool("select");
+      } else if (k === "h") {
+        useInteractionStore.getState().setActiveTool("hand");
+      } else if (k === "t") {
+        addAtViewportCenter(getViewport, canvas.addNode, "text");
+      } else if (k === "s") {
+        addAtViewportCenter(getViewport, canvas.addNode, "sticky");
+      } else if (k === "d") {
+        addAtViewportCenter(getViewport, canvas.addNode, "todo");
+      } else if (e.key === "Escape") {
+        canvas.clearSelection();
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        if (canvas.selectedNodeIds.length) {
+          e.preventDefault();
+          canvas.deleteSelected();
+        }
+      } else if (e.key.startsWith("Arrow")) {
+        const step = e.shiftKey ? 10 : 1;
+        let dx = 0;
+        let dy = 0;
+        if (e.key === "ArrowUp") dy = -step;
+        else if (e.key === "ArrowDown") dy = step;
+        else if (e.key === "ArrowLeft") dx = -step;
+        else if (e.key === "ArrowRight") dx = step;
+        if (dx !== 0 || dy !== 0) {
+          e.preventDefault();
+          canvas.nodes
+            .filter((n) => n.selected)
+            .forEach((n) => canvas.updateNodePosition(n.id, n.position.x + dx, n.position.y + dy));
         }
       }
-
-      if ((e.key === "Delete" || e.key === "Backspace") && store.selectedNodeId) {
-        e.preventDefault();
-        store.deleteNode(store.selectedNodeId);
-      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") useInteractionStore.getState().setSpaceHeld(false);
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKeyUp);
+    };
   }, [getViewport]);
 
-  const handleNodeClick = useCallback(
-    (_e: React.MouseEvent, node: Node) => setSelected(node.id),
-    [setSelected],
-  );
-  const handlePaneClick = useCallback(() => setSelected(null), [setSelected]);
+  const handlePaneClick = useCallback(() => useCanvasStore.getState().clearSelection(), []);
   const handleMoveEnd = useCallback((_e: unknown, vp: Viewport) => saveViewport(vp), []);
 
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files?.[0];
+      if (!file || !file.type.startsWith("image/")) return;
+      const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      const canvas = useCanvasStore.getState();
+      canvas.addNode("image", pos);
+      const id = useCanvasStore.getState().selectedNodeIds[0];
+      if (id) {
+        const assetId = await storeImageAsset(file, file.name);
+        useCanvasStore.getState().updateNodeData(id, { assetId, caption: file.name });
+      }
+    },
+    [screenToFlowPosition],
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes("Files")) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+    }
+  }, []);
+
+  const cursorClass =
+    isDragging || useInteractionStore.getState().isPanning
+      ? "sut-cursor-grabbing"
+      : handMode
+        ? "sut-cursor-grab"
+        : activeTool === "select"
+          ? "sut-cursor-default"
+          : "sut-cursor-crosshair";
+
   return (
-    <div ref={containerRef} className="relative w-full h-full">
+    <div
+      ref={containerRef}
+      className="relative w-full h-full"
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+    >
       <ReactFlow
-        nodes={nodes}
+        nodes={displayNodes}
         edges={edges}
-        onNodesChange={onNodesChange}
+        onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        onNodeClick={handleNodeClick}
         onPaneClick={handlePaneClick}
         onMoveEnd={handleMoveEnd}
+        onNodeDragStart={handleNodeDragStart}
+        onNodeDrag={handleNodeDrag}
+        onNodeDragStop={handleNodeDragStop}
         nodeTypes={nodeTypes}
         proOptions={{ hideAttribution: true }}
         defaultViewport={defaultViewport}
         translateExtent={extent}
-        className="bg-canvas"
+        className={`bg-canvas ${cursorClass}`}
         nodeOrigin={[0.5, 0.5]}
         minZoom={0.2}
         maxZoom={2}
         snapToGrid={snapToGrid}
         snapGrid={[16, 16]}
-        deleteKeyCode={["Backspace", "Delete"]}
-        multiSelectionKeyCode={["Meta", "Shift"]}
-        selectionOnDrag={true}
-        panOnDrag={[1, 2]}
+        deleteKeyCode={null}
+        multiSelectionKeyCode={["Meta", "Shift", "Control"]}
+        selectionOnDrag={!handMode}
+        panOnDrag={handMode ? [0, 1, 2] : [1, 2]}
+        nodesDraggable={!handMode}
         connectionRadius={30}
       >
         {gridVisible && <Background color="var(--canvas-dot)" gap={24} size={1.5} />}
       </ReactFlow>
-      {/* vignette */}
       <div
         className="pointer-events-none absolute inset-0 z-10"
         style={{ boxShadow: "inset 0 0 80px rgba(0,0,0,0.03)" }}
@@ -229,7 +386,6 @@ export function CanvasArea() {
 
 function CanvasOverlay() {
   const count = useCanvasStore((s) => s.nodes.length);
-
   return (
     <AnimatePresence>
       {count === 0 && (
@@ -258,30 +414,36 @@ function BottomToolbar() {
   const addNode = useCanvasStore((state) => state.addNode);
   const { getViewport, zoomIn, zoomOut } = useReactFlow();
   const { zoom } = useViewport();
-  const [activeTool, setActiveTool] = useState("select");
+  const activeTool = useInteractionStore((s) => s.activeTool);
+  const setActiveTool = useInteractionStore((s) => s.setActiveTool);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleAdd = (type: string) => addAtViewportCenter(getViewport, addNode, type);
+  const createWith = (type: string) => {
+    addAtViewportCenter(getViewport, addNode, type);
+    setActiveTool("select");
+  };
 
   const onImagePicked = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     addAtViewportCenter(getViewport, addNode, "image");
-    const id = useCanvasStore.getState().selectedNodeId;
+    const id = useCanvasStore.getState().selectedNodeIds[0];
     if (id) {
-      useCanvasStore.getState().updateNodeData(id, {
-        src: URL.createObjectURL(file),
-        caption: file.name,
-      });
+      import("@/lib/asset-store").then(({ storeImageAsset }) =>
+        storeImageAsset(file).then((assetId) => {
+          useCanvasStore.getState().updateNodeData(id, { assetId, caption: file.name });
+        }),
+      );
     }
     e.target.value = "";
+    setActiveTool("select");
   };
 
   const tools = [
     { type: "text", label: "Text", icon: Type },
     { type: "sticky", label: "Sticky", icon: StickyNote },
     { type: "todo", label: "To-do", icon: CheckSquare },
-  ];
+  ] as const;
 
   return (
     <div className="pointer-events-auto absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-border bg-popover/92 p-2 shadow-[0_8px_30px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
@@ -289,9 +451,17 @@ function BottomToolbar() {
         type="button"
         onClick={() => setActiveTool("select")}
         className={toolBtn(activeTool === "select")}
-        aria-label="Select"
+        aria-label="Select (V)"
       >
         <MousePointer2 className="h-[18px] w-[18px]" strokeWidth={1.75} />
+      </button>
+      <button
+        type="button"
+        onClick={() => setActiveTool("hand")}
+        className={toolBtn(activeTool === "hand")}
+        aria-label="Hand / pan (H)"
+      >
+        <Hand className="h-[18px] w-[18px]" strokeWidth={1.75} />
       </button>
 
       <span className="mx-1 h-6 w-px bg-border" />
@@ -300,11 +470,8 @@ function BottomToolbar() {
         <button
           key={type}
           type="button"
-          onClick={() => {
-            setActiveTool(type);
-            handleAdd(type);
-          }}
-          className={toolBtn(activeTool === type)}
+          onClick={() => createWith(type)}
+          className={toolBtn(false)}
           aria-label={label}
         >
           <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
@@ -314,7 +481,7 @@ function BottomToolbar() {
       <button
         type="button"
         onClick={() => fileRef.current?.click()}
-        className={toolBtn(activeTool === "image")}
+        className={toolBtn(false)}
         aria-label="Image"
       >
         <ImageIcon className="h-[18px] w-[18px]" strokeWidth={1.75} />
