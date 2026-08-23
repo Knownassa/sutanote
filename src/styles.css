@@ -64,6 +64,11 @@
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-border: var(--sidebar-border);
+  --color-highlight-yellow: var(--highlight-yellow);
+  --color-highlight-pink: var(--highlight-pink);
+  --color-highlight-blue: var(--highlight-blue);
+  --color-highlight-green: var(--highlight-green);
+  --color-highlight-orange: var(--highlight-orange);
 }
 
 :root {
@@ -106,6 +111,11 @@
   --sidebar: oklch(0.9702 0.0026 106.42);
   --sidebar-foreground: oklch(0.2166 0.0045 106.5);
   --sidebar-border: oklch(0.8916 0.0031 106.42);
+  --highlight-yellow: oklch(0.93 0.06 95);
+  --highlight-pink: oklch(0.88 0.06 350);
+  --highlight-blue: oklch(0.88 0.05 250);
+  --highlight-green: oklch(0.88 0.06 150);
+  --highlight-orange: oklch(0.90 0.07 60);
 }
 
 .dark {
@@ -144,6 +154,11 @@
   --sidebar: oklch(0.1476 0.0031 285.9);
   --sidebar-foreground: oklch(0.9276 0.0058 264.53);
   --sidebar-border: oklch(0.2472 0.0056 286);
+  --highlight-yellow: oklch(0.60 0.08 90);
+  --highlight-pink: oklch(0.55 0.10 350);
+  --highlight-blue: oklch(0.55 0.08 250);
+  --highlight-green: oklch(0.55 0.09 150);
+  --highlight-orange: oklch(0.58 0.10 60);
 }
 
 @utility canvas-dots {

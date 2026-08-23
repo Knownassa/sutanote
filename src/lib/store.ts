@@ -880,13 +880,17 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         edges: snapshot.edges as CanvasEdge[],
         selectedNodeIds: snapshot.nodes.filter((n) => n.selected).map((n) => n.id),
       });
-      // Mark all restored nodes dirty for persistence.
+      // Mark all restored nodes and edges dirty for persistence.
       snapshot.nodes.forEach((n) => {
         const store = get();
         store.onNodesChange([
           { id: n.id, type: "position", dragging: false, position: n.position },
         ]);
       });
+      (snapshot.edges as CanvasEdge[]).forEach((e) => {
+        markEdgeDirty(e);
+      });
+      scheduleFlush();
     },
 
     redo: () => {
@@ -903,6 +907,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           { id: n.id, type: "position", dragging: false, position: n.position },
         ]);
       });
+      (snapshot.edges as CanvasEdge[]).forEach((e) => {
+        markEdgeDirty(e);
+      });
+      scheduleFlush();
     },
   };
 });

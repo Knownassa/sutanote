@@ -7,6 +7,7 @@ import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import { CanvasArea } from "@/components/workspace/CanvasArea";
 import { RightPropertiesSidebar } from "@/components/workspace/RightPropertiesSidebar";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
+import { NoticeBar } from "@/components/workspace/NoticeBar";
 import { useCanvasStore } from "@/lib/store";
 import { useSettingsStore } from "@/lib/settings-store";
 import { useThemeManager } from "@/lib/theme";
@@ -38,7 +39,17 @@ function Workspace() {
   const sidebarOpen = useSettingsStore((s) => s.leftSidebarOpen);
   const toggleSidebar = useSettingsStore((s) => s.toggleLeftSidebar);
   const setSidebarOpen = useSettingsStore((s) => s.setLeftSidebarOpen);
+  const lastSaveError = useCanvasStore((s) => s.lastSaveError);
   useThemeManager();
+
+  // Show save-error notices.
+  useEffect(() => {
+    if (lastSaveError) {
+      import("@/lib/notice-store").then(({ useNoticeStore }) =>
+        useNoticeStore.getState().show(`Save failed: ${lastSaveError}`, "error"),
+      );
+    }
+  }, [lastSaveError]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -118,6 +129,7 @@ function Workspace() {
       </div>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <NoticeBar />
     </div>
   );
 }

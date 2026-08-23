@@ -26,6 +26,14 @@ const colors = [
   { name: "White", class: "bg-card" },
 ];
 
+const highlightColors = [
+  { name: "Yellow", css: "var(--highlight-yellow)" },
+  { name: "Pink", css: "var(--highlight-pink)" },
+  { name: "Blue", css: "var(--highlight-blue)" },
+  { name: "Green", css: "var(--highlight-green)" },
+  { name: "Orange", css: "var(--highlight-orange)" },
+];
+
 function SectionLabel({ children }: { children: string }) {
   return (
     <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80">
@@ -339,6 +347,32 @@ export function RightPropertiesSidebar() {
           />
         </div>
       </div>
+
+      {!multi && node.type === "text" && (
+        <div>
+          <SectionLabel>Highlight</SectionLabel>
+          <div className="flex flex-wrap gap-1.5">
+            {highlightColors.map((hc) => (
+              <button
+                key={hc.name}
+                type="button"
+                onClick={() =>
+                  updateNodeData(node.id, {
+                    highlight: node.data.highlight === hc.css ? "" : hc.css,
+                  })
+                }
+                title={hc.name}
+                className={`h-5 w-5 rounded-md border transition-all ${
+                  (node.data.highlight as string) === hc.css
+                    ? "ring-2 ring-foreground/40 ring-offset-1"
+                    : "hover:scale-110"
+                }`}
+                style={{ background: hc.css }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {!multi && node.type === "sticky" && (
         <div>

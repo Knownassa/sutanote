@@ -32,7 +32,11 @@ function TextNode(props: NodeProps) {
             ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
             : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]"
         }`}
-        style={{ padding: "20px 22px" }}
+        style={{
+          padding: "20px 22px",
+          borderLeftWidth: (data.highlight as string) ? "4px" : undefined,
+          borderLeftColor: (data.highlight as string) || undefined,
+        }}
       >
         <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
         <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
