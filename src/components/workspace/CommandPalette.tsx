@@ -25,13 +25,8 @@ export function CommandPalette({
   onOpenChange: (open: boolean) => void;
 }) {
   return (
-    <CommandDialog
-      open={open}
-      onOpenChange={onOpenChange}
-      title="Command palette"
-      description="Search actions"
-      className="rounded-xl border-border"
-    >
+    <CommandDialog open={open} onOpenChange={onOpenChange}>
+
       <CommandInput placeholder="Search actions..." />
       <CommandList className="p-1">
         <CommandEmpty>No results.</CommandEmpty>
