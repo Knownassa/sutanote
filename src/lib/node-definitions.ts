@@ -1,5 +1,8 @@
 export type ResizeMode = "none" | "width" | "both" | "width-content";
 
+/** Canonical card width for all newly created standard items. */
+export const DEFAULT_ITEM_WIDTH = 280;
+
 export interface NodeDefinition {
   defaultWidth: number;
   defaultHeight: number;
@@ -15,7 +18,7 @@ export interface NodeDefinition {
 
 export const NODE_DEFINITIONS: Record<string, NodeDefinition> = {
   text: {
-    defaultWidth: 280,
+    defaultWidth: DEFAULT_ITEM_WIDTH,
     defaultHeight: 120,
     minWidth: 200,
     minHeight: 80,
@@ -24,7 +27,7 @@ export const NODE_DEFINITIONS: Record<string, NodeDefinition> = {
     editableText: true,
   },
   sticky: {
-    defaultWidth: 220,
+    defaultWidth: DEFAULT_ITEM_WIDTH,
     defaultHeight: 180,
     minWidth: 180,
     minHeight: 140,
@@ -32,7 +35,7 @@ export const NODE_DEFINITIONS: Record<string, NodeDefinition> = {
     resizeMode: "both",
   },
   todo: {
-    defaultWidth: 300,
+    defaultWidth: DEFAULT_ITEM_WIDTH,
     defaultHeight: 160,
     minWidth: 240,
     minHeight: 120,
@@ -40,7 +43,7 @@ export const NODE_DEFINITIONS: Record<string, NodeDefinition> = {
     resizeMode: "both",
   },
   image: {
-    defaultWidth: 280,
+    defaultWidth: DEFAULT_ITEM_WIDTH,
     defaultHeight: 220,
     minWidth: 120,
     minHeight: 120,
@@ -49,10 +52,35 @@ export const NODE_DEFINITIONS: Record<string, NodeDefinition> = {
     resizeMode: "both",
     preserveAspectRatio: true,
   },
+  link: {
+    defaultWidth: DEFAULT_ITEM_WIDTH,
+    defaultHeight: 100,
+    minWidth: 200,
+    minHeight: 60,
+    maxWidth: 520,
+    resizeMode: "width",
+  },
+  file: {
+    defaultWidth: DEFAULT_ITEM_WIDTH,
+    defaultHeight: 80,
+    minWidth: 180,
+    minHeight: 60,
+    maxWidth: 520,
+    resizeMode: "width",
+  },
+  comment: {
+    defaultWidth: DEFAULT_ITEM_WIDTH,
+    defaultHeight: 100,
+    minWidth: 180,
+    minHeight: 60,
+    maxWidth: 420,
+    resizeMode: "width",
+    editableText: true,
+  },
 };
 
 const FALLBACK: NodeDefinition = {
-  defaultWidth: 180,
+  defaultWidth: DEFAULT_ITEM_WIDTH,
   defaultHeight: 120,
   minWidth: 140,
   minHeight: 90,

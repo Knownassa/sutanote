@@ -18,6 +18,7 @@ import {
   StickyNote,
   CheckSquare,
   ImageIcon,
+  MoreHorizontal,
 } from "lucide-react";
 import "reactflow/dist/style.css";
 import { useCanvasStore } from "@/lib/store";
@@ -34,12 +35,19 @@ import StickyNoteNode from "@/components/nodes/StickyNoteNode";
 import TextNode from "@/components/nodes/TextNode";
 import TodoNode from "@/components/nodes/TodoNode";
 import ImageNode from "@/components/nodes/ImageNode";
+import LinkNode from "@/components/nodes/LinkNode";
+import FileNode from "@/components/nodes/FileNode";
+import CommentNode from "@/components/nodes/CommentNode";
+import { ToolPicker } from "@/components/workspace/ToolPicker";
 
 const nodeTypes: NodeTypes = {
   sticky: StickyNoteNode,
   text: TextNode,
   todo: TodoNode,
   image: ImageNode,
+  link: LinkNode,
+  file: FileNode,
+  comment: CommentNode,
 };
 
 function centerViewport(): Viewport {
@@ -353,7 +361,7 @@ function CanvasInner() {
         nodeOrigin={[0.5, 0.5]}
         minZoom={0.2}
         maxZoom={2}
-        snapToGrid={snapToGrid}
+        snapToGrid={false}
         snapGrid={[16, 16]}
         deleteKeyCode={null}
         multiSelectionKeyCode={["Meta", "Shift", "Control"]}
@@ -417,6 +425,7 @@ function BottomToolbar() {
   const activeTool = useInteractionStore((s) => s.activeTool);
   const setActiveTool = useInteractionStore((s) => s.setActiveTool);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const createWith = (type: string) => {
     addAtViewportCenter(getViewport, addNode, type);
@@ -446,75 +455,87 @@ function BottomToolbar() {
   ] as const;
 
   return (
-    <div className="pointer-events-auto absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-border bg-popover/92 p-2 shadow-[0_8px_30px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
-      <button
-        type="button"
-        onClick={() => setActiveTool("select")}
-        className={toolBtn(activeTool === "select")}
-        aria-label="Select (V)"
-      >
-        <MousePointer2 className="h-[18px] w-[18px]" strokeWidth={1.75} />
-      </button>
-      <button
-        type="button"
-        onClick={() => setActiveTool("hand")}
-        className={toolBtn(activeTool === "hand")}
-        aria-label="Hand / pan (H)"
-      >
-        <Hand className="h-[18px] w-[18px]" strokeWidth={1.75} />
-      </button>
-
-      <span className="mx-1 h-6 w-px bg-border" />
-
-      {tools.map(({ type, label, icon: Icon }) => (
+    <>
+      <div className="pointer-events-auto absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-border bg-popover/92 p-2 shadow-[0_8px_30px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
         <button
-          key={type}
           type="button"
-          onClick={() => createWith(type)}
-          className={toolBtn(false)}
-          aria-label={label}
+          onClick={() => setActiveTool("select")}
+          className={toolBtn(activeTool === "select")}
+          aria-label="Select (V)"
         >
-          <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          <MousePointer2 className="h-[18px] w-[18px]" strokeWidth={1.75} />
         </button>
-      ))}
+        <button
+          type="button"
+          onClick={() => setActiveTool("hand")}
+          className={toolBtn(activeTool === "hand")}
+          aria-label="Hand / pan (H)"
+        >
+          <Hand className="h-[18px] w-[18px]" strokeWidth={1.75} />
+        </button>
 
-      <button
-        type="button"
-        onClick={() => fileRef.current?.click()}
-        className={toolBtn(false)}
-        aria-label="Image"
-      >
-        <ImageIcon className="h-[18px] w-[18px]" strokeWidth={1.75} />
-      </button>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={onImagePicked}
-      />
+        <span className="mx-1 h-6 w-px bg-border" />
 
-      <span className="mx-1 h-6 w-px bg-border" />
+        {tools.map(({ type, label, icon: Icon }) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => createWith(type)}
+            className={toolBtn(false)}
+            aria-label={label}
+          >
+            <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          </button>
+        ))}
 
-      <button
-        type="button"
-        onClick={() => zoomOut()}
-        className={toolBtn(false)}
-        aria-label="Zoom out"
-      >
-        <ZoomOut className="h-[18px] w-[18px]" strokeWidth={1.75} />
-      </button>
-      <span className="min-w-[40px] text-center text-[11px] font-mono tabular-nums text-muted-foreground">
-        {Math.round(zoom * 100)}%
-      </span>
-      <button
-        type="button"
-        onClick={() => zoomIn()}
-        className={toolBtn(false)}
-        aria-label="Zoom in"
-      >
-        <ZoomIn className="h-[18px] w-[18px]" strokeWidth={1.75} />
-      </button>
-    </div>
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          className={toolBtn(false)}
+          aria-label="Image"
+        >
+          <ImageIcon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={onImagePicked}
+        />
+
+        <button
+          type="button"
+          onClick={() => setPickerOpen(!pickerOpen)}
+          className={toolBtn(pickerOpen)}
+          aria-label="More items"
+        >
+          <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
+        </button>
+
+        <span className="mx-1 h-6 w-px bg-border" />
+
+        <button
+          type="button"
+          onClick={() => zoomOut()}
+          className={toolBtn(false)}
+          aria-label="Zoom out"
+        >
+          <ZoomOut className="h-[18px] w-[18px]" strokeWidth={1.75} />
+        </button>
+        <span className="min-w-[40px] text-center text-[11px] font-mono tabular-nums text-muted-foreground">
+          {Math.round(zoom * 100)}%
+        </span>
+        <button
+          type="button"
+          onClick={() => zoomIn()}
+          className={toolBtn(false)}
+          aria-label="Zoom in"
+        >
+          <ZoomIn className="h-[18px] w-[18px]" strokeWidth={1.75} />
+        </button>
+      </div>
+      <ToolPicker open={pickerOpen} onClose={() => setPickerOpen(false)} />
+    </>
   );
 }

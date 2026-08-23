@@ -11,10 +11,12 @@ import {
 } from "reactflow";
 import { nanoid } from "nanoid";
 import { initDB } from "./init-db";
+import { db } from "./database";
 import { loadNodesByBoard } from "./persistence/node-repository";
 import { loadEdgesByBoard } from "./persistence/edge-repository";
 import { getNodeDef } from "./node-definitions";
 import { flushBoard } from "./persistence/persistence-manager";
+import { useSettingsStore } from "./settings-store";
 import {
   DEFAULT_BOARD_ID,
   type CanvasNodeData,
@@ -68,12 +70,18 @@ const defaultColors: Record<string, string> = {
   sticky: "bg-note-yellow",
   todo: "bg-card",
   image: "bg-card",
+  link: "bg-card",
+  file: "bg-card",
+  comment: "bg-card",
 };
 
 const SAVE_DELAY = 500;
 
 const queueSize = () =>
   dirtyNodes.size + dirtyEdges.size + deletedNodeIds.size + deletedEdgeIds.size;
+
+const GRID_SIZE = 16;
+const snapValue = (v: number) => Math.round(v / GRID_SIZE) * GRID_SIZE;
 
 // Entity-level persistence queue — lives outside React state so it is not
 // recreated on every render and survives across store updates.
@@ -200,9 +208,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         });
       } finally {
         flushing = false;
-        if (queueSize() > 0 && !flushTimer) {
-          flushTimer = setTimeout(() => void get().flushNow(), SAVE_DELAY);
-        }
+        // Single scheduler: if changes arrived during flush, re-schedule cleanly.
+        if (queueSize() > 0) scheduleFlush();
       }
     },
 
@@ -215,6 +222,25 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       if (dbNodes.length > 0) {
         set({
           nodes: dbNodes as CanvasNode[],
+          edges: dbEdges as CanvasEdge[],
+          selectedNodeIds: [],
+          isLoaded: true,
+          persistenceStatus: "saved",
+          lastSavedAt: Date.now(),
+          pendingChanges: 0,
+        });
+        return;
+      }
+
+      // Safety: check whether ANY nodes exist in the database (any board).
+      // If yes, the current board filter just didn't match — do NOT seed demo content.
+      const anyNodes = await db.query<{ cnt: number }>(
+        `SELECT COUNT(*)::int AS cnt FROM canvas_nodes WHERE deleted_at IS NULL`,
+      );
+      if ((anyNodes.rows[0]?.cnt ?? 0) > 0) {
+        // Data exists elsewhere — load empty for this board but don't seed.
+        set({
+          nodes: [],
           edges: dbEdges as CanvasEdge[],
           selectedNodeIds: [],
           isLoaded: true,
@@ -300,6 +326,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         if (c.type === "position") {
           const node = next.find((n) => n.id === c.id);
           if (node) {
+            // Group movement: propagate delta to siblings with same groupId.
             const gid = node.data.groupId as string | undefined;
             if (gid && c.dragging) {
               const oldNode = prev.find((n) => n.id === c.id);
@@ -315,9 +342,39 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
                 }
               }
             }
-            if (c.dragging === false && node) {
-              markNodeDirty(node);
-              touched = true;
+
+            // Snap-on-drop: apply grid snapping only at release, never during drag.
+            if (c.dragging === false) {
+              const doSnap = useSettingsStore.getState().snapToGrid;
+              if (doSnap) {
+                const snappedX = snapValue(node.position.x);
+                const snappedY = snapValue(node.position.y);
+                const dx = snappedX - node.position.x;
+                const dy = snappedY - node.position.y;
+                if (dx !== 0 || dy !== 0) {
+                  // Snap the dragged node.
+                  next = next.map((n) =>
+                    n.id === c.id ? { ...n, position: { x: snappedX, y: snappedY } } : n,
+                  ) as CanvasNode[];
+                  // Apply same delta to all other selected nodes (preserves relative spacing).
+                  next = next.map((n) =>
+                    n.id !== c.id && n.selected
+                      ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } }
+                      : n,
+                  ) as CanvasNode[];
+                }
+              }
+
+              // Mark dirty with final (snapped) positions.
+              const final = next.find((n) => n.id === c.id);
+              if (final) {
+                markNodeDirty(final);
+                // Also mark dirty any selected siblings (they may have moved via snap delta).
+                for (const n of next) {
+                  if (n.id !== c.id && n.selected) markNodeDirty(n);
+                }
+                touched = true;
+              }
             }
           }
         } else if (c.type === "dimensions") {
@@ -385,15 +442,18 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     addNode: (type, position) => {
       const maxZ = get().nodes.reduce((m, n) => Math.max(m, n.zIndex ?? 0), 0);
       const def = getNodeDef(type);
+      // Snap initial position to grid if setting enabled.
+      const doSnap = useSettingsStore.getState().snapToGrid;
+      const pos = doSnap ? { x: snapValue(position.x), y: snapValue(position.y) } : position;
       const newNode: CanvasNode = {
         id: nanoid(),
         type,
-        position,
+        position: pos,
         zIndex: maxZ + 1,
         selected: true,
         data: {
           text: "",
-          title: type === "text" ? "" : type === "todo" ? "To-do" : "",
+          title: type === "text" ? "" : type === "todo" ? "To-do" : type === "link" ? "" : "",
           color: defaultColors[type] ?? "bg-note-yellow",
           rotation: type === "sticky" ? Number((Math.random() * 2 - 1).toFixed(2)) : 0,
           ...(type === "todo"
@@ -406,6 +466,14 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
               }
             : {}),
           ...(type === "image" ? { src: "", caption: "", assetId: "" } : {}),
+          ...(type === "link" ? { url: "", description: "" } : {}),
+          ...(type === "file" ? { filename: "", assetId: "", mime: "" } : {}),
+          ...(type === "comment"
+            ? {
+                author: useSettingsStore.getState().displayName,
+                resolved: false,
+              }
+            : {}),
         },
         style: { width: def.defaultWidth, minHeight: def.defaultHeight },
       };

@@ -22,6 +22,15 @@ export interface CanvasNodeData {
   italic?: boolean;
   textColor?: string;
   showCompleted?: boolean;
+  // Link node fields.
+  url?: string;
+  description?: string;
+  // File node fields.
+  filename?: string;
+  mime?: string;
+  // Comment node fields.
+  author?: string;
+  resolved?: boolean;
   [key: string]: unknown;
 }
 
