@@ -17,7 +17,9 @@ function StickyNoteNode({ id, data, selected }: NodeProps) {
         className={`relative select-none rounded-lg border p-3 shadow-sm transition-[box-shadow,border-color] ${
           data.color ?? "bg-note-yellow"
         } ${
-          selected ? "border-border-strong shadow-lg" : "border-note-foreground/10 hover:shadow-md"
+          selected
+            ? "border-border-strong shadow-[0_8px_30px_rgba(0,0,0,0.08)]"
+            : "border-note-foreground/10 hover:shadow-md"
         }`}
         style={{
           transform: `rotate(${rotation}deg)`,

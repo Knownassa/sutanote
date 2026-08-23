@@ -17,7 +17,9 @@ function TextNode({ id, data, selected }: NodeProps) {
         className={`relative select-none rounded-xl border p-5 transition-[box-shadow,border-color] ${
           data.color ?? "bg-card"
         } ${
-          selected ? "border-border-strong shadow-lg" : "border-transparent hover:border-border"
+          selected
+            ? "border-border-strong shadow-[0_8px_30px_rgba(0,0,0,0.08)]"
+            : "border-border hover:border-border-strong"
         }`}
         style={{ minWidth: 240, maxWidth: 400 }}
       >

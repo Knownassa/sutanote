@@ -1,4 +1,5 @@
-import { ChevronRight, MoreHorizontal, Redo2, Settings, Undo2 } from "lucide-react";
+import { ChevronRight, MoreHorizontal, Redo2, Settings, Undo2, AlertTriangle, Check, Loader2 } from "lucide-react";
+import { useCanvasStore } from "@/lib/store";
 
 const crumbs = ["Workspace", "Studio Rebrand", "Moodboard"];
 
@@ -11,6 +12,31 @@ function IconButton({ label, children }: { label: string; children: React.ReactN
     >
       {children}
     </button>
+  );
+}
+
+function SaveStatus() {
+  const status = useCanvasStore((s) => s.persistenceStatus);
+  const lastSaveError = useCanvasStore((s) => s.lastSaveError);
+
+  const map = {
+    clean: { label: "Saved locally", icon: Check, cls: "text-muted-foreground" },
+    saved: { label: "Saved locally", icon: Check, cls: "text-muted-foreground" },
+    dirty: { label: "Saving…", icon: Loader2, cls: "text-muted-foreground" },
+    saving: { label: "Saving…", icon: Loader2, cls: "text-muted-foreground" },
+    error: { label: "Save failed", icon: AlertTriangle, cls: "text-destructive" },
+  } as const;
+
+  const { label, icon: Icon, cls } = map[status];
+
+  return (
+    <span
+      title={status === "error" ? lastSaveError ?? "Save failed" : undefined}
+      className={`flex items-center gap-1.5 rounded-full border border-border bg-popover/80 px-2.5 py-1 text-[11px] ${cls}`}
+    >
+      <Icon className={`h-3 w-3 ${status === "dirty" || status === "saving" ? "animate-spin" : ""}`} />
+      {label}
+    </span>
   );
 }
 
@@ -34,7 +60,8 @@ export function WorkspaceHeader() {
         ))}
       </nav>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
+        <SaveStatus />
         <IconButton label="Undo">
           <Undo2 className="h-4 w-4" />
         </IconButton>

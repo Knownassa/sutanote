@@ -1,11 +1,4 @@
-import {
-  AlignCenterHorizontal,
-  AlignEndVertical,
-  AlignStartVertical,
-  BringToFront,
-  SendToBack,
-  Trash2,
-} from "lucide-react";
+import { BringToFront, SendToBack, Trash2 } from "lucide-react";
 import { useCanvasStore } from "@/lib/store";
 
 const colors = [
@@ -51,7 +44,8 @@ export function RightPropertiesSidebar() {
   const selectedNodeId = useCanvasStore((s) => s.selectedNodeId);
   const nodes = useCanvasStore((s) => s.nodes);
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
-  const setNodeZ = useCanvasStore((s) => s.setNodeZ);
+  const bringToFront = useCanvasStore((s) => s.bringToFront);
+  const sendToBack = useCanvasStore((s) => s.sendToBack);
   const deleteNode = useCanvasStore((s) => s.deleteNode);
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
@@ -78,22 +72,13 @@ export function RightPropertiesSidebar() {
           <ToolButton
             label="Bring to front"
             icon={BringToFront}
-            onClick={() => setNodeZ(selectedNode.id, 9999)}
+            onClick={() => bringToFront(selectedNode.id)}
           />
           <ToolButton
             label="Send to back"
             icon={SendToBack}
-            onClick={() => setNodeZ(selectedNode.id, -9999)}
+            onClick={() => sendToBack(selectedNode.id)}
           />
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <SectionLabel>Align</SectionLabel>
-        <div className="flex w-full gap-1 rounded-lg border border-border p-1">
-          <ToolButton label="Align left" icon={AlignStartVertical} onClick={() => {}} />
-          <ToolButton label="Align center" icon={AlignCenterHorizontal} onClick={() => {}} />
-          <ToolButton label="Align right" icon={AlignEndVertical} onClick={() => {}} />
         </div>
       </div>
 

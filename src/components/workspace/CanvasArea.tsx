@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -78,14 +78,6 @@ function CanvasInner() {
         addAtViewportCenter(getViewport, store.addNode, "todo");
         return;
       }
-      if (!mod && (e.key === "i" || e.key === "I")) {
-        e.preventDefault();
-        addAtViewportCenter(getViewport, store.addNode, "text");
-        const id = useCanvasStore.getState().selectedNodeId;
-        if (id) store.updateNodeData(id, { text: "Image placeholder" });
-        return;
-      }
-
       // Nudge selected node with arrow keys
       if (store.selectedNodeId) {
         const node = store.nodes.find((n) => n.id === store.selectedNodeId);
@@ -129,7 +121,7 @@ function CanvasInner() {
   const handlePaneClick = useCallback(() => setSelected(null), [setSelected]);
 
   return (
-    <div className="w-full h-full">
+    <div className="relative w-full h-full">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -139,6 +131,7 @@ function CanvasInner() {
         onNodeClick={handleNodeClick}
         onPaneClick={handlePaneClick}
         nodeTypes={nodeTypes}
+        proOptions={{ hideAttribution: true }}
         fitView
         className="bg-canvas"
         nodeOrigin={[0.5, 0.5]}
@@ -161,6 +154,11 @@ function CanvasInner() {
           showInteractive={true}
         />
       </ReactFlow>
+      {/* vignette */}
+      <div
+        className="pointer-events-none absolute inset-0 z-10"
+        style={{ boxShadow: "inset 0 0 80px rgba(0,0,0,0.03)" }}
+      />
     </div>
   );
 }
@@ -179,39 +177,27 @@ export function CanvasArea() {
 
 function CanvasOverlay() {
   const count = useCanvasStore((s) => s.nodes.length);
-  const isSaving = useCanvasStore((s) => s.isSaving);
 
   return (
-    <>
-      <AnimatePresence>
-        {count === 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 6 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
-          >
-            <p className="font-serif text-sm text-muted-foreground/70">
-              Click a tool below to begin, or press{" "}
-              <kbd className="rounded bg-surface px-1.5 py-0.5 font-mono text-[10px] text-foreground/70">
-                T
-              </kbd>{" "}
-              for a text note
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="pointer-events-none absolute bottom-6 right-6 z-20 flex items-center gap-1.5 rounded-full border border-border bg-popover/85 px-3 py-1.5 text-[11px] text-muted-foreground shadow-sm backdrop-blur-md">
-        <span
-          className={`h-1.5 w-1.5 rounded-full transition-colors ${
-            isSaving ? "animate-pulse bg-amber-500" : "bg-sync"
-          }`}
-        />
-        {isSaving ? "Saving…" : "Saved locally"}
-      </div>
-    </>
+    <AnimatePresence>
+      {count === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 6 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
+        >
+          <p className="font-serif text-sm text-muted-foreground/70">
+            Click a tool below to begin, or press{" "}
+            <kbd className="rounded bg-surface px-1.5 py-0.5 font-mono text-[10px] text-foreground/70">
+              T
+            </kbd>{" "}
+            for a text note
+          </p>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -222,11 +208,17 @@ function BottomToolbar() {
   const addNode = useCanvasStore((state) => state.addNode);
   const { getViewport } = useReactFlow();
 
+  const [activeTool, setActiveTool] = useState("select");
+
   const handleAdd = (type: string) => addAtViewportCenter(getViewport, addNode, type);
 
   return (
     <div className="pointer-events-auto absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-border bg-popover/90 p-2 shadow-[0_8px_30px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
-      <button type="button" aria-label="Select" className={btnBase}>
+      <button
+        type="button"
+        aria-label="Select"
+        className={`${btnBase} ${activeTool === "select" ? "bg-surface-active text-foreground" : ""}`}
+      >
         <svg
           className="h-[18px] w-[18px]"
           strokeWidth={1.75}
@@ -243,7 +235,15 @@ function BottomToolbar() {
         </svg>
       </button>
       <span className="mx-1 h-6 w-px bg-border" />
-      <button type="button" onClick={() => handleAdd("text")} aria-label="Text" className={btnBase}>
+      <button
+        type="button"
+        onClick={() => {
+          setActiveTool("text");
+          handleAdd("text");
+        }}
+        aria-label="Text"
+        className={`${btnBase} ${activeTool === "text" ? "bg-surface-active text-foreground" : ""}`}
+      >
         <svg
           className="h-[18px] w-[18px]"
           strokeWidth={1.75}
@@ -258,9 +258,12 @@ function BottomToolbar() {
       </button>
       <button
         type="button"
-        onClick={() => handleAdd("sticky")}
+        onClick={() => {
+          setActiveTool("sticky");
+          handleAdd("sticky");
+        }}
         aria-label="Sticky note"
-        className={btnBase}
+        className={`${btnBase} ${activeTool === "sticky" ? "bg-surface-active text-foreground" : ""}`}
       >
         <svg
           className="h-[18px] w-[18px]"
@@ -279,9 +282,12 @@ function BottomToolbar() {
       </button>
       <button
         type="button"
-        onClick={() => handleAdd("todo")}
+        onClick={() => {
+          setActiveTool("todo");
+          handleAdd("todo");
+        }}
         aria-label="To-do list"
-        className={btnBase}
+        className={`${btnBase} ${activeTool === "todo" ? "bg-surface-active text-foreground" : ""}`}
       >
         <svg
           className="h-[18px] w-[18px]"
@@ -298,7 +304,12 @@ function BottomToolbar() {
           />
         </svg>
       </button>
-      <button type="button" aria-label="Image" className={btnBase}>
+      <button
+        type="button"
+        onClick={() => setActiveTool("image")}
+        aria-label="Image"
+        className={`${btnBase} ${activeTool === "image" ? "bg-surface-active text-foreground" : ""}`}
+      >
         <svg
           className="h-[18px] w-[18px]"
           strokeWidth={1.75}

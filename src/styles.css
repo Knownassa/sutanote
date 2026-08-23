@@ -92,7 +92,7 @@
   --ring: oklch(0.7161 0.0091 106.5);
   /* stone-50 */
   --canvas: oklch(0.9846 0.0017 106.42);
-  --canvas-dot: oklch(0.2166 0.0045 106.5 / 8%);
+  --canvas-dot: oklch(0.2166 0.0045 106.5 / 12%);
   --surface: oklch(0.9846 0.0017 106.42);
   --surface-hover: oklch(0.9702 0.0026 106.42);
   --surface-active: oklch(0.9232 0.0026 106.42);
@@ -130,7 +130,7 @@
   --input: oklch(0.2739 0.0055 286.03);
   --ring: oklch(0.4419 0.0146 285.8);
   --canvas: oklch(0.1476 0.0031 285.9);
-  --canvas-dot: oklch(1 0 0 / 7%);
+  --canvas-dot: oklch(1 0 0 / 12%);
   --surface: oklch(0.2103 0.0059 285.9);
   --surface-hover: oklch(0.2472 0.0056 286);
   --surface-active: oklch(0.2954 0.006 286);
@@ -169,6 +169,40 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
+}
+
+/* Hide ReactFlow attribution watermark */
+.react-flow__attribution { display: none !important; }
+.react-flow__selection {
+  background: oklch(0.9232 0.0026 106.42 / 0.15) !important;
+  border: 1px dashed oklch(0.8695 0.0036 106.42) !important;
+  border-radius: 4px;
+}
+.react-flow__nodesselection-rect {
+  background: oklch(0.9232 0.0026 106.42 / 0.12) !important;
+  border: 1px dashed oklch(0.8695 0.0036 106.42) !important;
+  border-radius: 8px;
+}
+.react-flow__edge-path {
+  stroke: oklch(0.5534 0.0117 106.5) !important;
+  stroke-width: 1.5px;
+}
+.react-flow__edge.selected .react-flow__edge-path,
+.react-flow__edge:focus .react-flow__edge-path {
+  stroke: oklch(0.4525 0.0345 45.5) !important;
+  stroke-width: 2px;
+}
+.react-flow__connection-line {
+  stroke: oklch(0.5534 0.0117 106.5) !important;
+  stroke-width: 1.5px;
+  stroke-dasharray: 4 4;
+}
+.react-flow__node.selected { outline: none !important; box-shadow: none !important; }
+.react-flow__background { opacity: 1 !important; }
+.react-flow__minimap {
+  background: var(--color-popover) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 8px;
 }
 
 /* Subliminal paper grain — makes the whole app feel material, not digital. */

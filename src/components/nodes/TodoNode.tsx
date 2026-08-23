@@ -36,7 +36,7 @@ function TodoNode({ id, data, selected }: NodeProps) {
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
         className={`relative select-none rounded-xl border p-5 transition-[box-shadow,border-color] ${
           data.color ?? "bg-card"
-        } ${selected ? "border-border-strong shadow-lg" : "border-border hover:shadow-md"}`}
+        } ${selected ? "border-border-strong shadow-[0_8px_30px_rgba(0,0,0,0.08)]" : "border-border hover:shadow-md"}`}
         style={{ minWidth: 260, maxWidth: 400 }}
       >
         <Handle
@@ -73,7 +73,11 @@ function TodoNode({ id, data, selected }: NodeProps) {
                 onClick={() => toggle(i)}
                 className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border transition-colors hover:border-primary"
               >
-                {todo.done && <CheckCircle2 className="h-3.5 w-3.5 text-primary" strokeWidth={2} />}
+                {todo.done ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" strokeWidth={2} />
+                ) : (
+                  <div className="h-3.5 w-3.5 rounded border border-border" />
+                )}
               </button>
               <span
                 className={`flex-1 truncate ${todo.done ? "text-muted-foreground line-through" : "text-foreground"}`}

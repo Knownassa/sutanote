@@ -10,26 +10,27 @@ import {
   Connection,
 } from "reactflow";
 import { nanoid } from "nanoid";
-import { initDB, loadNodesFromDB, saveNodesToDB, deleteNodeFromDB, type SavedNode } from "./db";
-
-interface CanvasNodeData {
-  text: string;
-  color: string;
-  rotation?: number;
-  todos?: Array<{ label: string; done: boolean }>;
-  [key: string]: unknown;
-}
-
-interface CanvasNode extends Node {
-  data: CanvasNodeData;
-}
+import { initDB } from "./db";
+import { loadNodesByBoard } from "./persistence/node-repository";
+import { loadEdgesByBoard } from "./persistence/edge-repository";
+import { flushBoard } from "./persistence/persistence-manager";
+import {
+  DEFAULT_BOARD_ID,
+  type CanvasNodeData,
+  type CanvasNode,
+  type CanvasEdge,
+  type PersistenceStatus,
+} from "./persistence/types";
 
 interface CanvasState {
   nodes: CanvasNode[];
-  edges: Edge[];
+  edges: CanvasEdge[];
   selectedNodeId: string | null;
   isLoaded: boolean;
-  isSaving: boolean;
+  persistenceStatus: PersistenceStatus;
+  lastSavedAt: number | null;
+  lastSaveError: string | null;
+  pendingChanges: number;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: (connection: Connection) => void;
@@ -38,18 +39,11 @@ interface CanvasState {
   updateNodeSize: (id: string, width: number, height: number) => void;
   deleteNode: (id: string) => void;
   setSelected: (id: string | null) => void;
-  setNodeZ: (id: string, z: number) => void;
+  bringToFront: (id: string) => void;
+  sendToBack: (id: string) => void;
+  flushNow: () => Promise<void>;
   initializeStore: () => Promise<void>;
 }
-
-const toSaved = (n: CanvasNode): SavedNode => ({
-  id: n.id,
-  type: n.type ?? "sticky",
-  position: n.position,
-  width: (n.style?.width as number) ?? null,
-  height: (n.style?.minHeight as number) ?? null,
-  data: n.data,
-});
 
 const defaultColors: Record<string, string> = {
   text: "bg-card",
@@ -57,17 +51,52 @@ const defaultColors: Record<string, string> = {
   todo: "bg-card",
 };
 
-export const useCanvasStore = create<CanvasState>((set, get) => {
-  // One shared timer saves the whole board 500ms after the last change.
-  let saveTimer: ReturnType<typeof setTimeout> | undefined;
+const queueSize = () =>
+  dirtyNodes.size + dirtyEdges.size + deletedNodeIds.size + deletedEdgeIds.size;
 
-  const scheduleSave = (nodes: CanvasNode[]) => {
-    if (saveTimer) clearTimeout(saveTimer);
-    set({ isSaving: true });
-    saveTimer = setTimeout(async () => {
-      await saveNodesToDB(nodes.map(toSaved));
-      set({ isSaving: false });
-    }, 500);
+// Entity-level persistence queue — lives outside React state so it is not
+// recreated on every render and survives across store updates.
+const dirtyNodes = new Map<string, CanvasNode>();
+const deletedNodeIds = new Set<string>();
+const dirtyEdges = new Map<string, CanvasEdge>();
+const deletedEdgeIds = new Set<string>();
+
+let flushTimer: ReturnType<typeof setTimeout> | undefined;
+let flushing = false;
+
+export const useCanvasStore = create<CanvasState>((set, get) => {
+  const markNodeDirty = (node: CanvasNode) => {
+    deletedNodeIds.delete(node.id);
+    dirtyNodes.set(node.id, node);
+  };
+
+  const markNodeDeleted = (id: string) => {
+    dirtyNodes.delete(id);
+    deletedNodeIds.add(id);
+    // Cascade: any edge touching this node must also go.
+    const edges = get().edges;
+    for (const e of edges) {
+      if (e.source === id || e.target === id) {
+        dirtyEdges.delete(e.id);
+        deletedEdgeIds.add(e.id);
+      }
+    }
+  };
+
+  const markEdgeDirty = (edge: CanvasEdge) => {
+    deletedEdgeIds.delete(edge.id);
+    dirtyEdges.set(edge.id, edge);
+  };
+
+  const markEdgeDeleted = (id: string) => {
+    dirtyEdges.delete(id);
+    deletedEdgeIds.add(id);
+  };
+
+  const scheduleFlush = () => {
+    set({ persistenceStatus: "dirty", pendingChanges: queueSize() });
+    if (flushTimer) clearTimeout(flushTimer);
+    flushTimer = setTimeout(() => void get().flushNow(), 500);
   };
 
   return {
@@ -75,14 +104,68 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     edges: [],
     selectedNodeId: null,
     isLoaded: false,
-    isSaving: false,
+    persistenceStatus: "clean",
+    lastSavedAt: null,
+    lastSaveError: null,
+    pendingChanges: 0,
+
+    flushNow: async () => {
+      if (flushing) return;
+      const dn = new Map(dirtyNodes);
+      const dd = new Set(deletedNodeIds);
+      const de = new Map(dirtyEdges);
+      const dde = new Set(deletedEdgeIds);
+      if (dn.size === 0 && dd.size === 0 && de.size === 0 && dde.size === 0) {
+        set({ persistenceStatus: "clean", pendingChanges: 0 });
+        return;
+      }
+
+      flushing = true;
+      set({ persistenceStatus: "saving" });
+      try {
+        await flushBoard(DEFAULT_BOARD_ID, dn, dd, de, dde);
+        // Only clear what we successfully flushed.
+        for (const id of dn.keys()) dirtyNodes.delete(id);
+        for (const id of dd) deletedNodeIds.delete(id);
+        for (const id of de.keys()) dirtyEdges.delete(id);
+        for (const id of dde) deletedEdgeIds.delete(id);
+
+        set({
+          persistenceStatus: queueSize() > 0 ? "dirty" : "saved",
+          lastSavedAt: Date.now(),
+          lastSaveError: null,
+          pendingChanges: queueSize(),
+        });
+      } catch (err) {
+        set({
+          persistenceStatus: "error",
+          lastSaveError: err instanceof Error ? err.message : String(err),
+          pendingChanges: queueSize(),
+        });
+      } finally {
+        flushing = false;
+        // If new changes arrived during the flush, keep the cycle alive.
+        if (queueSize() > 0 && !flushTimer) {
+          flushTimer = setTimeout(() => void get().flushNow(), 500);
+        }
+      }
+    },
 
     initializeStore: async () => {
       if (get().isLoaded) return;
       await initDB();
-      const dbNodes = await loadNodesFromDB();
+      const dbNodes = await loadNodesByBoard(DEFAULT_BOARD_ID);
+      const dbEdges = await loadEdgesByBoard(DEFAULT_BOARD_ID);
+
       if (dbNodes.length > 0) {
-        set({ nodes: dbNodes as CanvasNode[], isLoaded: true });
+        set({
+          nodes: dbNodes as CanvasNode[],
+          edges: dbEdges as CanvasEdge[],
+          isLoaded: true,
+          persistenceStatus: "saved",
+          lastSavedAt: Date.now(),
+          pendingChanges: 0,
+        });
         return;
       }
 
@@ -91,6 +174,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           id: nanoid(),
           type: "sticky",
           position: { x: -120, y: -80 },
+          zIndex: 1,
           data: {
             text: "Welcome to Sutonote. This canvas is yours — infinite, private, and local.",
             color: "bg-note-yellow",
@@ -102,6 +186,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           id: nanoid(),
           type: "text",
           position: { x: 160, y: -60 },
+          zIndex: 2,
           data: {
             text: "Press T to add a text note, S for a sticky, D for a todo list. Arrow keys nudge selected items.",
             color: "bg-card",
@@ -113,6 +198,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           id: nanoid(),
           type: "todo",
           position: { x: -40, y: 120 },
+          zIndex: 3,
           data: {
             text: "",
             color: "bg-card",
@@ -127,30 +213,77 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         },
       ];
 
-      set({ nodes: seeded, isLoaded: true });
-      await saveNodesToDB(seeded.map(toSaved));
+      set({
+        nodes: seeded,
+        edges: dbEdges as CanvasEdge[],
+        isLoaded: true,
+        persistenceStatus: "dirty",
+        pendingChanges: seeded.length,
+      });
+      seeded.forEach(markNodeDirty);
+      scheduleFlush();
     },
 
     onNodesChange: (changes) => {
       const newNodes = applyNodeChanges(changes, get().nodes) as CanvasNode[];
       set({ nodes: newNodes });
-      const structural = changes.some((c) => c.type === "position" || c.type === "dimensions");
-      if (structural) scheduleSave(newNodes);
+
+      let touched = false;
+      for (const c of changes) {
+        if (c.type === "position" || c.type === "dimensions") {
+          const node = newNodes.find((n) => n.id === c.id);
+          if (node) {
+            markNodeDirty(node);
+            touched = true;
+          }
+        } else if (c.type === "remove") {
+          markNodeDeleted(c.id);
+          touched = true;
+        }
+      }
+      if (touched) scheduleFlush();
     },
 
     onEdgesChange: (changes) => {
-      set((state) => ({ edges: applyEdgeChanges(changes, state.edges) }));
+      const newEdges = applyEdgeChanges(changes, get().edges) as CanvasEdge[];
+      set({ edges: newEdges });
+
+      let touched = false;
+      for (const c of changes) {
+        if (c.type === "remove") {
+          markEdgeDeleted(c.id);
+          touched = true;
+        } else if (c.type === "add") {
+          markEdgeDirty(c.item as CanvasEdge);
+          touched = true;
+        }
+      }
+      if (touched) scheduleFlush();
     },
 
     onConnect: (connection) => {
-      set((state) => ({ edges: addEdge(connection, state.edges) }));
+      const newEdges = addEdge(connection, get().edges) as CanvasEdge[];
+      set({ edges: newEdges });
+      const edge = newEdges.find(
+        (e) =>
+          e.source === connection.source &&
+          e.target === connection.target &&
+          (e.sourceHandle ?? null) === (connection.sourceHandle ?? null) &&
+          (e.targetHandle ?? null) === (connection.targetHandle ?? null),
+      );
+      if (edge) {
+        markEdgeDirty(edge);
+        scheduleFlush();
+      }
     },
 
     addNode: (type, position) => {
+      const maxZ = get().nodes.reduce((m, n) => Math.max(m, n.zIndex ?? 0), 0);
       const newNode: CanvasNode = {
         id: nanoid(),
         type,
         position,
+        zIndex: maxZ + 1,
         data: {
           text: "",
           color: defaultColors[type] ?? "bg-note-yellow",
@@ -169,7 +302,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       };
       const next = [...get().nodes, newNode];
       set({ nodes: next, selectedNodeId: newNode.id });
-      scheduleSave(next);
+      markNodeDirty(newNode);
+      scheduleFlush();
     },
 
     updateNodeData: (id, data) => {
@@ -177,7 +311,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         n.id === id ? { ...n, data: { ...n.data, ...data } } : n,
       ) as CanvasNode[];
       set({ nodes: newNodes });
-      scheduleSave(newNodes);
+      const node = newNodes.find((n) => n.id === id);
+      if (node) {
+        markNodeDirty(node);
+        scheduleFlush();
+      }
     },
 
     updateNodeSize: (id, width, height) => {
@@ -185,21 +323,50 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         n.id === id ? { ...n, style: { ...n.style, width, minHeight: height } } : n,
       ) as CanvasNode[];
       set({ nodes: newNodes });
-      scheduleSave(newNodes);
+      const node = newNodes.find((n) => n.id === id);
+      if (node) {
+        markNodeDirty(node);
+        scheduleFlush();
+      }
     },
 
     deleteNode: (id) => {
       const newNodes = get().nodes.filter((n) => n.id !== id);
       set({ nodes: newNodes, selectedNodeId: null });
-      deleteNodeFromDB(id);
+      markNodeDeleted(id);
+      scheduleFlush();
     },
 
     setSelected: (id) => set({ selectedNodeId: id }),
 
-    setNodeZ: (id, z) => {
-      const newNodes = get().nodes.map((n) => (n.id === id ? { ...n, zIndex: z } : n));
+    bringToFront: (id) => {
+      const maxZ = get().nodes.reduce((m, n) => Math.max(m, n.zIndex ?? 0), 0);
+      const newNodes = get().nodes.map((n) =>
+        n.id === id ? { ...n, zIndex: maxZ + 1 } : n,
+      ) as CanvasNode[];
       set({ nodes: newNodes });
-      scheduleSave(newNodes);
+      const node = newNodes.find((n) => n.id === id);
+      if (node) {
+        markNodeDirty(node);
+        scheduleFlush();
+      }
+    },
+
+    sendToBack: (id) => {
+      const minZ = get().nodes.reduce(
+        (m, n) => Math.min(m, n.zIndex ?? 0),
+        Number.POSITIVE_INFINITY,
+      );
+      const base = Number.isFinite(minZ) ? minZ - 1 : -1;
+      const newNodes = get().nodes.map((n) =>
+        n.id === id ? { ...n, zIndex: base } : n,
+      ) as CanvasNode[];
+      set({ nodes: newNodes });
+      const node = newNodes.find((n) => n.id === id);
+      if (node) {
+        markNodeDirty(node);
+        scheduleFlush();
+      }
     },
   };
 });
