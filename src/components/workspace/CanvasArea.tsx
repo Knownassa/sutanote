@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import ReactFlow, {
   Background,
+  MiniMap,
   useReactFlow,
   useViewport,
   NodeTypes,
@@ -396,6 +397,21 @@ function CanvasInner() {
         connectionRadius={30}
       >
         {gridVisible && <Background color="var(--canvas-dot)" gap={24} size={0.8} />}
+        <MiniMap
+          position="bottom-right"
+          pannable
+          zoomable
+          nodeColor="var(--muted)"
+          nodeBorderRadius={6}
+          maskColor="rgba(0,0,0,0.08)"
+          style={{
+            width: 160,
+            height: 120,
+            background: "var(--popover)",
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+          }}
+        />
       </ReactFlow>
       <div
         className="pointer-events-none absolute inset-0 z-10"

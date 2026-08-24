@@ -1,9 +1,10 @@
-import { memo } from "react";
+import { memo, useRef } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
-import { FileText } from "lucide-react";
+import { FileText, Upload } from "lucide-react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
+import { storeImageAsset } from "@/lib/asset-store";
 import { ResizeControls } from "./ResizeControls";
 
 function FileNode(props: NodeProps) {
@@ -13,6 +14,15 @@ function FileNode(props: NodeProps) {
   const rotation = (data.rotation as number) ?? 0;
   const filename = (data.filename as string) ?? "";
   const assetId = (data.assetId as string) ?? "";
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const aid = await storeImageAsset(file, file.name);
+    updateNodeData(id, { assetId: aid, filename: file.name, mime: file.type });
+    e.target.value = "";
+  };
 
   return (
     <div
@@ -40,6 +50,8 @@ function FileNode(props: NodeProps) {
         <Handle type="source" position={Position.Left} className="!h-0 !w-0 !opacity-0" />
         <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
 
+        <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
+
         <div className="flex items-center gap-2">
           <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
           <input
@@ -51,9 +63,17 @@ function FileNode(props: NodeProps) {
             className="w-full cursor-text bg-transparent text-[13px] font-medium text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/50"
           />
         </div>
-        {assetId && <p className="mt-1 pl-6 text-[11px] text-muted-foreground/60">Attached file</p>}
-        {!assetId && (
-          <p className="mt-1 pl-6 text-[11px] text-muted-foreground/40">No file attached</p>
+        {assetId ? (
+          <p className="mt-1 pl-6 text-[11px] text-muted-foreground/60">Attached file</p>
+        ) : (
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground/60 transition-colors hover:border-primary/40 hover:text-muted-foreground"
+          >
+            <Upload className="h-3 w-3" />
+            Attach file
+          </button>
         )}
       </motion.div>
     </div>

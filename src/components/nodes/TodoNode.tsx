@@ -18,15 +18,17 @@ function TodoNode(props: NodeProps) {
   const rotation = (data.rotation as number) ?? 0;
 
   const showCompleted = (data.showCompleted as boolean) ?? true;
-  const todos: Todo[] = (
-    Array.isArray(data.todos)
-      ? (data.todos as Todo[])
-      : [
-          { label: "Task 1", done: false },
-          { label: "Task 2", done: false },
-          { label: "Task 3", done: false },
-        ]
-  ).filter((t) => showCompleted || !t.done);
+  const allTodos: Todo[] = Array.isArray(data.todos)
+    ? (data.todos as Todo[])
+    : [
+        { label: "Task 1", done: false },
+        { label: "Task 2", done: false },
+        { label: "Task 3", done: false },
+      ];
+  const todos = allTodos.filter((t) => showCompleted || !t.done);
+  const doneCount = allTodos.filter((t) => t.done).length;
+  const totalCount = allTodos.length;
+  const progress = totalCount > 0 ? (doneCount / totalCount) * 100 : 0;
 
   const setTodos = (next: Todo[]) => updateNodeData(id, { todos: next });
   const toggle = (i: number) =>
@@ -68,6 +70,20 @@ function TodoNode(props: NodeProps) {
           onBlur={() => useInteractionStore.getState().setEditingText(false)}
           className="mb-3 w-full cursor-text bg-transparent text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/80 outline-none focus:ring-0"
         />
+
+        {totalCount > 0 && (
+          <div className="mb-3 flex items-center gap-2">
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-border/60">
+              <div
+                className="h-full rounded-full bg-primary transition-[width] duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <span className="text-[10px] tabular-nums text-muted-foreground/70">
+              {doneCount}/{totalCount}
+            </span>
+          </div>
+        )}
 
         <div className="space-y-2">
           {todos.map((todo, i) => (

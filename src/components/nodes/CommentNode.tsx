@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useEffect, useRef } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { MessageCircle } from "lucide-react";
@@ -15,6 +15,35 @@ function CommentNode(props: NodeProps) {
   const text = (data.text as string) ?? "";
   const author = (data.author as string) ?? useSettingsStore.getState().displayName;
   const resolved = (data.resolved as boolean) ?? false;
+  const createdAt = (data.createdAt as number) ?? 0;
+  const updatedAt = (data.updatedAt as number) ?? 0;
+  const initRef = useRef(false);
+
+  // Auto-set createdAt on first render.
+  useEffect(() => {
+    if (!initRef.current && !createdAt) {
+      initRef.current = true;
+      updateNodeData(id, { createdAt: Date.now(), updatedAt: Date.now() });
+    }
+  }, []);
+
+  // Update timestamp on text change.
+  const handleTextChange = (value: string) => {
+    updateNodeData(id, { text: value, updatedAt: Date.now() });
+  };
+
+  const formatTime = (ts: number) => {
+    if (!ts) return "";
+    const d = new Date(ts);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return "just now";
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `${diffH}h ago`;
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
 
   return (
     <div
@@ -50,12 +79,19 @@ function CommentNode(props: NodeProps) {
             <p className="mb-1 text-[11px] font-medium text-muted-foreground/70">{author}</p>
             <textarea
               value={text}
-              onChange={(e) => updateNodeData(id, { text: e.target.value })}
+              onChange={(e) => handleTextChange(e.target.value)}
               onFocus={() => useInteractionStore.getState().setEditingText(true)}
               onBlur={() => useInteractionStore.getState().setEditingText(false)}
               placeholder="Write a comment..."
               className="min-h-[40px] w-full cursor-text resize-none bg-transparent font-serif text-[13px] leading-[1.5] text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/40"
             />
+            {(createdAt || updatedAt) && (
+              <p className="mt-1 text-[10px] text-muted-foreground/40">
+                {updatedAt && updatedAt !== createdAt
+                  ? `edited ${formatTime(updatedAt)}`
+                  : formatTime(createdAt)}
+              </p>
+            )}
           </div>
           <button
             type="button"
