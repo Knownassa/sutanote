@@ -96,6 +96,21 @@ const queueSize = () =>
 const GRID_SIZE = 16;
 const snapValue = (v: number) => Math.round(v / GRID_SIZE) * GRID_SIZE;
 
+/** Types that always stay behind regular items (backdrops / containers). */
+const CONTAINER_TYPES = ["section", "frame", "column"];
+
+/**
+ * Stacking rule: the most recently edited item sits on top of the stack.
+ * Containers keep their z-order so they never cover their own children.
+ */
+function withTopZ(nodes: CanvasNode[], id: string): CanvasNode[] {
+  const target = nodes.find((n) => n.id === id);
+  if (!target || CONTAINER_TYPES.includes(target.type ?? "")) return nodes;
+  const maxZ = nodes.reduce((m, n) => Math.max(m, n.zIndex ?? 0), 0);
+  if ((target.zIndex ?? 0) >= maxZ) return nodes;
+  return nodes.map((n) => (n.id === id ? { ...n, zIndex: maxZ + 1 } : n));
+}
+
 // Entity-level persistence queue — lives outside React state so it is not
 // recreated on every render and survives across store updates.
 const dirtyNodes = new Map<string, CanvasNode>();
@@ -418,6 +433,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
               }
 
               // Mark dirty with final (snapped) positions.
+              // Last-touched wins: dragged item moves to the top of the stack.
+              next = withTopZ(next, c.id);
               const finalNode = next.find((n) => n.id === c.id);
               if (finalNode) {
                 markNodeDirty(finalNode);
@@ -588,6 +605,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
             : {}),
           ...(type === "color_swatch" ? { color: "#6366f1", label: "" } : {}),
           ...(type === "board" ? { title: "Board", itemCount: 0 } : {}),
+          ...(type === "folder"
+            ? { title: "Folder", icon: "folder", iconColor: "", itemCount: 0 }
+            : {}),
           ...(type === "code"
             ? { code: "", language: "plaintext", showLineNumbers: true, wrap: false }
             : {}),
@@ -609,8 +629,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     updateNodeData: (id, data) => {
-      const next = get().nodes.map((n) =>
-        n.id === id ? { ...n, data: { ...n.data, ...data } } : n,
+      const next = withTopZ(
+        get().nodes.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...data } } : n)),
+        id,
       ) as CanvasNode[];
       commitNodes(next);
       const node = next.find((n) => n.id === id);
@@ -622,8 +643,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
 
     updateNodeDataWithHistory: (id, data) => {
       useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
-      const next = get().nodes.map((n) =>
-        n.id === id ? { ...n, data: { ...n.data, ...data } } : n,
+      const next = withTopZ(
+        get().nodes.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...data } } : n)),
+        id,
       ) as CanvasNode[];
       commitNodes(next);
       const node = next.find((n) => n.id === id);
@@ -634,8 +656,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     updateNodeSize: (id, width, height) => {
-      const next = get().nodes.map((n) =>
-        n.id === id ? { ...n, style: { ...n.style, width, minHeight: height } } : n,
+      const next = withTopZ(
+        get().nodes.map((n) =>
+          n.id === id ? { ...n, style: { ...n.style, width, minHeight: height } } : n,
+        ),
+        id,
       ) as CanvasNode[];
       commitNodes(next);
       const node = next.find((n) => n.id === id);
@@ -646,8 +671,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     updateNodePosition: (id, x, y) => {
-      const next = get().nodes.map((n) =>
-        n.id === id ? { ...n, position: { x, y } } : n,
+      const next = withTopZ(
+        get().nodes.map((n) => (n.id === id ? { ...n, position: { x, y } } : n)),
+        id,
       ) as CanvasNode[];
       commitNodes(next);
       const node = next.find((n) => n.id === id);
@@ -656,6 +682,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         scheduleFlush();
       }
     },
+
 
     deleteNode: (id) => {
       // History: push state before deletion.

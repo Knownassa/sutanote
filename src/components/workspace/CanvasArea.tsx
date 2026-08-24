@@ -43,6 +43,7 @@ import CommentNode from "@/components/nodes/CommentNode";
 import ShapeNode from "@/components/nodes/ShapeNode";
 import ColorSwatchNode from "@/components/nodes/ColorSwatchNode";
 import BoardNode from "@/components/nodes/BoardNode";
+import FolderNode from "@/components/nodes/FolderNode";
 import ColumnNode from "@/components/nodes/ColumnNode";
 import FrameNode from "@/components/nodes/FrameNode";
 import PDFNode from "@/components/nodes/PDFNode";
@@ -64,6 +65,7 @@ const nodeTypes: NodeTypes = {
   shape: ShapeNode,
   color_swatch: ColorSwatchNode,
   board: BoardNode,
+  folder: FolderNode,
   column: ColumnNode,
   frame: FrameNode,
   pdf: PDFNode,
