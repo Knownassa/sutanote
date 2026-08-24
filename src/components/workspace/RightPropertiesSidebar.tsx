@@ -310,6 +310,34 @@ export function RightPropertiesSidebar() {
                 onCommit={(n) => patchSelectedData({ strokeWidth: n })}
                 step={1}
               />
+              <Field
+                label="R"
+                value={(node.data.rotation as number) ?? 0}
+                onCommit={(n) => patchSelectedData({ rotation: n })}
+                step={1}
+              />
+              <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                <span className="w-12">Opacity</span>
+                <input
+                  type="range"
+                  min={20}
+                  max={100}
+                  value={(node.data.opacity as number) ?? 100}
+                  onChange={(e) => patchSelectedData({ opacity: parseInt(e.target.value) })}
+                  className="flex-1"
+                />
+                <span className="w-8 text-right text-[11px] tabular-nums">
+                  {`${(node.data.opacity as number) ?? 100}%`}
+                </span>
+              </label>
+              {(node.data.shape as string) === "rounded-rectangle" && (
+                <Field
+                  label="CR"
+                  value={(node.data.cornerRadius as number) ?? 12}
+                  onCommit={(n) => patchSelectedData({ cornerRadius: n })}
+                  step={1}
+                />
+              )}
             </div>
           </div>
         )}
