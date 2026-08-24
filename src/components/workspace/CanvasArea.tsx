@@ -49,6 +49,7 @@ import PDFNode from "@/components/nodes/PDFNode";
 import VideoNode from "@/components/nodes/VideoNode";
 import EmbedNode from "@/components/nodes/EmbedNode";
 import CodeBlockNode from "@/components/nodes/CodeBlockNode";
+import SectionNode from "@/components/nodes/SectionNode";
 import { ToolPicker } from "@/components/workspace/ToolPicker";
 
 const nodeTypes: NodeTypes = {
@@ -68,6 +69,7 @@ const nodeTypes: NodeTypes = {
   video: VideoNode,
   embed: EmbedNode,
   code: CodeBlockNode,
+  section: SectionNode,
 };
 
 function centerViewport(): Viewport {
@@ -302,6 +304,18 @@ function CanvasInner() {
       if (mod) return;
 
       if (isEditing) return;
+
+      if (e.key === "Enter" && !mod && !isEditing) {
+        const selIds = canvas.selectedNodeIds;
+        if (selIds.length === 1) {
+          const nn = canvas.nodes.find((x) => x.id === selIds[0]);
+          if (nn && (nn.type === "text" || nn.type === "sticky" || nn.type === "code")) {
+            e.preventDefault();
+            useInteractionStore.getState().setEditingNode(nn.id, "body");
+            return;
+          }
+        }
+      }
 
       if (k === "v") {
         useInteractionStore.getState().setActiveTool("select");

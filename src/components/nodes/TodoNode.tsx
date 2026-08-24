@@ -78,12 +78,12 @@ function TodoNode(props: NodeProps) {
         initial={reduce ? false : { scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
-        className={`relative w-full select-none rounded-xl border transition-shadow ${
+        className={`relative w-full select-none rounded-[7px] border transition-shadow ${
           (data.backgroundColor as string) || (data.color ?? "bg-card")
         } ${
           selected
-            ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
-            : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]"
+            ? "border-border-strong shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+            : "border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)]"
         }`}
         style={{ padding: "18px 20px" }}
       >

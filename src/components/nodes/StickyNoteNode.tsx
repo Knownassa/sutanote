@@ -58,12 +58,12 @@ function StickyNoteNode(props: NodeProps) {
         initial={reduce ? false : { scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
-        className={`relative w-full select-none rounded-lg transition-shadow ${
+        className={`relative w-full select-none rounded-[7px] transition-shadow ${
           (data.backgroundColor as string) || (data.color ?? "bg-note-yellow")
         } ${
           selected
-            ? "shadow-[0_4px_14px_rgba(0,0,0,0.06)]"
-            : "shadow-[0_3px_10px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_18px_rgba(0,0,0,0.09)]"
+            ? "shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+            : "shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)]"
         }`}
         style={{
           minHeight: 160,
@@ -80,16 +80,15 @@ function StickyNoteNode(props: NodeProps) {
         <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
         <textarea
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => handleTextChange(e.target.value)}
           onBlur={handleTextBlur}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") (e.currentTarget as HTMLTextAreaElement).blur();
-          }}
+          onKeyDown={handleTextKeyDown}
           onDoubleClick={handleDoubleClick}
           placeholder="Jot something down..."
-          className="h-full min-h-[100px] w-full cursor-text resize-none bg-transparent font-serif leading-[1.6] text-note-foreground outline-none focus:ring-0 placeholder:text-note-foreground/40"
+          className={`h-full min-h-[100px] w-full resize-none bg-transparent font-serif leading-[1.6] text-note-foreground outline-none focus:ring-0 placeholder:text-note-foreground/40 ${isEditing ? "nodrag nowheel select-text cursor-text" : "cursor-default"}`}
           style={{ fontSize: (data.fontSize as number) ?? 14 }}
           aria-label="Sticky note"
+          readOnly={!isEditing}
         />
       </motion.div>
     </div>

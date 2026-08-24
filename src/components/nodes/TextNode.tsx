@@ -1,30 +1,35 @@
-import { memo, useState, useRef, useEffect } from "react";
+import { memo, useState, useEffect } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { ResizeControls } from "./ResizeControls";
+import { RichTextEditor } from "./RichTextEditor";
 
 function TextNode(props: NodeProps) {
   const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
+  const { editingNodeId, setEditingNode } = useInteractionStore();
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
-  const { editingNodeId, setEditingNode } = useInteractionStore();
-
   const isEditing = editingNodeId === id;
-  const [title, setTitle] = useState((data.title as string) ?? "");
-  const [text, setText] = useState((data.text as string) ?? "");
 
-  // Sync internal state with data prop changes
+  const [title, setTitle] = useState((data.title as string) ?? "");
+  const [content, setContent] = useState((data.content as string) ?? (data.text as string) ?? "");
+
   useEffect(() => {
     setTitle((data.title as string) ?? "");
   }, [data.title]);
 
   useEffect(() => {
-    setText((data.text as string) ?? "");
-  }, [data.text]);
+    // Migrate from legacy text field if content doesn't exist
+    if (!data.content && data.text) {
+      setContent((data.text as string) ?? "");
+    } else {
+      setContent((data.content as string) ?? "");
+    }
+  }, [data.content, data.text]);
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
@@ -38,36 +43,26 @@ function TextNode(props: NodeProps) {
     }
   };
 
-  const handleTextChange = (value: string) => {
-    setText(value);
-    updateNodeData(id, { text: value });
+  const handleContentChange = (value: string) => {
+    setContent(value);
+    updateNodeData(id, { content: value, text: value }); // Keep legacy text in sync
   };
 
-  const handleTextBlur = () => {
-    updateNodeDataWithHistory(id, { text });
+  const handleContentBlur = () => {
+    updateNodeDataWithHistory(id, { content, text: content });
     if (editingNodeId === id) {
       setEditingNode(null);
     }
   };
 
   const handleTitleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      (e.currentTarget as HTMLInputElement).blur();
-    } else if (e.key === "Escape") {
+    if (e.key === "Enter" || e.key === "Escape") {
       (e.currentTarget as HTMLInputElement).blur();
     }
-  };
-
-  const handleTextKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      (e.currentTarget as HTMLTextAreaElement).blur();
-    }
-    // Allow Enter for newlines in textarea
   };
 
   const handleDoubleClick = () => {
-    if (!isEditing) {
+    if (!editingNodeId) {
       useInteractionStore.getState().setEditingNode(id, "body");
     }
   };
@@ -86,12 +81,12 @@ function TextNode(props: NodeProps) {
         initial={reduce ? false : { scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
-        className={`relative w-full select-none rounded-xl border transition-shadow ${
+        className={`relative w-full select-none rounded-[7px] border transition-shadow ${
           (data.backgroundColor as string) || (data.color ?? "bg-card")
         } ${
           selected
-            ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
-            : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]"
+            ? "border-border-strong shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+            : "border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)]"
         }`}
         style={{
           padding: "20px 22px",
@@ -107,29 +102,33 @@ function TextNode(props: NodeProps) {
         <input
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
+          onFocus={() => useInteractionStore.getState().setEditingNode(id, "title")}
           onBlur={handleTitleBlur}
-          onKeyDown={handleTitleKeyDown}
-          placeholder="Title"
-          className="mb-2 w-full cursor-text bg-transparent text-[15px] font-semibold tracking-tight text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/50"
-          aria-label="Title"
-        />
-        <textarea
-          value={text}
-          onChange={(e) => handleTextChange(e.target.value)}
-          onBlur={handleTextBlur}
-          onKeyDown={handleTextKeyDown}
-          onDoubleClick={handleDoubleClick}
-          placeholder="Start writing..."
-          className={`min-h-[80px] w-full cursor-text resize-none bg-transparent font-serif leading-[1.65] outline-none focus:ring-0 placeholder:text-muted-foreground/50 ${
-            (data.bold as boolean) ? "font-bold" : ""
-          } ${(data.italic as boolean) ? "italic" : ""}`}
-          style={{
-            fontSize: (data.fontSize as number) ?? 14,
-            textAlign: (data.textAlign as "left" | "center" | "right") ?? "left",
-            color: (data.textColor as string) || undefined,
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === "Escape")
+              (e.currentTarget as HTMLInputElement).blur();
           }}
-          aria-label="Note content"
+          placeholder="Title"
+          className={`mb-2 w-full bg-transparent text-[15px] font-semibold tracking-tight text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/50 ${isEditing ? "cursor-text" : "cursor-default"}`}
+          aria-label="Title"
+          readOnly={!isEditing}
         />
+        <div className={`nodrag nowheel ${isEditing ? "select-text cursor-text" : "select-none"}`}>
+          <RichTextEditor
+            id={id}
+            content={content}
+            onChange={handleContentChange}
+            onBlur={handleContentBlur}
+            placeholder="Start writing..."
+            editable={isEditing}
+            fontSize={(data.fontSize as number) ?? 14}
+            textAlign={(data.textAlign as "left" | "center" | "right") ?? "left"}
+            textColor={(data.textColor as string) || ""}
+            bold={(data.bold as boolean) ?? false}
+            italic={(data.italic as boolean) ?? false}
+            highlightColor={(data.highlight as string) || ""}
+          />
+        </div>
       </motion.div>
     </div>
   );

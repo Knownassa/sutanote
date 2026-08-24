@@ -26,6 +26,9 @@ export interface CanvasNodeData {
   backgroundColor?: string;
   // Highlight color for text emphasis.
   highlight?: string;
+  // Rich text
+  content?: string;
+  plainText?: string;
   // Link node fields.
   url?: string;
   description?: string;
@@ -35,6 +38,20 @@ export interface CanvasNodeData {
   // Comment node fields.
   author?: string;
   resolved?: boolean;
+  createdAt?: number;
+  updatedAt?: number;
+  // Shared asset fields
+  remoteUrl?: string;
+  sourceType?: "local" | "remote";
+  // Appearance
+  opacity?: number;
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+  shape?: string;
+  label?: string;
+  // Container / hierarchy
+  parentId?: string;
   [key: string]: unknown;
 }
 

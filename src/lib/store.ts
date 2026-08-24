@@ -64,6 +64,9 @@ interface CanvasState {
   setPositionSelected: (id: string, x: number, y: number) => void;
   setSizeSelected: (id: string, width: number, height: number) => void;
   setLockedSelected: (locked: boolean) => void;
+  patchSelectedData: (patch: Partial<CanvasNodeData>) => void;
+  setRotationSelected: (deg: number) => void;
+  setOpacitySelected: (opacity: number) => void;
   groupSelected: () => void;
   ungroupSelected: () => void;
   flushNow: () => Promise<void>;
@@ -363,6 +366,26 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
                 }
               }
             }
+            // Container movement: move children with same parentId when container drags.
+            const containerTypes = ["section", "frame", "column"];
+            if (containerTypes.includes(node.type ?? "") && c.dragging) {
+              const oldNode = prev.find((n) => n.id === c.id);
+              if (oldNode && c.position) {
+                const dx = c.position.x - oldNode.position.x;
+                const dy = c.position.y - oldNode.position.y;
+                if (dx !== 0 || dy !== 0) {
+                  next = next.map((n) =>
+                    n.data.parentId === c.id
+                      ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } }
+                      : n,
+                  ) as CanvasNode[];
+                  // Mark moved children dirty
+                  for (const n of next) {
+                    if (n.data.parentId === c.id) markNodeDirty(n);
+                  }
+                }
+              }
+            }
 
             // Snap-on-drop: apply grid snapping only at release, never during drag.
             if (c.dragging === false) {
@@ -383,6 +406,12 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
                       ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } }
                       : n,
                   ) as CanvasNode[];
+                  // Also apply same delta to container children
+                  next = next.map((n) =>
+                    n.data.parentId === c.id
+                      ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } }
+                      : n,
+                  ) as CanvasNode[];
                 }
               }
 
@@ -393,6 +422,44 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
                 // Also mark dirty any selected siblings (they may have moved via snap delta).
                 for (const n of next) {
                   if (n.id !== c.id && n.selected) markNodeDirty(n);
+                }
+                // Also mark container children dirty for snap
+                for (const n of next) if (n.data.parentId === c.id) markNodeDirty(n);
+                // Section containment: attach/detach
+                if (!["section", "frame", "column"].includes(finalNode.type ?? "")) {
+                  const containers = next.filter(
+                    (n) => ["section", "frame"].includes(n.type ?? "") && n.id !== finalNode.id,
+                  );
+                  let newParent: string | undefined;
+                  for (const cont of containers) {
+                    const cw = (cont.style?.width as number) ?? 560;
+                    const ch = (cont.style?.minHeight as number) ?? 360;
+                    const cx = cont.position.x;
+                    const cy = cont.position.y;
+                    const left = cx - cw / 2;
+                    const right = cx + cw / 2;
+                    const top = cy - ch / 2;
+                    const bottom = cy + ch / 2;
+                    if (
+                      finalNode.position.x >= left &&
+                      finalNode.position.x <= right &&
+                      finalNode.position.y >= top &&
+                      finalNode.position.y <= bottom
+                    ) {
+                      newParent = cont.id;
+                      break;
+                    }
+                  }
+                  const curParent = finalNode.data.parentId as string | undefined;
+                  if (newParent !== curParent) {
+                    next = next.map((n) =>
+                      n.id === finalNode.id
+                        ? { ...n, data: { ...n.data, parentId: newParent } }
+                        : n,
+                    ) as CanvasNode[];
+                    const updated = next.find((n) => n.id === finalNode.id);
+                    if (updated) markNodeDirty(updated);
+                  }
                 }
                 touched = true;
               }
@@ -468,15 +535,25 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
 
     addNode: (type, position) => {
       const maxZ = get().nodes.reduce((m, n) => Math.max(m, n.zIndex ?? 0), 0);
+      const minZ = get().nodes.reduce(
+        (m, n) => Math.min(m, n.zIndex ?? 0),
+        Number.POSITIVE_INFINITY,
+      );
       const def = getNodeDef(type);
       // Snap initial position to grid if setting enabled.
       const doSnap = useSettingsStore.getState().snapToGrid;
       const pos = doSnap ? { x: snapValue(position.x), y: snapValue(position.y) } : position;
+      const containerTypes = ["section", "frame"];
+      const zIndex = containerTypes.includes(type)
+        ? Number.isFinite(minZ)
+          ? minZ - 1
+          : 0
+        : maxZ + 1;
       const newNode: CanvasNode = {
         id: nanoid(),
         type,
         position: pos,
-        zIndex: maxZ + 1,
+        zIndex,
         selected: true,
         data: {
           text: "",
@@ -501,6 +578,21 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
                 resolved: false,
               }
             : {}),
+          ...(type === "section" ? { title: "Section", opacity: 100 } : {}),
+          ...(type === "frame" ? { title: "", showTitle: true, opacity: 100 } : {}),
+          ...(type === "column" ? { title: "Column", collapsed: false } : {}),
+          ...(type === "shape"
+            ? { shape: "rectangle", fill: "transparent", stroke: "currentColor", strokeWidth: 2 }
+            : {}),
+          ...(type === "color_swatch" ? { color: "#6366f1", label: "" } : {}),
+          ...(type === "board" ? { title: "Board", itemCount: 0 } : {}),
+          ...(type === "code"
+            ? { code: "", language: "plaintext", showLineNumbers: true, wrap: false }
+            : {}),
+          ...(type === "pdf" || type === "video"
+            ? { filename: "", assetId: "", remoteUrl: "", sourceType: "local" }
+            : {}),
+          ...(type === "embed" ? { remoteUrl: "" } : {}),
         },
         style: { width: def.defaultWidth, minHeight: def.defaultHeight },
       };
@@ -693,6 +785,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     bringToFront: (id) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       const maxZ = get().nodes.reduce((m, n) => Math.max(m, n.zIndex ?? 0), 0);
       const next = get().nodes.map((n) => (n.id === id ? { ...n, zIndex: maxZ + 1 } : n));
       commitNodes(next);
@@ -704,6 +797,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     sendToBack: (id) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       const minZ = get().nodes.reduce(
         (m, n) => Math.min(m, n.zIndex ?? 0),
         Number.POSITIVE_INFINITY,
@@ -719,6 +813,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     bringForward: (id) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       const sorted = [...get().nodes].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
       const idx = sorted.findIndex((n) => n.id === id);
       if (idx < 0 || idx === sorted.length - 1) return;
@@ -740,6 +835,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     sendBackward: (id) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       const sorted = [...get().nodes].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
       const idx = sorted.findIndex((n) => n.id === id);
       if (idx <= 0) return;
@@ -761,6 +857,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     alignSelected: (edge) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       const sel = get().nodes.filter((n) => n.selected);
       if (sel.length < 2) return;
       const left = (n: CanvasNode) => n.position.x - (n.style?.width as number) / 2;
@@ -792,6 +889,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     distributeSelected: (axis) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       const sel = get()
         .nodes.filter((n) => n.selected)
         .sort((a, b) =>
@@ -815,6 +913,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     matchSizeSelected: (dim) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       const sel = get().nodes.filter((n) => n.selected);
       if (sel.length < 2) return;
       const ref =
@@ -829,12 +928,28 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     setColorSelected: (color) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       applyToSelected((n) => ({ ...n, data: { ...n.data, color } }));
     },
 
     setBackgroundColorSelected: (hex) => {
       useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       applyToSelected((n) => ({ ...n, data: { ...n.data, backgroundColor: hex } }));
+    },
+
+    patchSelectedData: (patch) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      applyToSelected((n) => ({ ...n, data: { ...n.data, ...patch } }));
+    },
+
+    setRotationSelected: (deg) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      applyToSelected((n) => ({ ...n, data: { ...n.data, rotation: deg } }));
+    },
+
+    setOpacitySelected: (opacity) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      applyToSelected((n) => ({ ...n, data: { ...n.data, opacity } }));
     },
 
     setPositionSelected: (id, x, y) => {
@@ -864,10 +979,12 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     setLockedSelected: (locked) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       applyToSelected((n) => ({ ...n, data: { ...n.data, locked } }));
     },
 
     groupSelected: () => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       const sel = get().nodes.filter((n) => n.selected);
       if (sel.length < 2) return;
       const groupId = nanoid();
@@ -875,6 +992,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     ungroupSelected: () => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       applyToSelected((n) => {
         const { groupId, ...rest } = n.data;
         return { ...n, data: rest as CanvasNodeData };

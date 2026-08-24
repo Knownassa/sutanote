@@ -69,6 +69,16 @@
   --color-highlight-blue: var(--highlight-blue);
   --color-highlight-green: var(--highlight-green);
   --color-highlight-orange: var(--highlight-orange);
+  --color-highlight-sand: var(--highlight-sand);
+  --color-highlight-apricot: var(--highlight-apricot);
+  --color-highlight-rose: var(--highlight-rose);
+  --color-highlight-sage: var(--highlight-sage);
+  --color-highlight-sky: var(--highlight-sky);
+  --color-highlight-lavender: var(--highlight-lavender);
+  --radius-node: 7px;
+  --radius-control: 5px;
+  --radius-panel: 9px;
+  --radius-popover: 10px;
 }
 
 :root {
@@ -116,6 +126,18 @@
   --highlight-blue: oklch(0.88 0.05 250);
   --highlight-green: oklch(0.88 0.06 150);
   --highlight-orange: oklch(0.90 0.07 60);
+  --highlight-sand: oklch(0.94 0.04 85);
+  --highlight-apricot: oklch(0.92 0.05 55);
+  --highlight-rose: oklch(0.89 0.06 15);
+  --highlight-sage: oklch(0.89 0.05 150);
+  --highlight-sky: oklch(0.90 0.05 200);
+  --highlight-lavender: oklch(0.90 0.04 280);
+  --sut-highlight-sand: var(--highlight-sand);
+  --sut-highlight-apricot: var(--highlight-apricot);
+  --sut-highlight-rose: var(--highlight-rose);
+  --sut-highlight-sage: var(--highlight-sage);
+  --sut-highlight-sky: var(--highlight-sky);
+  --sut-highlight-lavender: var(--highlight-lavender);
 }
 
 .dark {
@@ -159,6 +181,18 @@
   --highlight-blue: oklch(0.55 0.08 250);
   --highlight-green: oklch(0.55 0.09 150);
   --highlight-orange: oklch(0.58 0.10 60);
+  --highlight-sand: oklch(0.65 0.07 80);
+  --highlight-apricot: oklch(0.60 0.08 50);
+  --highlight-rose: oklch(0.55 0.10 15);
+  --highlight-sage: oklch(0.55 0.08 150);
+  --highlight-sky: oklch(0.58 0.07 200);
+  --highlight-lavender: oklch(0.58 0.07 280);
+  --sut-highlight-sand: var(--highlight-sand);
+  --sut-highlight-apricot: var(--highlight-apricot);
+  --sut-highlight-rose: var(--highlight-rose);
+  --sut-highlight-sage: var(--highlight-sage);
+  --sut-highlight-sky: var(--highlight-sky);
+  --sut-highlight-lavender: var(--highlight-lavender);
 }
 
 @utility canvas-dots {
@@ -304,6 +338,55 @@ body::after {
   opacity: 0.007;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }
+
+/* Tiptap / ProseMirror rich text */
+.ProseMirror {
+  outline: none;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--muted-foreground);
+  opacity: 0.4;
+  pointer-events: none;
+  height: 0;
+}
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.2rem;
+  margin: 0.4rem 0;
+}
+.ProseMirror ul { list-style: disc; }
+.ProseMirror ol { list-style: decimal; }
+.ProseMirror h1 { font-size: 1.6rem; font-weight: 600; margin: 0.6rem 0 0.3rem; }
+.ProseMirror h2 { font-size: 1.3rem; font-weight: 600; margin: 0.5rem 0 0.2rem; }
+.ProseMirror h3 { font-size: 1.1rem; font-weight: 600; margin: 0.4rem 0 0.2rem; }
+.ProseMirror blockquote {
+  border-left: 2px solid var(--border-strong);
+  padding-left: 0.8rem;
+  color: var(--muted-foreground);
+  margin: 0.5rem 0;
+}
+.ProseMirror code {
+  background: var(--surface-active);
+  padding: 0.15rem 0.3rem;
+  border-radius: var(--radius-control);
+  font-size: 0.85em;
+  font-family: var(--font-mono);
+}
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+.ProseMirror ul[data-type="taskList"] li > label { flex-shrink: 0; margin-top: 0.25rem; }
+.ProseMirror a { color: var(--primary); text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) {
   *,
