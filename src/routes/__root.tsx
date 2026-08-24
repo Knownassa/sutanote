@@ -109,7 +109,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <HeadContent />
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{const raw=localStorage.getItem("sutonote:settings");const parsed=raw?JSON.parse(raw):null;const pref=parsed?.state?.theme??"system";const dark=pref==="dark"||(pref==="system"&&window.matchMedia("(prefers-color-scheme:dark)").matches);document.documentElement.classList.toggle("dark",dark);document.documentElement.style.colorScheme=dark?"dark":"light";}catch{}})();`,
+          }}
+        />
+        <HeadContent />
+      </head>
       <body>
         {children}
         <Scripts />

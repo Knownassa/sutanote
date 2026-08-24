@@ -1,0 +1,115 @@
+import { memo, useState } from "react";
+import { Handle, Position, NodeProps } from "reactflow";
+import { motion, useReducedMotion } from "motion/react";
+import { useCanvasStore } from "@/lib/store";
+import { useInteractionStore } from "@/lib/interaction-store";
+import { ChevronRight, LayoutDashboard, Edit2 } from "lucide-react";
+import { ResizeControls } from "./ResizeControls";
+
+function BoardNode(props: NodeProps) {
+  const { id, data, selected } = props;
+  const updateNodeData = useCanvasStore((s) => s.updateNodeData);
+  const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
+  const reduce = useReducedMotion();
+  const rotation = (data.rotation as number) ?? 0;
+
+  const title = (data.title as string) ?? "Untitled Board";
+  const itemCount = (data.itemCount as number) ?? 0;
+  const targetBoardId = (data.targetBoardId as string) ?? "";
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleDoubleClick = () => {
+    // In a real app, this would navigate to the target board
+    // For now, just allow editing the title
+    setIsEditing(true);
+  };
+
+  const handleTitleBlur = () => {
+    setIsEditing(false);
+    updateNodeDataWithHistory(id, { title });
+  };
+
+  return (
+    <div
+      style={{
+        transform: `rotate(${rotation}deg)`,
+        transformOrigin: "center",
+        width: "100%",
+      }}
+    >
+      <ResizeControls {...props} />
+      <motion.div
+        data-node-surface
+        initial={reduce ? false : { scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
+        className={`relative w-full select-none rounded-xl border transition-shadow ${
+          (data.backgroundColor as string) || "bg-card"
+        } ${
+          selected
+            ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
+            : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]"
+        }`}
+        style={{ padding: "16px", minHeight: 100, cursor: "pointer" }}
+        onDoubleClick={handleDoubleClick}
+      >
+        <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
+        <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
+        <Handle type="source" position={Position.Left} className="!h-0 !w-0 !opacity-0" />
+        <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
+
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <LayoutDashboard className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            {isEditing ? (
+              <input
+                value={title}
+                onChange={(e) => updateNodeData(id, { title: e.target.value })}
+                onBlur={handleTitleBlur}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                  if (e.key === "Escape") setIsEditing(false);
+                }}
+                autoFocus
+                className="w-full text-lg font-semibold text-foreground bg-transparent outline-none focus:ring-0"
+              />
+            ) : (
+              <h3 className="text-lg font-semibold text-foreground truncate">{title}</h3>
+            )}
+            <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground/70">
+              <span className="flex items-center gap-1">
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                {itemCount} item{itemCount !== 1 ? "s" : ""}
+              </span>
+              {targetBoardId && (
+                <span className="flex items-center gap-1">
+                  <ChevronRight className="h-3.5 w-3.5" />
+                  Board link
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
+          <span className="text-[11px] text-muted-foreground/50">Double-click to open</span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditing(true);
+            }}
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-popover px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-surface-hover"
+          >
+            <Edit2 className="h-3.5 w-3.5" />
+            Rename
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+export default memo(BoardNode);

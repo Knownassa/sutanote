@@ -20,6 +20,7 @@ import {
   CheckSquare,
   ImageIcon,
   MoreHorizontal,
+  Link2,
 } from "lucide-react";
 import "reactflow/dist/style.css";
 import { useCanvasStore } from "@/lib/store";
@@ -39,6 +40,15 @@ import ImageNode from "@/components/nodes/ImageNode";
 import LinkNode from "@/components/nodes/LinkNode";
 import FileNode from "@/components/nodes/FileNode";
 import CommentNode from "@/components/nodes/CommentNode";
+import ShapeNode from "@/components/nodes/ShapeNode";
+import ColorSwatchNode from "@/components/nodes/ColorSwatchNode";
+import BoardNode from "@/components/nodes/BoardNode";
+import ColumnNode from "@/components/nodes/ColumnNode";
+import FrameNode from "@/components/nodes/FrameNode";
+import PDFNode from "@/components/nodes/PDFNode";
+import VideoNode from "@/components/nodes/VideoNode";
+import EmbedNode from "@/components/nodes/EmbedNode";
+import CodeBlockNode from "@/components/nodes/CodeBlockNode";
 import { ToolPicker } from "@/components/workspace/ToolPicker";
 
 const nodeTypes: NodeTypes = {
@@ -49,6 +59,15 @@ const nodeTypes: NodeTypes = {
   link: LinkNode,
   file: FileNode,
   comment: CommentNode,
+  shape: ShapeNode,
+  color_swatch: ColorSwatchNode,
+  board: BoardNode,
+  column: ColumnNode,
+  frame: FrameNode,
+  pdf: PDFNode,
+  video: VideoNode,
+  embed: EmbedNode,
+  code: CodeBlockNode,
 };
 
 function centerViewport(): Viewport {
@@ -285,6 +304,8 @@ function CanvasInner() {
         useInteractionStore.getState().setActiveTool("select");
       } else if (k === "h") {
         useInteractionStore.getState().setActiveTool("hand");
+      } else if (k === "c") {
+        useInteractionStore.getState().setActiveTool("connector");
       } else if (k === "t") {
         addAtViewportCenter(getViewport, canvas.addNode, "text");
       } else if (k === "s") {
@@ -359,7 +380,9 @@ function CanvasInner() {
         ? "sut-cursor-grab"
         : activeTool === "select"
           ? "sut-cursor-default"
-          : "sut-cursor-crosshair";
+          : activeTool === "connector"
+            ? "sut-cursor-crosshair"
+            : "sut-cursor-crosshair";
 
   return (
     <div
@@ -391,10 +414,11 @@ function CanvasInner() {
         snapGrid={[16, 16]}
         deleteKeyCode={null}
         multiSelectionKeyCode={["Meta", "Shift", "Control"]}
-        selectionOnDrag={!handMode}
-        panOnDrag={handMode ? [0, 1, 2] : [1, 2]}
-        nodesDraggable={!handMode}
+        selectionOnDrag={!handMode && activeTool !== "connector"}
+        panOnDrag={handMode ? [0, 1, 2] : activeTool === "connector" ? [] : [1, 2]}
+        nodesDraggable={!handMode && activeTool !== "connector"}
         connectionRadius={30}
+        connectOnClick={activeTool === "connector"}
       >
         {gridVisible && <Background color="var(--canvas-dot)" gap={24} size={0.8} />}
         <MiniMap
@@ -465,7 +489,6 @@ function BottomToolbar() {
   const { zoom } = useViewport();
   const activeTool = useInteractionStore((s) => s.activeTool);
   const setActiveTool = useInteractionStore((s) => s.setActiveTool);
-  const fileRef = useRef<HTMLInputElement>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const createWith = (type: string) => {
@@ -473,26 +496,12 @@ function BottomToolbar() {
     setActiveTool("select");
   };
 
-  const onImagePicked = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    addAtViewportCenter(getViewport, addNode, "image");
-    const id = useCanvasStore.getState().selectedNodeIds[0];
-    if (id) {
-      import("@/lib/asset-store").then(({ storeImageAsset }) =>
-        storeImageAsset(file).then((assetId) => {
-          useCanvasStore.getState().updateNodeData(id, { assetId, caption: file.name });
-        }),
-      );
-    }
-    e.target.value = "";
-    setActiveTool("select");
-  };
-
   const tools = [
     { type: "text", label: "Text", icon: Type },
     { type: "sticky", label: "Sticky", icon: StickyNote },
     { type: "todo", label: "To-do", icon: CheckSquare },
+    { type: "image", label: "Image", icon: ImageIcon },
+    { type: "connector", label: "Connector", icon: Link2 },
   ] as const;
 
   return (
@@ -528,22 +537,6 @@ function BottomToolbar() {
             <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
           </button>
         ))}
-
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          className={toolBtn(false)}
-          aria-label="Image"
-        >
-          <ImageIcon className="h-[18px] w-[18px]" strokeWidth={1.75} />
-        </button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={onImagePicked}
-        />
 
         <button
           type="button"
