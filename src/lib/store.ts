@@ -624,8 +624,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     updateNodeData: (id, data) => {
-      const next = get().nodes.map((n) =>
-        n.id === id ? { ...n, data: { ...n.data, ...data } } : n,
+      const next = withTopZ(
+        get().nodes.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...data } } : n)),
+        id,
       ) as CanvasNode[];
       commitNodes(next);
       const node = next.find((n) => n.id === id);
@@ -637,8 +638,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
 
     updateNodeDataWithHistory: (id, data) => {
       useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
-      const next = get().nodes.map((n) =>
-        n.id === id ? { ...n, data: { ...n.data, ...data } } : n,
+      const next = withTopZ(
+        get().nodes.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...data } } : n)),
+        id,
       ) as CanvasNode[];
       commitNodes(next);
       const node = next.find((n) => n.id === id);
@@ -649,8 +651,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     updateNodeSize: (id, width, height) => {
-      const next = get().nodes.map((n) =>
-        n.id === id ? { ...n, style: { ...n.style, width, minHeight: height } } : n,
+      const next = withTopZ(
+        get().nodes.map((n) =>
+          n.id === id ? { ...n, style: { ...n.style, width, minHeight: height } } : n,
+        ),
+        id,
       ) as CanvasNode[];
       commitNodes(next);
       const node = next.find((n) => n.id === id);
@@ -661,8 +666,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     updateNodePosition: (id, x, y) => {
-      const next = get().nodes.map((n) =>
-        n.id === id ? { ...n, position: { x, y } } : n,
+      const next = withTopZ(
+        get().nodes.map((n) => (n.id === id ? { ...n, position: { x, y } } : n)),
+        id,
       ) as CanvasNode[];
       commitNodes(next);
       const node = next.find((n) => n.id === id);
@@ -671,6 +677,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         scheduleFlush();
       }
     },
+
 
     deleteNode: (id) => {
       // History: push state before deletion.
