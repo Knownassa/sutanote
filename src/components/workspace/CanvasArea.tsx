@@ -424,7 +424,7 @@ function CanvasInner() {
 export function CanvasArea() {
   return (
     <ReactFlowProvider>
-      <div className="relative flex-1 overflow-hidden">
+      <div className="relative flex-1 overflow-hidden" style={{ width: "100%", height: "100%" }}>
         <CanvasInner />
         <CanvasOverlay />
         <BottomToolbar />

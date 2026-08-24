@@ -103,7 +103,10 @@ function Workspace() {
       </div>
 
       {/* Canvas — row 2, col 2 */}
-      <div className="col-start-2 row-start-2 h-full w-full min-h-0 min-w-0">
+      <div
+        className="col-start-2 row-start-2 h-full w-full min-h-0 min-w-0"
+        style={{ width: "100%", height: "100%" }}
+      >
         <CanvasErrorBoundary>
           <CanvasArea />
         </CanvasErrorBoundary>
