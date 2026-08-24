@@ -366,6 +366,84 @@ export function RightPropertiesSidebar() {
           </div>
         )}
 
+        {/* FOLDER */}
+        {!multi && node.type === "folder" && (
+          <div>
+            <SectionLabel>Folder</SectionLabel>
+            <input
+              value={(node.data.title as string) ?? ""}
+              onChange={(e) => patchSelectedData({ title: e.target.value })}
+              placeholder="Folder name"
+              className="mb-2 w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+            />
+            <div className="mb-2 grid grid-cols-8 gap-1">
+              {FOLDER_ICONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  title={opt.label}
+                  aria-label={opt.label}
+                  onClick={() => patchSelectedData({ icon: opt.id })}
+                  className={`flex aspect-square items-center justify-center rounded-[5px] border transition-colors ${
+                    ((node.data.icon as string) ?? DEFAULT_FOLDER_ICON) === opt.id
+                      ? "border-border-strong bg-surface-active text-foreground"
+                      : "border-border text-muted-foreground hover:bg-surface-hover hover:text-foreground"
+                  }`}
+                >
+                  <opt.icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+              <span className="w-12">Icon</span>
+              <SutonoteColorPicker
+                value={(node.data.iconColor as string) ?? ""}
+                onChange={(c) => patchSelectedData({ iconColor: c })}
+                palette="object"
+              />
+              <button
+                type="button"
+                onClick={() => patchSelectedData({ iconColor: "" })}
+                className="rounded-[5px] border border-border px-2 py-1 text-[11px] hover:bg-surface-hover"
+              >
+                Default
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* BOARD */}
+        {!multi && node.type === "board" && (
+          <div>
+            <SectionLabel>Board</SectionLabel>
+            <input
+              value={(node.data.title as string) ?? ""}
+              onChange={(e) => patchSelectedData({ title: e.target.value })}
+              placeholder="Board name"
+              className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+            />
+          </div>
+        )}
+
+        {/* LINK */}
+        {!multi && node.type === "link" && (
+          <div>
+            <SectionLabel>Link</SectionLabel>
+            <input
+              value={(node.data.url as string) ?? ""}
+              onChange={(e) => patchSelectedData({ url: e.target.value })}
+              placeholder="https://…"
+              className="mb-2 w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+            />
+            <input
+              value={(node.data.title as string) ?? ""}
+              onChange={(e) => patchSelectedData({ title: e.target.value })}
+              placeholder="Title"
+              className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+            />
+          </div>
+        )}
+
         {/* ARRANGE - single */}
         {!multi && (
           <div>
