@@ -68,13 +68,7 @@ function TextNode(props: NodeProps) {
   };
 
   return (
-    <div
-      style={{
-        transform: `rotate(${rotation}deg)`,
-        transformOrigin: "center",
-        width: "100%",
-      }}
-    >
+    <div style={{ width: "100%" }}>
       <ResizeControls {...props} />
       <motion.div
         data-node-surface
@@ -89,6 +83,8 @@ function TextNode(props: NodeProps) {
             : "border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)]"
         }`}
         style={{
+          transform: `rotate(${rotation}deg)`,
+          transformOrigin: "center",
           padding: "20px 22px",
           borderLeftWidth: (data.highlight as string) ? "4px" : undefined,
           borderLeftColor: (data.highlight as string) || undefined,

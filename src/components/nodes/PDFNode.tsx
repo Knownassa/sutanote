@@ -13,6 +13,8 @@ function PDFNode(props: NodeProps) {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
   const reduce = useReducedMotion();
+  const rotation = (data.rotation as number) ?? 0;
+  const opacity = (data.opacity as number) ?? 100;
   const fileRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState<string>("");
   const [pageCount, setPageCount] = useState<number | null>(null);
@@ -109,7 +111,7 @@ function PDFNode(props: NodeProps) {
   const hasPreview = !!url;
 
   return (
-    <>
+    <div style={{ width: "100%" }}>
       <ResizeControls {...props} />
       <motion.div
         data-node-surface
@@ -123,7 +125,10 @@ function PDFNode(props: NodeProps) {
             ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
             : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
         }`}
-        style={{ maxWidth: 320 }}
+        style={{
+          transform: `rotate(${rotation}deg)`,
+          transformOrigin: "center",
+          opacity: opacity / 100, maxWidth: 320 }}
       >
         {showEmpty ? (
           <EmptyAssetState
@@ -237,7 +242,7 @@ function PDFNode(props: NodeProps) {
           onChange={handleReplace}
         />
       </motion.div>
-    </>
+    </div>
   );
 }
 

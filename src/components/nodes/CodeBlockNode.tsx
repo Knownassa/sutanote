@@ -47,13 +47,7 @@ function CodeBlockNode(props: NodeProps) {
   };
 
   return (
-    <div
-      style={{
-        transform: `rotate(${rotation}deg)`,
-        transformOrigin: "center",
-        width: "100%",
-      }}
-    >
+    <div style={{ width: "100%" }}>
       <ResizeControls {...props} />
       <motion.div
         data-node-surface
@@ -65,7 +59,9 @@ function CodeBlockNode(props: NodeProps) {
             ? "border-border-strong shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
             : "border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)]"
         }`}
-        style={{ padding: "0", minHeight: 160, maxWidth: 600 }}
+        style={{
+          transform: `rotate(${rotation}deg)`,
+          transformOrigin: "center", padding: "0", minHeight: 160, maxWidth: 600 }}
         onDoubleClick={() => {
           if (!isEditing) setEditingNode(id, "body");
         }}

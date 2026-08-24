@@ -45,13 +45,7 @@ function StickyNoteNode(props: NodeProps) {
   };
 
   return (
-    <div
-      style={{
-        transform: `rotate(${rotation}deg)`,
-        transformOrigin: "center",
-        width: "100%",
-      }}
-    >
+    <div style={{ width: "100%" }}>
       <ResizeControls {...props} />
       <motion.div
         data-node-surface
@@ -66,6 +60,8 @@ function StickyNoteNode(props: NodeProps) {
             : "shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)]"
         }`}
         style={{
+          transform: `rotate(${rotation}deg)`,
+          transformOrigin: "center",
           minHeight: 160,
           padding: "18px",
           border: "1px solid rgba(0,0,0,0.04)",

@@ -12,6 +12,8 @@ function EmbedNode(props: NodeProps) {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
   const reduce = useReducedMotion();
+  const rotation = (data.rotation as number) ?? 0;
+  const opacity = (data.opacity as number) ?? 100;
 
   const remoteUrl = (data.remoteUrl as string) ?? "";
   const caption = (data.caption as string) ?? "";
@@ -47,7 +49,7 @@ function EmbedNode(props: NodeProps) {
   };
 
   return (
-    <>
+    <div style={{ width: "100%" }}>
       <ResizeControls {...props} />
       <motion.div
         data-node-surface
@@ -61,7 +63,10 @@ function EmbedNode(props: NodeProps) {
             ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
             : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
         }`}
-        style={{ maxWidth: 480 }}
+        style={{
+          transform: `rotate(${rotation}deg)`,
+          transformOrigin: "center",
+          opacity: opacity / 100, maxWidth: 480 }}
       >
         {showEmpty ? (
           <EmptyAssetState
@@ -124,7 +129,7 @@ function EmbedNode(props: NodeProps) {
           </>
         )}
       </motion.div>
-    </>
+    </div>
   );
 }
 

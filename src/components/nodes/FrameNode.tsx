@@ -25,13 +25,7 @@ function FrameNode(props: NodeProps) {
   };
 
   return (
-    <div
-      style={{
-        transform: `rotate(${rotation}deg)`,
-        transformOrigin: "center",
-        width: "100%",
-      }}
-    >
+    <div style={{ width: "100%" }}>
       <ResizeControls {...props} />
       <motion.div
         data-node-surface
@@ -40,6 +34,8 @@ function FrameNode(props: NodeProps) {
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
         className={`relative w-full select-none rounded-[6px] border transition-shadow ${selected ? "border-primary/30 shadow-[0_1px_3px_rgba(0,0,0,0.06)]" : "border-border/60 shadow-[0_1px_2px_rgba(0,0,0,0.03)]"}`}
         style={{
+          transform: `rotate(${rotation}deg)`,
+          transformOrigin: "center",
           padding: showTitle ? "48px 16px 16px" : "16px",
           minHeight: 120,
           minWidth: 200,

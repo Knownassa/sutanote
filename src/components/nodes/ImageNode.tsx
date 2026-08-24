@@ -14,6 +14,8 @@ function ImageNode(props: NodeProps) {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
   const reduce = useReducedMotion();
+  const rotation = (data.rotation as number) ?? 0;
+  const opacity = (data.opacity as number) ?? 100;
   const fileRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState<string>("");
   const def = getNodeDef("image");
@@ -98,7 +100,7 @@ function ImageNode(props: NodeProps) {
   const isRemote = sourceType === "remote" && remoteUrl;
 
   return (
-    <>
+    <div style={{ width: "100%" }}>
       <ResizeControls {...props} />
       <motion.div
         data-node-surface
@@ -112,7 +114,10 @@ function ImageNode(props: NodeProps) {
             ? "border-border-strong shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
             : "border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)]"
         }`}
-        style={{ maxWidth: 360 }}
+        style={{
+          transform: `rotate(${rotation}deg)`,
+          transformOrigin: "center",
+          opacity: opacity / 100, maxWidth: 360 }}
       >
         {showEmpty ? (
           <EmptyAssetState
@@ -222,7 +227,7 @@ function ImageNode(props: NodeProps) {
           )}
         </div>
       </motion.div>
-    </>
+    </div>
   );
 }
 

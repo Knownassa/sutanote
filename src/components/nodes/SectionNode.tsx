@@ -28,14 +28,7 @@ function SectionNode(props: NodeProps) {
   };
 
   return (
-    <div
-      style={{
-        transform: `rotate(${rotation}deg)`,
-        transformOrigin: "center",
-        width: "100%",
-        zIndex: -1,
-      }}
-    >
+    <div style={{ width: "100%" }}>
       <ResizeControls {...props} />
       <motion.div
         data-node-surface
@@ -44,6 +37,8 @@ function SectionNode(props: NodeProps) {
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
         className={`relative w-full select-none border bg-surface/40 backdrop-blur-[0.5px] ${selected ? "border-primary/40" : "border-border/70"}`}
         style={{
+          transform: `rotate(${rotation}deg)`,
+          transformOrigin: "center",
           padding: "12px",
           minHeight: 120,
           borderRadius: "6px",

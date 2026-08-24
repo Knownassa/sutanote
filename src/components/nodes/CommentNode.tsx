@@ -75,13 +75,7 @@ function CommentNode(props: NodeProps) {
   };
 
   return (
-    <div
-      style={{
-        transform: `rotate(${rotation}deg)`,
-        transformOrigin: "center",
-        width: "100%",
-      }}
-    >
+    <div style={{ width: "100%" }}>
       <ResizeControls {...props} />
       <motion.div
         data-node-surface
@@ -95,7 +89,9 @@ function CommentNode(props: NodeProps) {
             ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
             : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]"
         }`}
-        style={{ padding: "14px 18px" }}
+        style={{
+          transform: `rotate(${rotation}deg)`,
+          transformOrigin: "center", padding: "14px 18px" }}
         onDoubleClick={handleDoubleClick}
       >
         <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
