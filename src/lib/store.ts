@@ -605,6 +605,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
             : {}),
           ...(type === "color_swatch" ? { color: "#6366f1", label: "" } : {}),
           ...(type === "board" ? { title: "Board", itemCount: 0 } : {}),
+          ...(type === "folder"
+            ? { title: "Folder", icon: "folder", iconColor: "", itemCount: 0 }
+            : {}),
           ...(type === "code"
             ? { code: "", language: "plaintext", showLineNumbers: true, wrap: false }
             : {}),

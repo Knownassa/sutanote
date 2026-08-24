@@ -104,6 +104,14 @@ export const NODE_DEFINITIONS: Record<string, NodeDefinition> = {
     maxHeight: 200,
     resizeMode: "width",
   },
+  folder: {
+    defaultWidth: DEFAULT_ITEM_WIDTH,
+    defaultHeight: 100,
+    minWidth: 220,
+    minHeight: 80,
+    maxWidth: 420,
+    resizeMode: "width",
+  },
   board: {
     defaultWidth: DEFAULT_ITEM_WIDTH,
     defaultHeight: 100,
