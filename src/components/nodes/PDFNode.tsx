@@ -234,13 +234,6 @@ function PDFNode(props: NodeProps) {
             </div>
           </>
         )}
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/pdf"
-          className="hidden"
-          onChange={handleReplace}
-        />
       </motion.div>
     </div>
   );

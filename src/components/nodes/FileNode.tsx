@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { FileText, Upload } from "lucide-react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
-import { storeImageAsset } from "@/lib/asset-store";
+import { storeAsset } from "@/lib/asset-store";
 import { ResizeControls } from "./ResizeControls";
 
 function FileNode(props: NodeProps) {
@@ -26,7 +26,7 @@ function FileNode(props: NodeProps) {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const aid = await storeImageAsset(file, file.name);
+    const aid = await storeAsset(file, file.name);
     updateNodeDataWithHistory(id, { assetId: aid, filename: file.name, mime: file.type });
     e.target.value = "";
   };

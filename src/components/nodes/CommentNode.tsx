@@ -86,8 +86,8 @@ function CommentNode(props: NodeProps) {
           resolved ? "opacity-60" : ""
         } ${
           selected
-            ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
-            : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]"
+            ? "border-border-strong shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+            : "border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)]"
         }`}
         style={{
           transform: `rotate(${rotation}deg)`,
@@ -126,7 +126,7 @@ function CommentNode(props: NodeProps) {
             onClick={toggleResolved}
             className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border transition-colors ${
               resolved
-                ? "border-green-500 bg-green-500"
+                ? "border-status-success bg-status-success"
                 : "border-muted-foreground/30 bg-transparent hover:border-muted-foreground/50"
             }`}
             aria-label={resolved ? "Unresolve" : "Resolve"}

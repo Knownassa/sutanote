@@ -29,6 +29,7 @@ export interface CanvasNodeData {
   // Rich text
   content?: string;
   plainText?: string;
+  richText?: { version: number; json: unknown };
   // Link node fields.
   url?: string;
   description?: string;

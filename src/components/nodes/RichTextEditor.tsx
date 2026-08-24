@@ -17,28 +17,21 @@ import { createPortal } from "react-dom";
 interface RichTextEditorProps {
   id: string;
   content: string;
-  onChange: (content: string) => void;
+  contentJson?: unknown;
+  onChange: (html: string, json: unknown, plain: string) => void;
   onBlur: () => void;
   placeholder?: string;
   editable?: boolean;
-  fontSize?: number;
-  textAlign?: "left" | "center" | "right";
-  textColor?: string;
-  bold?: boolean;
-  italic?: boolean;
-  highlightColor?: string;
 }
 
 export function RichTextEditor({
   id,
   content,
+  contentJson,
   onChange,
   onBlur,
   placeholder = "Start writing...",
   editable = true,
-  fontSize = 14,
-  textAlign = "left",
-  textColor = "",
 }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
@@ -64,9 +57,14 @@ export function RichTextEditor({
       }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
     ],
-    content: content || "",
+    content: (contentJson as unknown) ?? content ?? "",
     editable,
-    onUpdate: ({ editor }) => onChange(editor.getHTML()),
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML();
+      const json = editor.getJSON();
+      const plain = editor.getText();
+      onChange(html, json, plain);
+    },
     onBlur: () => onBlur(),
     editorProps: {
       attributes: {
@@ -161,12 +159,17 @@ export function RichTextEditor({
   );
 
   useEffect(() => {
-    if (editor && editor.getHTML() !== content) {
-      // Don't override while user is typing and focused
-      if (editor.isFocused) return;
+    if (!editor || editor.isFocused) return;
+    if (contentJson) {
+      const currentJson = editor.getJSON();
+      // shallow compare via JSON stringify for Beta (good enough)
+      if (JSON.stringify(currentJson) !== JSON.stringify(contentJson)) {
+        editor.commands.setContent(contentJson as never);
+      }
+    } else if (editor.getHTML() !== content) {
       editor.commands.setContent(content);
     }
-  }, [content, editor]);
+  }, [content, contentJson, editor]);
 
   if (!editor) return null;
 

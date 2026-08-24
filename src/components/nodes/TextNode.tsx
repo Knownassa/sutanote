@@ -17,19 +17,31 @@ function TextNode(props: NodeProps) {
 
   const [title, setTitle] = useState((data.title as string) ?? "");
   const [content, setContent] = useState((data.content as string) ?? (data.text as string) ?? "");
+  const [contentJson, setContentJson] = useState<unknown>((data.richText as { json: unknown } | undefined)?.json ?? null);
+  const [plainText, setPlainText] = useState((data.plainText as string) ?? "");
 
   useEffect(() => {
     setTitle((data.title as string) ?? "");
   }, [data.title]);
 
   useEffect(() => {
-    // Migrate from legacy text field if content doesn't exist
-    if (!data.content && data.text) {
+    const rich = (data.richText as { version: number; json: unknown } | undefined)?.json;
+    if (rich) {
+      setContentJson(rich);
+      setPlainText((data.plainText as string) ?? "");
+    } else if (!data.content && data.text) {
       setContent((data.text as string) ?? "");
+      setContentJson(null);
+      setPlainText((data.text as string) ?? "");
     } else {
       setContent((data.content as string) ?? "");
+      setContentJson(null);
+      setPlainText((data.plainText as string) ?? (data.content as string) ?? "");
     }
-  }, [data.content, data.text]);
+    if (((data as Record<string, unknown>)["bold"] || (data as Record<string, unknown>)["italic"] || (data as Record<string, unknown>)["highlight"]) && rich) {
+      // will be cleared on next save via handleContentChange
+    }
+  }, [data.content, data.text, data.richText, data.plainText]);
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
@@ -43,13 +55,29 @@ function TextNode(props: NodeProps) {
     }
   };
 
-  const handleContentChange = (value: string) => {
-    setContent(value);
-    updateNodeData(id, { content: value, text: value }); // Keep legacy text in sync
+  const handleContentChange = (html: string, json: unknown, plain: string) => {
+    setContent(html);
+    setContentJson(json);
+    setPlainText(plain);
+    const patch: Record<string, unknown> = { content: html, text: html, plainText: plain, richText: { version: 1, json } };
+    const d = data as Record<string, unknown>;
+    if (d["bold"] || d["italic"] || d["highlight"] || d["fontSize"] || d["textColor"]) {
+      patch["bold"] = false;
+      patch["italic"] = false;
+      patch["highlight"] = "";
+      patch["fontSize"] = undefined;
+      patch["textColor"] = "";
+      patch["textAlign"] = "left";
+    }
+    updateNodeData(id, patch);
   };
 
   const handleContentBlur = () => {
-    updateNodeDataWithHistory(id, { content, text: content });
+    const patch: Record<string, unknown> = { content, text: content, plainText };
+    if (contentJson) {
+      patch["richText"] = { version: 1, json: contentJson };
+    }
+    updateNodeDataWithHistory(id, patch as Partial<import("@/lib/persistence/types").CanvasNodeData>);
     if (editingNodeId === id) {
       setEditingNode(null);
     }
@@ -86,8 +114,6 @@ function TextNode(props: NodeProps) {
           transform: `rotate(${rotation}deg)`,
           transformOrigin: "center",
           padding: "20px 22px",
-          borderLeftWidth: (data.highlight as string) ? "4px" : undefined,
-          borderLeftColor: (data.highlight as string) || undefined,
         }}
         onDoubleClick={handleDoubleClick}
       >
@@ -113,16 +139,11 @@ function TextNode(props: NodeProps) {
           <RichTextEditor
             id={id}
             content={content}
+            contentJson={contentJson}
             onChange={handleContentChange}
             onBlur={handleContentBlur}
             placeholder="Start writing..."
             editable={isEditing}
-            fontSize={(data.fontSize as number) ?? 14}
-            textAlign={(data.textAlign as "left" | "center" | "right") ?? "left"}
-            textColor={(data.textColor as string) || ""}
-            bold={(data.bold as boolean) ?? false}
-            italic={(data.italic as boolean) ?? false}
-            highlightColor={(data.highlight as string) || ""}
           />
         </div>
       </motion.div>

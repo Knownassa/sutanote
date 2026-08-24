@@ -53,7 +53,12 @@ async function idbDelete(id: string) {
 
 const urlCache = new Map<string, string>();
 
-/** Persist an image file locally and return a stable asset id. */
+/** Persist a file locally and return a stable asset id. Generic for all file types. */
+export async function storeAsset(file: Blob, name?: string): Promise<string> {
+  return storeImageAsset(file, name);
+}
+
+/** Persist an image file locally and return a stable asset id. @deprecated use storeAsset */
 export async function storeImageAsset(file: Blob, name?: string): Promise<string> {
   const assetId = nanoid();
   await idbPut(assetId, file);

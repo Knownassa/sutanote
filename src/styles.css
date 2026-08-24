@@ -75,6 +75,7 @@
   --color-highlight-sage: var(--highlight-sage);
   --color-highlight-sky: var(--highlight-sky);
   --color-highlight-lavender: var(--highlight-lavender);
+  --color-status-success: var(--status-success);
   --radius-node: 7px;
   --radius-control: 5px;
   --radius-panel: 9px;
@@ -138,6 +139,7 @@
   --sut-highlight-sage: var(--highlight-sage);
   --sut-highlight-sky: var(--highlight-sky);
   --sut-highlight-lavender: var(--highlight-lavender);
+  --status-success: oklch(0.55 0.09 150);
 }
 
 .dark {
