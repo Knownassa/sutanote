@@ -44,7 +44,7 @@ function ShapeNode(props: NodeProps) {
         initial={reduce ? false : { scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
-        className={`relative w-full select-none rounded-xl border transition-shadow ${
+        className={`relative w-full select-none rounded-[7px] border transition-shadow ${
           (data.backgroundColor as string) || "bg-transparent"
         } ${
           selected

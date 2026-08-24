@@ -115,7 +115,7 @@ function VideoNode(props: NodeProps) {
         initial={reduce ? false : { scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
-        className={`relative w-full select-none overflow-hidden rounded-xl border transition-shadow ${
+        className={`relative w-full select-none overflow-hidden rounded-[7px] border transition-shadow ${
           (data.backgroundColor as string) || ""
         } ${
           selected

@@ -376,14 +376,60 @@ function CanvasInner() {
     async (e: React.DragEvent) => {
       e.preventDefault();
       const file = e.dataTransfer.files?.[0];
-      if (!file || !file.type.startsWith("image/")) return;
+      if (!file) return;
       const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      const allNodes = useCanvasStore.getState().nodes;
+      // Check if drop is onto an empty asset node (image/pdf/video/file/audio)
+      const emptyAssetTypes = ["image", "pdf", "video", "audio", "file"];
+      const hitEmpty = allNodes.find((n) => {
+        if (!n.type || !emptyAssetTypes.includes(n.type)) return false;
+        if ((n.data.assetId as string) || (n.data.remoteUrl as string)) return false;
+        const w = (n.style?.width as number) ?? 280;
+        const h = (n.style?.minHeight as number) ?? 120;
+        const left = n.position.x - w / 2;
+        const right = n.position.x + w / 2;
+        const top = n.position.y - h / 2;
+        const bottom = n.position.y + h / 2;
+        return pos.x >= left && pos.x <= right && pos.y >= top && pos.y <= bottom;
+      });
+      if (hitEmpty) {
+        const assetId = await storeImageAsset(file, file.name);
+        useCanvasStore.getState().updateNodeDataWithHistory(hitEmpty.id, {
+          assetId,
+          caption: file.name,
+          filename: file.name,
+          sourceType: "local",
+          remoteUrl: "",
+        });
+        useCanvasStore.getState().setSelectedIds([hitEmpty.id]);
+        return;
+      }
+      // Otherwise create new node based on file type
+      const typeMap: Record<string, string> = {
+        "image/": "image",
+        "video/": "video",
+        "audio/": "audio",
+        "application/pdf": "pdf",
+      };
+      let nodeType = "file";
+      for (const [prefix, t] of Object.entries(typeMap)) {
+        if (file.type.startsWith(prefix) || file.type === prefix) {
+          nodeType = t;
+          break;
+        }
+      }
       const canvas = useCanvasStore.getState();
-      canvas.addNode("image", pos);
+      canvas.addNode(nodeType, pos);
       const id = useCanvasStore.getState().selectedNodeIds[0];
       if (id) {
         const assetId = await storeImageAsset(file, file.name);
-        useCanvasStore.getState().updateNodeData(id, { assetId, caption: file.name });
+        useCanvasStore.getState().updateNodeDataWithHistory(id, {
+          assetId,
+          caption: file.name,
+          filename: file.name,
+          sourceType: "local",
+          remoteUrl: "",
+        });
       }
     },
     [screenToFlowPosition],

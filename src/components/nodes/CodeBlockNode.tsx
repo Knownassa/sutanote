@@ -29,6 +29,8 @@ function CodeBlockNode(props: NodeProps) {
   const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
+  const { editingNodeId, setEditingNode } = useInteractionStore();
+  const isEditing = editingNodeId === id;
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
 
@@ -36,7 +38,6 @@ function CodeBlockNode(props: NodeProps) {
   const language = (data.language as string) ?? "plaintext";
   const showLineNumbers = (data.showLineNumbers as boolean) ?? true;
   const wrap = (data.wrap as boolean) ?? false;
-  const [isEditing, setIsEditing] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
@@ -59,12 +60,15 @@ function CodeBlockNode(props: NodeProps) {
         initial={reduce ? false : { scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
-        className={`relative w-full select-none rounded-xl border transition-shadow bg-card ${
+        className={`relative w-full select-none rounded-[7px] border transition-shadow bg-card ${
           selected
-            ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
-            : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]"
+            ? "border-border-strong shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+            : "border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)]"
         }`}
         style={{ padding: "0", minHeight: 160, maxWidth: 600 }}
+        onDoubleClick={() => {
+          if (!isEditing) setEditingNode(id, "body");
+        }}
       >
         <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
         <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
@@ -147,19 +151,23 @@ function CodeBlockNode(props: NodeProps) {
           </pre>
         </div>
 
-        <div className="border-t border-border/50 px-3 py-2 bg-muted/30 rounded-b-xl">
+        <div className="border-t border-border/50 px-3 py-2 bg-muted/30 rounded-b-[7px]">
           <textarea
             value={code}
             onChange={(e) => updateNodeData(id, { code: e.target.value })}
-            onFocus={() => setIsEditing(true)}
+            onFocus={() => setEditingNode(id, "body")}
             onBlur={(e) => {
-              setIsEditing(false);
+              if (editingNodeId === id) setEditingNode(null);
               updateNodeDataWithHistory(id, { code: e.currentTarget.value });
             }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") (e.target as HTMLTextAreaElement).blur();
+            }}
             placeholder="// Start coding..."
-            className="w-full min-h-[120px] font-mono text-[12px] leading-relaxed bg-transparent text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/40 resize-none"
+            className={`w-full min-h-[120px] font-mono text-[12px] leading-relaxed bg-transparent text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/40 resize-none ${isEditing ? "nodrag nowheel select-text cursor-text" : "cursor-default"}`}
             spellCheck={false}
             style={{ fontFamily: '"JetBrains Mono", "Fira Code", monospace' }}
+            readOnly={!isEditing}
           />
         </div>
       </motion.div>

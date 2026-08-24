@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useState, useMemo } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
@@ -14,6 +14,9 @@ function FrameNode(props: NodeProps) {
 
   const title = (data.title as string) ?? "";
   const showTitle = (data.showTitle as boolean) ?? true;
+  const opacity = (data.opacity as number) ?? 100;
+  const allNodes = useCanvasStore((s) => s.nodes);
+  const children = useMemo(() => allNodes.filter((n) => (n.data.parentId as string | undefined) === id), [allNodes, id]);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
   const handleTitleBlur = () => {
@@ -35,14 +38,14 @@ function FrameNode(props: NodeProps) {
         initial={reduce ? false : { scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 15 }}
-        className={`relative w-full select-none rounded-xl border transition-shadow ${
-          (data.backgroundColor as string) || "bg-transparent"
-        } ${
-          selected
-            ? "border-primary/50 shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
-            : "border-dashed border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-primary/30 hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]"
-        }`}
-        style={{ padding: showTitle ? "48px 16px 16px" : "16px", minHeight: 120, minWidth: 200 }}
+        className={`relative w-full select-none rounded-[6px] border transition-shadow ${selected ? "border-primary/30 shadow-[0_1px_3px_rgba(0,0,0,0.06)]" : "border-border/60 shadow-[0_1px_2px_rgba(0,0,0,0.03)]"}`}
+        style={{
+          padding: showTitle ? "48px 16px 16px" : "16px",
+          minHeight: 120,
+          minWidth: 200,
+          background: (data.backgroundColor as string) || "transparent",
+          opacity: opacity / 100,
+        }}
       >
         <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
         <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
@@ -77,7 +80,8 @@ function FrameNode(props: NodeProps) {
           </div>
         )}
 
-        <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute bottom-2 right-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-[10px] text-muted-foreground/60">{children.length} items</span>
           <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <input
               type="checkbox"
@@ -89,7 +93,7 @@ function FrameNode(props: NodeProps) {
           </label>
         </div>
 
-        <div className="h-full w-full" />
+        <div className="h-full w-full min-h-[80px]" />
       </motion.div>
     </div>
   );

@@ -428,7 +428,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
                 // Section containment: attach/detach
                 if (!["section", "frame", "column"].includes(finalNode.type ?? "")) {
                   const containers = next.filter(
-                    (n) => ["section", "frame"].includes(n.type ?? "") && n.id !== finalNode.id,
+                    (n) => ["section", "frame", "column"].includes(n.type ?? "") && n.id !== finalNode.id,
                   );
                   let newParent: string | undefined;
                   for (const cont of containers) {
