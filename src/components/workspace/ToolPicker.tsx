@@ -58,6 +58,19 @@ export function ToolPicker({ open, onClose }: ToolPickerProps) {
   const pick = useCallback(
     (item: ItemDefinition) => {
       if (item.status !== "available") return;
+      if (item.kind === "tool") {
+        if (item.type === "connector") setActiveTool("connector");
+        else {
+          // drawing tools etc - for now just select
+          setActiveTool("select");
+        }
+        onClose();
+        return;
+      }
+      if (item.kind === "action") {
+        onClose();
+        return;
+      }
       const canvasEl = document.querySelector(".react-flow");
       const rect = canvasEl?.getBoundingClientRect();
       const cx = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;

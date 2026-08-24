@@ -7,6 +7,7 @@ import { getNodeDef } from "@/lib/node-definitions";
 import { ImageIcon, Replace, Link2, Download, X } from "lucide-react";
 import { ResizeControls } from "./ResizeControls";
 import { EmptyAssetState } from "./EmptyAssetState";
+import { useLightboxStore } from "@/lib/lightbox-store";
 
 function ImageNode(props: NodeProps) {
   const { id, data, selected } = props;
@@ -108,8 +109,8 @@ function ImageNode(props: NodeProps) {
           (data.backgroundColor as string) || ""
         } ${
           selected
-            ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
-            : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+            ? "border-border-strong shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+            : "border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)]"
         }`}
         style={{ maxWidth: 360 }}
       >
@@ -136,9 +137,16 @@ function ImageNode(props: NodeProps) {
             <img
               src={url}
               alt={alt || caption || "image"}
-              className="h-auto w-full object-cover"
+              className="h-auto w-full object-cover cursor-zoom-in"
               style={{ maxHeight: 360 }}
-              onDoubleClick={() => {}}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                const allIds = useCanvasStore
+                  .getState()
+                  .nodes.filter((n) => n.type === "image" && ((n.data.assetId as string) || (n.data.remoteUrl as string)))
+                  .map((n) => n.id);
+                useLightboxStore.getState().open(id, allIds);
+              }}
             />
             <div
               className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"

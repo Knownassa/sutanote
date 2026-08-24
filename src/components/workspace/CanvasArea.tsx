@@ -51,6 +51,7 @@ import EmbedNode from "@/components/nodes/EmbedNode";
 import CodeBlockNode from "@/components/nodes/CodeBlockNode";
 import SectionNode from "@/components/nodes/SectionNode";
 import { ToolPicker } from "@/components/workspace/ToolPicker";
+import { ImageLightbox } from "@/components/workspace/ImageLightbox";
 
 const nodeTypes: NodeTypes = {
   sticky: StickyNoteNode,
@@ -521,6 +522,7 @@ export function CanvasArea() {
         <CanvasInner />
         <CanvasOverlay />
         <BottomToolbar />
+        <ImageLightbox />
       </div>
     </ReactFlowProvider>
   );

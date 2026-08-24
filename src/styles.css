@@ -304,6 +304,17 @@
 }
 .react-flow__resize-control.line { display: none !important; }
 .react-flow__background { opacity: 1 !important; }
+
+/* Node polish: subtle shadows, no scale on selection */
+[data-node-surface] {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.react-flow__node:hover [data-node-surface] {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06) !important;
+}
+.react-flow__node.selected [data-node-surface] {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
 .react-flow__minimap {
   background: var(--color-popover) !important;
   border: 1px solid var(--color-border) !important;
