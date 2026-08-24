@@ -41,8 +41,8 @@ function BoardNode(props: NodeProps) {
           (data.backgroundColor as string) || "bg-card"
         } ${
           selected
-            ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
-            : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]"
+            ? "border-border-strong shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+            : "border-border shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)]"
         }`}
         style={{
           transform: `rotate(${rotation}deg)`,
@@ -90,14 +90,14 @@ function BoardNode(props: NodeProps) {
         </div>
 
         <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
-          <span className="text-[11px] text-muted-foreground/50">Double-click to open</span>
+          <span className="text-[11px] text-muted-foreground/50">Experimental • navigation soon</span>
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               setIsEditing(true);
             }}
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-popover px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-surface-hover"
+            className="flex items-center gap-1.5 rounded-[5px] border border-border bg-popover px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-surface-hover"
           >
             <Edit2 className="h-3.5 w-3.5" />
             Rename

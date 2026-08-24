@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useSettingsStore, type ThemePreference } from "@/lib/settings-store";
 import { useCanvasStore } from "@/lib/store";
 import { getAssetUrl, storeImageAsset } from "@/lib/asset-store";
+import { exportWorkspace, importWorkspace } from "@/lib/export";
 
 const themes: ThemePreference[] = ["system", "light", "dark"];
 
@@ -104,15 +105,20 @@ export function SettingsDialog({
   };
 
   const exportData = () => {
-    const state = useCanvasStore.getState();
-    const payload = JSON.stringify({ nodes: state.nodes, edges: state.edges }, null, 2);
-    const blob = new Blob([payload], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "sutonote-board.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    void exportWorkspace();
+  };
+  const importInput = useRef<HTMLInputElement>(null);
+  const onImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      await importWorkspace(file);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const { useNoticeStore } = await import("@/lib/notice-store");
+      useNoticeStore.getState().show(`Import failed: ${msg}`, "error");
+    }
+    e.target.value = "";
   };
 
   const fmt = (n: number) =>
@@ -234,14 +240,30 @@ export function SettingsDialog({
               {lastSave ? new Date(lastSave).toLocaleTimeString() : "—"}
             </span>
           </Row>
-          <Row label="Export local data">
-            <button
-              type="button"
-              onClick={exportData}
-              className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-surface-hover"
-            >
-              Download
-            </button>
+          <Row label="Export workspace">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={exportData}
+                className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-surface-hover"
+              >
+                Export .sutonote
+              </button>
+              <button
+                type="button"
+                onClick={() => importInput.current?.click()}
+                className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-surface-hover"
+              >
+                Import
+              </button>
+              <input
+                ref={importInput}
+                type="file"
+                accept=".sutonote,.json"
+                className="hidden"
+                onChange={onImport}
+              />
+            </div>
           </Row>
         </Section>
 
