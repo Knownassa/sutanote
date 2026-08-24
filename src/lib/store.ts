@@ -96,6 +96,21 @@ const queueSize = () =>
 const GRID_SIZE = 16;
 const snapValue = (v: number) => Math.round(v / GRID_SIZE) * GRID_SIZE;
 
+/** Types that always stay behind regular items (backdrops / containers). */
+const CONTAINER_TYPES = ["section", "frame", "column", "folder"];
+
+/**
+ * Stacking rule: the most recently edited item sits on top of the stack.
+ * Containers keep their z-order so they never cover their own children.
+ */
+function withTopZ(nodes: CanvasNode[], id: string): CanvasNode[] {
+  const target = nodes.find((n) => n.id === id);
+  if (!target || CONTAINER_TYPES.includes(target.type ?? "")) return nodes;
+  const maxZ = nodes.reduce((m, n) => Math.max(m, n.zIndex ?? 0), 0);
+  if ((target.zIndex ?? 0) >= maxZ) return nodes;
+  return nodes.map((n) => (n.id === id ? { ...n, zIndex: maxZ + 1 } : n));
+}
+
 // Entity-level persistence queue — lives outside React state so it is not
 // recreated on every render and survives across store updates.
 const dirtyNodes = new Map<string, CanvasNode>();
