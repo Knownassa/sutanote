@@ -18,6 +18,7 @@ import { getItemDef } from "@/lib/item-registry";
 import { storeImageAsset } from "@/lib/asset-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SutonoteColorPicker } from "@/components/ui/SutonoteColorPicker";
+import { FOLDER_ICONS, DEFAULT_FOLDER_ICON } from "@/lib/folder-icons";
 
 const colors = [
   { name: "Yellow", class: "bg-note-yellow" },
@@ -385,7 +386,7 @@ export function RightPropertiesSidebar() {
                   aria-label={opt.label}
                   onClick={() => patchSelectedData({ icon: opt.id })}
                   className={`flex aspect-square items-center justify-center rounded-[5px] border transition-colors ${
-                    ((node.data.icon as string) ?? DEFAULT_FOLDER_ICON) === opt.id
+                    ((node.data["icon"] as string) ?? DEFAULT_FOLDER_ICON) === opt.id
                       ? "border-border-strong bg-surface-active text-foreground"
                       : "border-border text-muted-foreground hover:bg-surface-hover hover:text-foreground"
                   }`}
@@ -397,7 +398,7 @@ export function RightPropertiesSidebar() {
             <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
               <span className="w-12">Icon</span>
               <SutonoteColorPicker
-                value={(node.data.iconColor as string) ?? ""}
+                value={(node.data["iconColor"] as string) ?? ""}
                 onChange={(c) => patchSelectedData({ iconColor: c })}
                 palette="object"
               />
