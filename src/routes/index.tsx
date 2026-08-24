@@ -69,26 +69,18 @@ function Workspace() {
     <div
       className="grid h-screen w-screen overflow-hidden bg-background"
       style={{
-        gridTemplateColumns: "240px minmax(0, 1fr) 260px",
+        gridTemplateColumns: `${sidebarOpen ? "240px" : "0px"} minmax(0, 1fr) ${rightPanelOpen ? "260px" : "0px"}`,
         gridTemplateRows: "48px minmax(0, 1fr)",
+        transition: "grid-template-columns 160ms ease",
       }}
     >
       {/* Left sidebar — row 1-2, col 1 */}
       <div className="col-start-1 row-span-2 overflow-hidden border-r border-sidebar-border bg-sidebar">
-        <motion.div
-          initial={false}
-          animate={{ width: sidebarOpen ? 240 : 0 }}
-          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          className="h-full overflow-hidden"
-        >
-          <div className="h-full w-[240px]">
-            <WorkspaceSidebar
-              open={sidebarOpen}
-              onToggle={toggleSidebar}
-              onOpenPalette={() => setPaletteOpen(true)}
-            />
-          </div>
-        </motion.div>
+        <WorkspaceSidebar
+          open={sidebarOpen}
+          onToggle={toggleSidebar}
+          onOpenPalette={() => setPaletteOpen(true)}
+        />
       </div>
 
       {/* Header — row 1, col 2 */}
@@ -119,16 +111,7 @@ function Workspace() {
 
       {/* Right properties — row 1-2, col 3 */}
       <div className="col-start-3 row-span-2 overflow-hidden border-l border-border bg-popover">
-        <motion.div
-          initial={false}
-          animate={{ width: rightPanelOpen ? 260 : 0 }}
-          transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-          className="h-full overflow-hidden"
-        >
-          <div className="h-full w-[260px]">
-            <RightPropertiesSidebar />
-          </div>
-        </motion.div>
+        <RightPropertiesSidebar />
       </div>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
