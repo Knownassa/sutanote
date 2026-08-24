@@ -14,6 +14,7 @@ interface Todo {
 function TodoNode(props: NodeProps) {
   const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
+  const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
 
@@ -31,9 +32,10 @@ function TodoNode(props: NodeProps) {
   const progress = totalCount > 0 ? (doneCount / totalCount) * 100 : 0;
 
   const setTodos = (next: Todo[]) => updateNodeData(id, { todos: next });
+  const setTodosWithHistory = (next: Todo[]) => updateNodeDataWithHistory(id, { todos: next });
   const toggle = (i: number) =>
-    setTodos(todos.map((t, idx) => (idx === i ? { ...t, done: !t.done } : t)));
-  const add = (label: string) => setTodos([...todos, { label, done: false }]);
+    setTodosWithHistory(todos.map((t, idx) => (idx === i ? { ...t, done: !t.done } : t)));
+  const add = (label: string) => setTodosWithHistory([...todos, { label, done: false }]);
 
   return (
     <div
@@ -67,8 +69,12 @@ function TodoNode(props: NodeProps) {
           value={(data.title as string) ?? "To-do"}
           onChange={(e) => updateNodeData(id, { title: e.target.value })}
           onFocus={() => useInteractionStore.getState().setEditingText(true)}
-          onBlur={() => useInteractionStore.getState().setEditingText(false)}
+          onBlur={() => {
+            useInteractionStore.getState().setEditingText(false);
+            updateNodeDataWithHistory(id, { title: (data.title as string) ?? "To-do" });
+          }}
           className="mb-3 w-full cursor-text bg-transparent text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/80 outline-none focus:ring-0"
+          aria-label="To-do list title"
         />
 
         {totalCount > 0 && (

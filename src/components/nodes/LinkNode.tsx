@@ -9,6 +9,7 @@ import { ResizeControls } from "./ResizeControls";
 function LinkNode(props: NodeProps) {
   const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
+  const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
   const url = (data.url as string) ?? "";
@@ -48,25 +49,37 @@ function LinkNode(props: NodeProps) {
               value={title}
               onChange={(e) => updateNodeData(id, { title: e.target.value })}
               onFocus={() => useInteractionStore.getState().setEditingText(true)}
-              onBlur={() => useInteractionStore.getState().setEditingText(false)}
+              onBlur={() => {
+                useInteractionStore.getState().setEditingText(false);
+                updateNodeDataWithHistory(id, { title });
+              }}
               placeholder="Link title"
               className="mb-1 w-full cursor-text bg-transparent text-[14px] font-semibold tracking-tight text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/50"
+              aria-label="Link title"
             />
             <input
               value={url}
               onChange={(e) => updateNodeData(id, { url: e.target.value })}
               onFocus={() => useInteractionStore.getState().setEditingText(true)}
-              onBlur={() => useInteractionStore.getState().setEditingText(false)}
+              onBlur={() => {
+                useInteractionStore.getState().setEditingText(false);
+                updateNodeDataWithHistory(id, { url });
+              }}
               placeholder="https://..."
               className="mb-1 w-full cursor-text bg-transparent text-[12px] text-muted-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/40"
+              aria-label="URL"
             />
             <input
               value={description}
               onChange={(e) => updateNodeData(id, { description: e.target.value })}
               onFocus={() => useInteractionStore.getState().setEditingText(true)}
-              onBlur={() => useInteractionStore.getState().setEditingText(false)}
+              onBlur={() => {
+                useInteractionStore.getState().setEditingText(false);
+                updateNodeDataWithHistory(id, { description });
+              }}
               placeholder="Optional description"
               className="w-full cursor-text bg-transparent text-[12px] text-muted-foreground/70 outline-none focus:ring-0 placeholder:text-muted-foreground/30"
+              aria-label="Description"
             />
           </div>
         </div>

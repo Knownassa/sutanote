@@ -10,6 +10,7 @@ import { ResizeControls } from "./ResizeControls";
 function CommentNode(props: NodeProps) {
   const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
+  const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
   const text = (data.text as string) ?? "";
@@ -30,6 +31,12 @@ function CommentNode(props: NodeProps) {
   // Update timestamp on text change.
   const handleTextChange = (value: string) => {
     updateNodeData(id, { text: value, updatedAt: Date.now() });
+  };
+  const handleTextBlur = () => {
+    updateNodeDataWithHistory(id, { text, updatedAt: Date.now() });
+  };
+  const toggleResolved = () => {
+    updateNodeDataWithHistory(id, { resolved: !resolved });
   };
 
   const formatTime = (ts: number) => {
@@ -81,9 +88,13 @@ function CommentNode(props: NodeProps) {
               value={text}
               onChange={(e) => handleTextChange(e.target.value)}
               onFocus={() => useInteractionStore.getState().setEditingText(true)}
-              onBlur={() => useInteractionStore.getState().setEditingText(false)}
+              onBlur={() => {
+                useInteractionStore.getState().setEditingText(false);
+                handleTextBlur();
+              }}
               placeholder="Write a comment..."
               className="min-h-[40px] w-full cursor-text resize-none bg-transparent font-serif text-[13px] leading-[1.5] text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/40"
+              aria-label="Comment"
             />
             {(createdAt || updatedAt) && (
               <p className="mt-1 text-[10px] text-muted-foreground/40">
@@ -95,7 +106,7 @@ function CommentNode(props: NodeProps) {
           </div>
           <button
             type="button"
-            onClick={() => updateNodeData(id, { resolved: !resolved })}
+            onClick={toggleResolved}
             className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border transition-colors ${
               resolved
                 ? "border-green-500 bg-green-500"

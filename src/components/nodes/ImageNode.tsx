@@ -10,6 +10,7 @@ import { ResizeControls } from "./ResizeControls";
 function ImageNode(props: NodeProps) {
   const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
+  const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
   const reduce = useReducedMotion();
   const fileRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState<string>("");
@@ -40,10 +41,10 @@ function ImageNode(props: NodeProps) {
       await replaceImageAsset(assetId, file, file.name);
       const u = await getAssetUrl(assetId);
       if (u) setUrl(u);
-      updateNodeData(id, { caption: file.name });
+      updateNodeDataWithHistory(id, { caption: file.name });
     } else {
       const newId = await storeImageAsset(file, file.name);
-      updateNodeData(id, { assetId: newId, caption: file.name });
+      updateNodeDataWithHistory(id, { assetId: newId, caption: file.name });
     }
     e.target.value = "";
   };
@@ -104,8 +105,10 @@ function ImageNode(props: NodeProps) {
           <input
             value={caption}
             onChange={(e) => updateNodeData(id, { caption: e.target.value })}
+            onBlur={() => updateNodeDataWithHistory(id, { caption })}
             placeholder="Add a caption..."
             className="w-full bg-transparent text-[13px] text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/50"
+            aria-label="Caption"
           />
         </div>
       </motion.div>

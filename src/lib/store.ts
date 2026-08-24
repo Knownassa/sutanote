@@ -40,6 +40,7 @@ interface CanvasState {
   onConnect: (connection: Connection) => void;
   addNode: (type: string, position: { x: number; y: number }) => void;
   updateNodeData: (id: string, data: Partial<CanvasNodeData>) => void;
+  updateNodeDataWithHistory: (id: string, data: Partial<CanvasNodeData>) => void;
   updateNodeSize: (id: string, width: number, height: number) => void;
   updateNodePosition: (id: string, x: number, y: number) => void;
   deleteNode: (id: string) => void;
@@ -514,6 +515,19 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     updateNodeData: (id, data) => {
+      const next = get().nodes.map((n) =>
+        n.id === id ? { ...n, data: { ...n.data, ...data } } : n,
+      ) as CanvasNode[];
+      commitNodes(next);
+      const node = next.find((n) => n.id === id);
+      if (node) {
+        markNodeDirty(node);
+        scheduleFlush();
+      }
+    },
+
+    updateNodeDataWithHistory: (id, data) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       const next = get().nodes.map((n) =>
         n.id === id ? { ...n, data: { ...n.data, ...data } } : n,
       ) as CanvasNode[];

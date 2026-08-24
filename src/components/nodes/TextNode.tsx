@@ -8,6 +8,7 @@ import { ResizeControls } from "./ResizeControls";
 function TextNode(props: NodeProps) {
   const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
+  const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
 
@@ -46,15 +47,22 @@ function TextNode(props: NodeProps) {
           value={(data.title as string) ?? ""}
           onChange={(e) => updateNodeData(id, { title: e.target.value })}
           onFocus={() => useInteractionStore.getState().setEditingText(true)}
-          onBlur={() => useInteractionStore.getState().setEditingText(false)}
+          onBlur={() => {
+            useInteractionStore.getState().setEditingText(false);
+            updateNodeDataWithHistory(id, { title: (data.title as string) ?? "" });
+          }}
           placeholder="Title"
           className="mb-2 w-full cursor-text bg-transparent text-[15px] font-semibold tracking-tight text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/50"
+          aria-label="Title"
         />
         <textarea
           value={(data.text as string) ?? ""}
           onChange={(e) => updateNodeData(id, { text: e.target.value })}
           onFocus={() => useInteractionStore.getState().setEditingText(true)}
-          onBlur={() => useInteractionStore.getState().setEditingText(false)}
+          onBlur={() => {
+            useInteractionStore.getState().setEditingText(false);
+            updateNodeDataWithHistory(id, { text: (data.text as string) ?? "" });
+          }}
           placeholder="Start writing..."
           className={`min-h-[80px] w-full cursor-text resize-none bg-transparent font-serif leading-[1.65] outline-none focus:ring-0 placeholder:text-muted-foreground/50 ${
             (data.bold as boolean) ? "font-bold" : ""
@@ -64,6 +72,7 @@ function TextNode(props: NodeProps) {
             textAlign: (data.textAlign as "left" | "center" | "right") ?? "left",
             color: (data.textColor as string) || undefined,
           }}
+          aria-label="Note content"
         />
       </motion.div>
     </div>

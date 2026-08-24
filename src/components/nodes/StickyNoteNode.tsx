@@ -8,6 +8,7 @@ import { ResizeControls } from "./ResizeControls";
 function StickyNoteNode(props: NodeProps) {
   const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
+  const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
 
@@ -36,6 +37,8 @@ function StickyNoteNode(props: NodeProps) {
           minHeight: 160,
           padding: "18px",
           border: "1px solid rgba(0,0,0,0.04)",
+          borderLeftWidth: (data.highlight as string) ? "4px" : undefined,
+          borderLeftColor: (data.highlight as string) || undefined,
         }}
       >
         <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
@@ -46,10 +49,14 @@ function StickyNoteNode(props: NodeProps) {
           value={(data.text as string) ?? ""}
           onChange={(e) => updateNodeData(id, { text: e.target.value })}
           onFocus={() => useInteractionStore.getState().setEditingText(true)}
-          onBlur={() => useInteractionStore.getState().setEditingText(false)}
+          onBlur={() => {
+            useInteractionStore.getState().setEditingText(false);
+            updateNodeDataWithHistory(id, { text: (data.text as string) ?? "" });
+          }}
           placeholder="Jot something down..."
           className="h-full min-h-[100px] w-full cursor-text resize-none bg-transparent font-serif leading-[1.6] text-note-foreground outline-none focus:ring-0 placeholder:text-note-foreground/40"
           style={{ fontSize: (data.fontSize as number) ?? 14 }}
+          aria-label="Sticky note"
         />
       </motion.div>
     </div>

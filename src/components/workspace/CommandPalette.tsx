@@ -1,4 +1,5 @@
-import { useCallback } from "react";
+import { useCallback, useState, useMemo, useRef, useEffect } from "react";
+import type { ReactElement } from "react";
 import { CheckSquare, Image, StickyNote, Type, Download } from "lucide-react";
 import {
   CommandDialog,
@@ -11,6 +12,12 @@ import {
 import { useCanvasStore } from "@/lib/store";
 import { useNoticeStore } from "@/lib/notice-store";
 
+type Action = {
+  label: string;
+  icon: typeof Type;
+  action: () => void;
+};
+
 export function CommandPalette({
   open,
   onOpenChange,
@@ -19,6 +26,14 @@ export function CommandPalette({
   onOpenChange: (open: boolean) => void;
 }) {
   const addNode = useCanvasStore((s) => s.addNode);
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      inputRef.current?.focus();
+    }
+  }, [open]);
 
   const insert = useCallback(
     (type: string) => {
@@ -44,49 +59,59 @@ export function CommandPalette({
     useNoticeStore.getState().show("Board exported", "success");
   }, [onOpenChange]);
 
+  const allActions: Action[] = useMemo(
+    () => [
+      { label: "Add Text", icon: Type, action: () => insert("text") },
+      { label: "Add Image", icon: Image, action: () => insert("image") },
+      { label: "Add To-do", icon: CheckSquare, action: () => insert("todo") },
+      { label: "Add Sticky Note", icon: StickyNote, action: () => insert("sticky") },
+      { label: "Export board", icon: Download, action: exportBoard },
+    ],
+    [insert, exportBoard],
+  );
+
+  const filteredActions = useMemo(
+    () => allActions.filter((a) => a.label.toLowerCase().includes(query.toLowerCase())),
+    [allActions, query],
+  );
+
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search actions..." />
+      <CommandInput
+        ref={inputRef}
+        placeholder="Search actions..."
+        // @ts-expect-error - cmdk types incomplete, onChange passed to primitive
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+      />
       <CommandList className="p-1">
         <CommandEmpty>No results.</CommandEmpty>
         <CommandGroup heading="Insert">
-          <CommandItem
-            onSelect={() => insert("text")}
-            className="gap-2.5 rounded-lg px-3 py-2.5 cursor-pointer"
-          >
-            <Type className="h-4 w-4 text-muted-foreground" />
-            Add Text
-          </CommandItem>
-          <CommandItem
-            onSelect={() => insert("image")}
-            className="gap-2.5 rounded-lg px-3 py-2.5 cursor-pointer"
-          >
-            <Image className="h-4 w-4 text-muted-foreground" />
-            Add Image
-          </CommandItem>
-          <CommandItem
-            onSelect={() => insert("todo")}
-            className="gap-2.5 rounded-lg px-3 py-2.5 cursor-pointer"
-          >
-            <CheckSquare className="h-4 w-4 text-muted-foreground" />
-            Add To-do
-          </CommandItem>
-          <CommandItem
-            onSelect={() => insert("sticky")}
-            className="gap-2.5 rounded-lg px-3 py-2.5 cursor-pointer"
-          >
-            <StickyNote className="h-4 w-4 text-muted-foreground" />
-            Add Sticky Note
-          </CommandItem>
+          {filteredActions
+            .filter((a) => a.label.startsWith("Add"))
+            .map((action) => (
+              <CommandItem
+                key={action.label}
+                onSelect={action.action}
+                className="gap-2.5 rounded-lg px-3 py-2.5 cursor-pointer"
+              >
+                <action.icon className="h-4 w-4 text-muted-foreground" />
+                {action.label}
+              </CommandItem>
+            ))}
         </CommandGroup>
         <CommandGroup heading="Board">
-          <CommandItem
-            onSelect={exportBoard}
-            className="gap-2.5 rounded-lg px-3 py-2.5 cursor-pointer"
-          >
-            <Download className="h-4 w-4 text-muted-foreground" />
-            Export board
-          </CommandItem>
+          {filteredActions
+            .filter((a) => !a.label.startsWith("Add"))
+            .map((action) => (
+              <CommandItem
+                key={action.label}
+                onSelect={action.action}
+                className="gap-2.5 rounded-lg px-3 py-2.5 cursor-pointer"
+              >
+                <action.icon className="h-4 w-4 text-muted-foreground" />
+                {action.label}
+              </CommandItem>
+            ))}
         </CommandGroup>
       </CommandList>
     </CommandDialog>

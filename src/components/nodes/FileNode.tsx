@@ -10,6 +10,7 @@ import { ResizeControls } from "./ResizeControls";
 function FileNode(props: NodeProps) {
   const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
+  const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
   const filename = (data.filename as string) ?? "";
@@ -20,7 +21,7 @@ function FileNode(props: NodeProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     const aid = await storeImageAsset(file, file.name);
-    updateNodeData(id, { assetId: aid, filename: file.name, mime: file.type });
+    updateNodeDataWithHistory(id, { assetId: aid, filename: file.name, mime: file.type });
     e.target.value = "";
   };
 
@@ -58,9 +59,13 @@ function FileNode(props: NodeProps) {
             value={filename}
             onChange={(e) => updateNodeData(id, { filename: e.target.value })}
             onFocus={() => useInteractionStore.getState().setEditingText(true)}
-            onBlur={() => useInteractionStore.getState().setEditingText(false)}
+            onBlur={() => {
+              useInteractionStore.getState().setEditingText(false);
+              updateNodeDataWithHistory(id, { filename });
+            }}
             placeholder="File name"
             className="w-full cursor-text bg-transparent text-[13px] font-medium text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/50"
+            aria-label="File name"
           />
         </div>
         {assetId ? (
