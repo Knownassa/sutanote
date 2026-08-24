@@ -557,8 +557,11 @@ function BottomToolbar() {
   const activeTool = useInteractionStore((s) => s.activeTool);
   const setActiveTool = useInteractionStore((s) => s.setActiveTool);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pressed, setPressed] = useState<string | null>(null);
 
   const createWith = (type: string) => {
+    setPressed(type);
+    setTimeout(() => setPressed(null), 180);
     addAtViewportCenter(getViewport, addNode, type);
     setActiveTool("select");
   };
@@ -598,7 +601,7 @@ function BottomToolbar() {
             key={type}
             type="button"
             onClick={() => createWith(type)}
-            className={toolBtn(false)}
+            className={toolBtn(pressed === type)}
             aria-label={label}
           >
             <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />

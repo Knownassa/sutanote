@@ -106,7 +106,13 @@ export function WorkspaceHeader() {
         <IconButton label="Settings" onClick={() => setSettingsOpen(true)}>
           <Settings className="h-4 w-4" />
         </IconButton>
-        <IconButton label="Menu">
+        <IconButton
+          label="Menu"
+          onClick={async () => {
+            const { useNoticeStore } = await import("@/lib/notice-store");
+            useNoticeStore.getState().show("Menu coming soon", "info");
+          }}
+        >
           <MoreHorizontal className="h-4 w-4" />
         </IconButton>
       </div>

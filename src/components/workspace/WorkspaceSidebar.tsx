@@ -80,6 +80,10 @@ export function WorkspaceSidebar({
       <div className="space-y-2 p-4">
         <button
           type="button"
+          onClick={async () => {
+            const { useNoticeStore } = await import("@/lib/notice-store");
+            useNoticeStore.getState().show("New Board coming soon", "info");
+          }}
           className="flex w-full items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
         >
           <Plus className="h-4 w-4" />
