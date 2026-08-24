@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState, useEffect } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
@@ -17,6 +17,9 @@ function TodoNode(props: NodeProps) {
   const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
+  const { editingNodeId, setEditingNode } = useInteractionStore();
+
+  const isEditing = editingNodeId === id;
 
   const showCompleted = (data.showCompleted as boolean) ?? true;
   const allTodos: Todo[] = Array.isArray(data.todos)
@@ -30,6 +33,30 @@ function TodoNode(props: NodeProps) {
   const doneCount = allTodos.filter((t) => t.done).length;
   const totalCount = allTodos.length;
   const progress = totalCount > 0 ? (doneCount / totalCount) * 100 : 0;
+
+  const [title, setTitle] = useState((data.title as string) ?? "To-do");
+
+  useEffect(() => {
+    setTitle((data.title as string) ?? "To-do");
+  }, [data.title]);
+
+  const handleTitleChange = (value: string) => {
+    setTitle(value);
+    updateNodeData(id, { title: value });
+  };
+
+  const handleTitleBlur = () => {
+    updateNodeDataWithHistory(id, { title });
+    if (editingNodeId === id) {
+      setEditingNode(null);
+    }
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === "Escape") {
+      (e.currentTarget as HTMLInputElement).blur();
+    }
+  };
 
   const setTodos = (next: Todo[]) => updateNodeData(id, { todos: next });
   const setTodosWithHistory = (next: Todo[]) => updateNodeDataWithHistory(id, { todos: next });
@@ -66,12 +93,12 @@ function TodoNode(props: NodeProps) {
         <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
 
         <input
-          value={(data.title as string) ?? "To-do"}
-          onChange={(e) => updateNodeData(id, { title: e.target.value })}
-          onFocus={() => useInteractionStore.getState().setEditingText(true)}
-          onBlur={() => {
-            useInteractionStore.getState().setEditingText(false);
-            updateNodeDataWithHistory(id, { title: (data.title as string) ?? "To-do" });
+          value={title}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          onBlur={handleTitleBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === "Escape")
+              (e.currentTarget as HTMLInputElement).blur();
           }}
           className="mb-3 w-full cursor-text bg-transparent text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/80 outline-none focus:ring-0"
           aria-label="To-do list title"
@@ -148,8 +175,6 @@ function TodoNode(props: NodeProps) {
             name="task"
             type="text"
             placeholder="Add a task"
-            onFocus={() => useInteractionStore.getState().setEditingText(true)}
-            onBlur={() => useInteractionStore.getState().setEditingText(false)}
             className="flex-1 cursor-text bg-transparent text-[13px] text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/50"
           />
         </form>

@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState, useRef, useEffect } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
@@ -11,6 +11,66 @@ function TextNode(props: NodeProps) {
   const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
+  const { editingNodeId, setEditingNode } = useInteractionStore();
+
+  const isEditing = editingNodeId === id;
+  const [title, setTitle] = useState((data.title as string) ?? "");
+  const [text, setText] = useState((data.text as string) ?? "");
+
+  // Sync internal state with data prop changes
+  useEffect(() => {
+    setTitle((data.title as string) ?? "");
+  }, [data.title]);
+
+  useEffect(() => {
+    setText((data.text as string) ?? "");
+  }, [data.text]);
+
+  const handleTitleChange = (value: string) => {
+    setTitle(value);
+    updateNodeData(id, { title: value });
+  };
+
+  const handleTitleBlur = () => {
+    updateNodeDataWithHistory(id, { title });
+    if (editingNodeId === id) {
+      setEditingNode(null);
+    }
+  };
+
+  const handleTextChange = (value: string) => {
+    setText(value);
+    updateNodeData(id, { text: value });
+  };
+
+  const handleTextBlur = () => {
+    updateNodeDataWithHistory(id, { text });
+    if (editingNodeId === id) {
+      setEditingNode(null);
+    }
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      (e.currentTarget as HTMLInputElement).blur();
+    } else if (e.key === "Escape") {
+      (e.currentTarget as HTMLInputElement).blur();
+    }
+  };
+
+  const handleTextKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      (e.currentTarget as HTMLTextAreaElement).blur();
+    }
+    // Allow Enter for newlines in textarea
+  };
+
+  const handleDoubleClick = () => {
+    if (!isEditing) {
+      useInteractionStore.getState().setEditingNode(id, "body");
+    }
+  };
 
   return (
     <div
@@ -38,31 +98,27 @@ function TextNode(props: NodeProps) {
           borderLeftWidth: (data.highlight as string) ? "4px" : undefined,
           borderLeftColor: (data.highlight as string) || undefined,
         }}
+        onDoubleClick={handleDoubleClick}
       >
         <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
         <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
         <Handle type="source" position={Position.Left} className="!h-0 !w-0 !opacity-0" />
         <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
         <input
-          value={(data.title as string) ?? ""}
-          onChange={(e) => updateNodeData(id, { title: e.target.value })}
-          onFocus={() => useInteractionStore.getState().setEditingText(true)}
-          onBlur={() => {
-            useInteractionStore.getState().setEditingText(false);
-            updateNodeDataWithHistory(id, { title: (data.title as string) ?? "" });
-          }}
+          value={title}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          onBlur={handleTitleBlur}
+          onKeyDown={handleTitleKeyDown}
           placeholder="Title"
           className="mb-2 w-full cursor-text bg-transparent text-[15px] font-semibold tracking-tight text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/50"
           aria-label="Title"
         />
         <textarea
-          value={(data.text as string) ?? ""}
-          onChange={(e) => updateNodeData(id, { text: e.target.value })}
-          onFocus={() => useInteractionStore.getState().setEditingText(true)}
-          onBlur={() => {
-            useInteractionStore.getState().setEditingText(false);
-            updateNodeDataWithHistory(id, { text: (data.text as string) ?? "" });
-          }}
+          value={text}
+          onChange={(e) => handleTextChange(e.target.value)}
+          onBlur={handleTextBlur}
+          onKeyDown={handleTextKeyDown}
+          onDoubleClick={handleDoubleClick}
           placeholder="Start writing..."
           className={`min-h-[80px] w-full cursor-text resize-none bg-transparent font-serif leading-[1.65] outline-none focus:ring-0 placeholder:text-muted-foreground/50 ${
             (data.bold as boolean) ? "font-bold" : ""

@@ -114,6 +114,7 @@ function CanvasInner() {
   const activeTool = useInteractionStore((s) => s.activeTool);
   const spaceHeld = useInteractionStore((s) => s.spaceHeld);
   const isDragging = useInteractionStore((s) => s.isDragging);
+  const editingNodeId = useInteractionStore((s) => s.editingNodeId);
   const { getViewport, screenToFlowPosition } = useReactFlow();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -164,10 +165,10 @@ function CanvasInner() {
     () =>
       nodes.map((n) => ({
         ...n,
-        draggable: !handMode && !n.data?.locked,
+        draggable: !handMode && !n.data?.locked && editingNodeId !== n.id,
         className: n.data?.locked ? "locked" : "",
       })),
-    [nodes, handMode],
+    [nodes, handMode, editingNodeId],
   );
 
   const handleNodeDragStart = useCallback(() => {
@@ -236,10 +237,11 @@ function CanvasInner() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      const editingText =
+      const isEditingInput =
         !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+      const editingNode = useInteractionStore.getState().editingNodeId;
 
-      if (e.code === "Space" && !editingText) {
+      if (e.code === "Space" && !isEditingInput && !editingNode) {
         e.preventDefault();
         if (!useInteractionStore.getState().spaceHeld)
           useInteractionStore.getState().setSpaceHeld(true);
@@ -249,37 +251,38 @@ function CanvasInner() {
       const canvas = useCanvasStore.getState();
       const mod = e.metaKey || e.ctrlKey;
       const k = e.key.toLowerCase();
+      const isEditing = isEditingInput || !!editingNode;
 
       if (mod && k === "a") {
-        if (editingText) return;
+        if (isEditing) return;
         e.preventDefault();
         canvas.selectAll();
         return;
       }
       if (mod && k === "z" && !e.shiftKey) {
-        if (editingText) return;
+        if (isEditing) return;
         e.preventDefault();
         canvas.undo();
         return;
       }
       if ((mod && k === "z" && e.shiftKey) || (mod && k === "y")) {
-        if (editingText) return;
+        if (isEditing) return;
         e.preventDefault();
         canvas.redo();
         return;
       }
       if (mod && k === "c") {
-        if (editingText) return;
+        if (isEditing) return;
         canvas.copySelected();
         return;
       }
       if (mod && k === "x") {
-        if (editingText) return;
+        if (isEditing) return;
         canvas.cutSelected();
         return;
       }
       if (mod && k === "v") {
-        if (editingText) return;
+        if (isEditing) return;
         e.preventDefault();
         const vp = getViewport();
         const center = getCanvasCenter();
@@ -291,14 +294,14 @@ function CanvasInner() {
         return;
       }
       if (mod && k === "d") {
-        if (editingText) return;
+        if (isEditing) return;
         e.preventDefault();
         canvas.duplicateSelected();
         return;
       }
       if (mod) return;
 
-      if (editingText) return;
+      if (isEditing) return;
 
       if (k === "v") {
         useInteractionStore.getState().setActiveTool("select");
@@ -313,6 +316,12 @@ function CanvasInner() {
       } else if (k === "d") {
         addAtViewportCenter(getViewport, canvas.addNode, "todo");
       } else if (e.key === "Escape") {
+        const { editingNodeId, setEditingNode } = useInteractionStore.getState();
+        if (editingNodeId) {
+          e.preventDefault();
+          setEditingNode(null);
+          return;
+        }
         canvas.clearSelection();
       } else if (e.key === "Delete" || e.key === "Backspace") {
         if (canvas.selectedNodeIds.length) {

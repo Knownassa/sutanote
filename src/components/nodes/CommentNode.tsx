@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { MessageCircle } from "lucide-react";
@@ -11,14 +11,20 @@ function CommentNode(props: NodeProps) {
   const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
+  const { editingNodeId, setEditingNode } = useInteractionStore();
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
-  const text = (data.text as string) ?? "";
+  const isEditing = editingNodeId === id;
+  const [text, setText] = useState((data.text as string) ?? "");
   const author = (data.author as string) ?? useSettingsStore.getState().displayName;
   const resolved = (data.resolved as boolean) ?? false;
   const createdAt = (data.createdAt as number) ?? 0;
   const updatedAt = (data.updatedAt as number) ?? 0;
   const initRef = useRef(false);
+
+  useEffect(() => {
+    setText((data.text as string) ?? "");
+  }, [data.text]);
 
   // Auto-set createdAt on first render.
   useEffect(() => {
@@ -30,10 +36,14 @@ function CommentNode(props: NodeProps) {
 
   // Update timestamp on text change.
   const handleTextChange = (value: string) => {
+    setText(value);
     updateNodeData(id, { text: value, updatedAt: Date.now() });
   };
   const handleTextBlur = () => {
     updateNodeDataWithHistory(id, { text, updatedAt: Date.now() });
+    if (editingNodeId === id) {
+      setEditingNode(null);
+    }
   };
   const toggleResolved = () => {
     updateNodeDataWithHistory(id, { resolved: !resolved });
@@ -50,6 +60,18 @@ function CommentNode(props: NodeProps) {
     const diffH = Math.floor(diffMin / 60);
     if (diffH < 24) return `${diffH}h ago`;
     return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
+
+  const handleTextKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      (e.currentTarget as HTMLTextAreaElement).blur();
+    }
+  };
+
+  const handleDoubleClick = () => {
+    if (!isEditing) {
+      useInteractionStore.getState().setEditingNode(id, "body");
+    }
   };
 
   return (
@@ -74,6 +96,7 @@ function CommentNode(props: NodeProps) {
             : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]"
         }`}
         style={{ padding: "14px 18px" }}
+        onDoubleClick={handleDoubleClick}
       >
         <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
         <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
@@ -87,11 +110,9 @@ function CommentNode(props: NodeProps) {
             <textarea
               value={text}
               onChange={(e) => handleTextChange(e.target.value)}
-              onFocus={() => useInteractionStore.getState().setEditingText(true)}
-              onBlur={() => {
-                useInteractionStore.getState().setEditingText(false);
-                handleTextBlur();
-              }}
+              onBlur={handleTextBlur}
+              onKeyDown={handleTextKeyDown}
+              onDoubleClick={handleDoubleClick}
               placeholder="Write a comment..."
               className="min-h-[40px] w-full cursor-text resize-none bg-transparent font-serif text-[13px] leading-[1.5] text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/40"
               aria-label="Comment"

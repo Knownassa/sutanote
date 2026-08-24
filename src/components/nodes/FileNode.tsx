@@ -1,4 +1,4 @@
-import { memo, useRef } from "react";
+import { memo, useRef, useState, useEffect } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { FileText, Upload } from "lucide-react";
@@ -11,11 +11,17 @@ function FileNode(props: NodeProps) {
   const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
+  const { editingNodeId, setEditingNode } = useInteractionStore();
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
-  const filename = (data.filename as string) ?? "";
+  const isEditing = editingNodeId === id;
+  const [filename, setFilename] = useState((data.filename as string) ?? "");
   const assetId = (data.assetId as string) ?? "";
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setFilename((data.filename as string) ?? "");
+  }, [data.filename]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -23,6 +29,24 @@ function FileNode(props: NodeProps) {
     const aid = await storeImageAsset(file, file.name);
     updateNodeDataWithHistory(id, { assetId: aid, filename: file.name, mime: file.type });
     e.target.value = "";
+  };
+
+  const handleFilenameChange = (value: string) => {
+    setFilename(value);
+    updateNodeData(id, { filename: value });
+  };
+
+  const handleFilenameBlur = () => {
+    updateNodeDataWithHistory(id, { filename });
+    if (editingNodeId === id) {
+      setEditingNode(null);
+    }
+  };
+
+  const handleFilenameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === "Escape") {
+      (e.currentTarget as HTMLInputElement).blur();
+    }
   };
 
   return (
@@ -57,12 +81,9 @@ function FileNode(props: NodeProps) {
           <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
           <input
             value={filename}
-            onChange={(e) => updateNodeData(id, { filename: e.target.value })}
-            onFocus={() => useInteractionStore.getState().setEditingText(true)}
-            onBlur={() => {
-              useInteractionStore.getState().setEditingText(false);
-              updateNodeDataWithHistory(id, { filename });
-            }}
+            onChange={(e) => handleFilenameChange(e.target.value)}
+            onBlur={handleFilenameBlur}
+            onKeyDown={handleFilenameKeyDown}
             placeholder="File name"
             className="w-full cursor-text bg-transparent text-[13px] font-medium text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/50"
             aria-label="File name"

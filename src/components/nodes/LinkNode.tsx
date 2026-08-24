@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState, useEffect } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { ExternalLink } from "lucide-react";
@@ -10,11 +10,55 @@ function LinkNode(props: NodeProps) {
   const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
+  const { editingNodeId, setEditingNode } = useInteractionStore();
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
-  const url = (data.url as string) ?? "";
-  const title = (data.title as string) ?? "";
-  const description = (data.description as string) ?? "";
+  const isEditing = editingNodeId === id;
+  const [url, setUrl] = useState((data.url as string) ?? "");
+  const [title, setTitle] = useState((data.title as string) ?? "");
+  const [description, setDescription] = useState((data.description as string) ?? "");
+
+  useEffect(() => {
+    setUrl((data.url as string) ?? "");
+    setTitle((data.title as string) ?? "");
+    setDescription((data.description as string) ?? "");
+  }, [data.url, data.title, data.description]);
+
+  const handleUrlChange = (value: string) => {
+    setUrl(value);
+    updateNodeData(id, { url: value });
+  };
+  const handleUrlBlur = () => {
+    updateNodeDataWithHistory(id, { url });
+    if (editingNodeId === id) setEditingNode(null);
+  };
+  const handleUrlKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === "Escape") (e.currentTarget as HTMLInputElement).blur();
+  };
+
+  const handleTitleChange = (value: string) => {
+    setTitle(value);
+    updateNodeData(id, { title: value });
+  };
+  const handleTitleBlur = () => {
+    updateNodeDataWithHistory(id, { title });
+    if (editingNodeId === id) setEditingNode(null);
+  };
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === "Escape") (e.currentTarget as HTMLInputElement).blur();
+  };
+
+  const handleDescriptionChange = (value: string) => {
+    setDescription(value);
+    updateNodeData(id, { description: value });
+  };
+  const handleDescriptionBlur = () => {
+    updateNodeDataWithHistory(id, { description });
+    if (editingNodeId === id) setEditingNode(null);
+  };
+  const handleDescriptionKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === "Escape") (e.currentTarget as HTMLInputElement).blur();
+  };
 
   return (
     <div
@@ -47,36 +91,27 @@ function LinkNode(props: NodeProps) {
           <div className="min-w-0 flex-1">
             <input
               value={title}
-              onChange={(e) => updateNodeData(id, { title: e.target.value })}
-              onFocus={() => useInteractionStore.getState().setEditingText(true)}
-              onBlur={() => {
-                useInteractionStore.getState().setEditingText(false);
-                updateNodeDataWithHistory(id, { title });
-              }}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              onBlur={handleTitleBlur}
+              onKeyDown={handleTitleKeyDown}
               placeholder="Link title"
               className="mb-1 w-full cursor-text bg-transparent text-[14px] font-semibold tracking-tight text-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/50"
               aria-label="Link title"
             />
             <input
               value={url}
-              onChange={(e) => updateNodeData(id, { url: e.target.value })}
-              onFocus={() => useInteractionStore.getState().setEditingText(true)}
-              onBlur={() => {
-                useInteractionStore.getState().setEditingText(false);
-                updateNodeDataWithHistory(id, { url });
-              }}
+              onChange={(e) => handleUrlChange(e.target.value)}
+              onBlur={handleUrlBlur}
+              onKeyDown={handleUrlKeyDown}
               placeholder="https://..."
               className="mb-1 w-full cursor-text bg-transparent text-[12px] text-muted-foreground outline-none focus:ring-0 placeholder:text-muted-foreground/40"
               aria-label="URL"
             />
             <input
               value={description}
-              onChange={(e) => updateNodeData(id, { description: e.target.value })}
-              onFocus={() => useInteractionStore.getState().setEditingText(true)}
-              onBlur={() => {
-                useInteractionStore.getState().setEditingText(false);
-                updateNodeDataWithHistory(id, { description });
-              }}
+              onChange={(e) => handleDescriptionChange(e.target.value)}
+              onBlur={handleDescriptionBlur}
+              onKeyDown={handleDescriptionKeyDown}
               placeholder="Optional description"
               className="w-full cursor-text bg-transparent text-[12px] text-muted-foreground/70 outline-none focus:ring-0 placeholder:text-muted-foreground/30"
               aria-label="Description"
