@@ -141,20 +141,21 @@ export function RightPropertiesSidebar() {
   const opacityVal = commonData("opacity") as number | null;
 
   return (
-    <ScrollArea className="h-full w-[260px] p-4">
-      <div className="flex flex-col gap-5">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-            {multi ? `${selected.length} items selected` : "Properties"}
-          </h3>
-          <button
-            onClick={deleteSelected}
-            aria-label="Delete"
-            className="rounded-[5px] p-1.5 text-destructive transition-colors hover:bg-destructive/10"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
+    <div className="flex h-full w-[260px] flex-col">
+      <div className="flex shrink-0 items-center justify-between border-b border-border/50 p-4">
+        <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+          {multi ? `${selected.length} items selected` : "Properties"}
+        </h3>
+        <button
+          onClick={deleteSelected}
+          aria-label="Delete"
+          className="rounded-[5px] p-1.5 text-destructive transition-colors hover:bg-destructive/10"
+        >
+          <Trash2 size={16} />
+        </button>
+      </div>
+      <ScrollArea className="flex-1 p-4">
+        <div className="flex flex-col gap-5">
 
         {/* TRANSFORM */}
         <div>
@@ -551,8 +552,9 @@ export function RightPropertiesSidebar() {
             )}
           </div>
         </div>
-      </div>
-    </ScrollArea>
+        </div>
+      </ScrollArea>
+    </div>
   );
 }
 
