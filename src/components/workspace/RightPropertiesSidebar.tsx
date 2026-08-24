@@ -92,6 +92,8 @@ export function RightPropertiesSidebar() {
   const patchSelectedData = useCanvasStore((s) => s.patchSelectedData);
   const setPositionSelected = useCanvasStore((s) => s.setPositionSelected);
   const setSizeSelected = useCanvasStore((s) => s.setSizeSelected);
+  const setWidthSelected = useCanvasStore((s) => s.setWidthSelected);
+  const setHeightSelected = useCanvasStore((s) => s.setHeightSelected);
   const setRotationSelected = useCanvasStore((s) => s.setRotationSelected);
   const setOpacitySelected = useCanvasStore((s) => s.setOpacitySelected);
   const bringToFront = useCanvasStore((s) => s.bringToFront);
@@ -193,8 +195,8 @@ export function RightPropertiesSidebar() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2">
-              <Field label="W" value={commonStyle("width")} onCommit={() => {}} />
-              <Field label="H" value={commonStyle("minHeight")} onCommit={() => {}} />
+              <Field label="W" value={commonStyle("width")} onCommit={(n) => setWidthSelected(n)} />
+              <Field label="H" value={commonStyle("minHeight")} onCommit={(n) => setHeightSelected(n)} />
             </div>
           )}
           <div className="mt-2 flex items-center gap-2">

@@ -162,7 +162,7 @@
   --input: oklch(0.2739 0.0055 286.03);
   --ring: oklch(0.4419 0.0146 285.8);
   --canvas: oklch(0.1476 0.0031 285.9);
-  --canvas-dot: oklch(1 0 0 / 12%);
+  --canvas-dot: oklch(1 0 0 / 6%);
   --surface: oklch(0.2103 0.0059 285.9);
   --surface-hover: oklch(0.2472 0.0056 286);
   --surface-active: oklch(0.2954 0.006 286);

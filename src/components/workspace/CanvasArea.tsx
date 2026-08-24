@@ -507,10 +507,6 @@ function CanvasInner() {
           }}
         />
       </ReactFlow>
-      <div
-        className="pointer-events-none absolute inset-0 z-10"
-        style={{ boxShadow: "inset 0 0 80px rgba(0,0,0,0.03)" }}
-      />
     </div>
   );
 }

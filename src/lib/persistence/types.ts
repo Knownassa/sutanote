@@ -49,6 +49,7 @@ export interface CanvasNodeData {
   stroke?: string;
   strokeWidth?: number;
   shape?: string;
+  cornerRadius?: number;
   label?: string;
   // Container / hierarchy
   parentId?: string;

@@ -63,6 +63,8 @@ interface CanvasState {
   setBackgroundColorSelected: (hex: string) => void;
   setPositionSelected: (id: string, x: number, y: number) => void;
   setSizeSelected: (id: string, width: number, height: number) => void;
+  setWidthSelected: (width: number) => void;
+  setHeightSelected: (height: number) => void;
   setLockedSelected: (locked: boolean) => void;
   patchSelectedData: (patch: Partial<CanvasNodeData>) => void;
   setRotationSelected: (deg: number) => void;
@@ -582,7 +584,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           ...(type === "frame" ? { title: "", showTitle: true, opacity: 100 } : {}),
           ...(type === "column" ? { title: "Column", collapsed: false } : {}),
           ...(type === "shape"
-            ? { shape: "rectangle", fill: "transparent", stroke: "currentColor", strokeWidth: 2 }
+            ? { shape: "rectangle", fill: "transparent", stroke: "currentColor", strokeWidth: 2, cornerRadius: 12 }
             : {}),
           ...(type === "color_swatch" ? { color: "#6366f1", label: "" } : {}),
           ...(type === "board" ? { title: "Board", itemCount: 0 } : {}),
@@ -978,6 +980,16 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       }
     },
 
+    setWidthSelected: (width) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      applyToSelected((n) => ({ ...n, style: { ...n.style, width } }));
+    },
+
+    setHeightSelected: (height) => {
+      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      applyToSelected((n) => ({ ...n, style: { ...n.style, minHeight: height } }));
+    },
+
     setLockedSelected: (locked) => {
       useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
       applyToSelected((n) => ({ ...n, data: { ...n.data, locked } }));
@@ -1048,3 +1060,18 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
 });
 
 export const getSelectedNodes = () => useCanvasStore.getState().nodes.filter((n) => n.selected);
+
+// Best-effort data safety: flush on hide and keep recovery snapshot for crash window
+if (typeof window !== "undefined") {
+  const onHide = () => {
+    if (document.visibilityState === "hidden") {
+      const s = useCanvasStore.getState();
+      if (s.pendingChanges > 0) void s.flushNow();
+      try {
+        localStorage.setItem("sutonote:recovery", JSON.stringify({ nodes: s.nodes, edges: s.edges, at: Date.now() }));
+      } catch {}
+    }
+  };
+  document.addEventListener("visibilitychange", onHide);
+  window.addEventListener("beforeunload", onHide);
+}
