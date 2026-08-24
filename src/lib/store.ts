@@ -97,7 +97,7 @@ const GRID_SIZE = 16;
 const snapValue = (v: number) => Math.round(v / GRID_SIZE) * GRID_SIZE;
 
 /** Types that always stay behind regular items (backdrops / containers). */
-const CONTAINER_TYPES = ["section", "frame", "column", "folder"];
+const CONTAINER_TYPES = ["section", "frame", "column"];
 
 /**
  * Stacking rule: the most recently edited item sits on top of the stack.
