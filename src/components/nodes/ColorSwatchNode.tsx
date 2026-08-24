@@ -1,10 +1,11 @@
-import { memo, useState } from "react";
+import { memo, useState, useEffect } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
-import { Copy, Edit2, Palette } from "lucide-react";
+import { Copy } from "lucide-react";
 import { ResizeControls } from "./ResizeControls";
+import { SutonoteColorPicker } from "@/components/ui/SutonoteColorPicker";
 
 function ColorSwatchNode(props: NodeProps) {
   const { id, data, selected } = props;
@@ -15,18 +16,11 @@ function ColorSwatchNode(props: NodeProps) {
 
   const color = (data.color as string) ?? "#6366f1";
   const label = (data.label as string) ?? "";
-  const [showPicker, setShowPicker] = useState(false);
   const [hex, setHex] = useState(color);
 
-  const handleColorChange = (newColor: string) => {
-    setHex(newColor);
-    updateNodeData(id, { color: newColor });
-  };
-
-  const handleColorCommit = () => {
-    updateNodeDataWithHistory(id, { color: hex });
-    setShowPicker(false);
-  };
+  useEffect(() => {
+    setHex(color);
+  }, [color]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(hex);
@@ -58,18 +52,7 @@ function ColorSwatchNode(props: NodeProps) {
           <div
             className="relative w-full aspect-square max-w-[160px] rounded-lg border border-border overflow-hidden bg-white"
             style={{ backgroundColor: color }}
-          >
-            {showPicker && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-lg">
-                <input
-                  type="color"
-                  value={hex}
-                  onChange={(e) => handleColorChange(e.target.value)}
-                  className="h-12 w-12 rounded-lg border-2 border-white cursor-pointer"
-                />
-              </div>
-            )}
-          </div>
+          />
 
           {label && (
             <div className="w-full max-w-[160px]">
@@ -84,14 +67,15 @@ function ColorSwatchNode(props: NodeProps) {
           )}
 
           <div className="flex items-center justify-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => setShowPicker(!showPicker)}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-popover px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-surface-hover"
-            >
-              <Palette className="h-3.5 w-3.5" />
-              {showPicker ? "Done" : "Edit"}
-            </button>
+            <SutonoteColorPicker
+              value={color}
+              onChange={(c) => {
+                setHex(c);
+                updateNodeDataWithHistory(id, { color: c });
+              }}
+              palette="object"
+            />
+            <span className="text-sm text-muted-foreground">Pick</span>
             <button
               type="button"
               onClick={copyToClipboard}
@@ -103,7 +87,7 @@ function ColorSwatchNode(props: NodeProps) {
           </div>
 
           <div className="flex items-center justify-center gap-1 text-[12px] font-mono text-muted-foreground/70">
-            <span>#{hex.toUpperCase()}</span>
+            <span>{hex.toUpperCase()}</span>
             <button
               type="button"
               onClick={copyToClipboard}
@@ -112,19 +96,6 @@ function ColorSwatchNode(props: NodeProps) {
             >
               <Copy className="h-3 w-3" />
             </button>
-          </div>
-
-          <div className="flex items-center justify-center gap-2 flex-wrap text-[11px] text-muted-foreground/60">
-            <label className="flex items-center gap-1">
-              <input
-                type="color"
-                value={hex}
-                onChange={(e) => handleColorChange(e.target.value)}
-                onBlur={handleColorCommit}
-                className="h-6 w-6 rounded border border-border cursor-pointer"
-              />
-              Picker
-            </label>
           </div>
         </div>
       </motion.div>

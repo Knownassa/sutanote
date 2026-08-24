@@ -17,6 +17,7 @@ import { getNodeDef } from "@/lib/node-definitions";
 import { getItemDef } from "@/lib/item-registry";
 import { storeImageAsset } from "@/lib/asset-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { SutonoteColorPicker } from "@/components/ui/SutonoteColorPicker";
 
 const colors = [
   { name: "Yellow", class: "bg-note-yellow" },
@@ -257,9 +258,10 @@ export function RightPropertiesSidebar() {
                   } ${color.class}`}
                 />
               ))}
-              <CustomColorButton
-                currentColor={(node.data.backgroundColor as string) ?? ""}
-                onPick={(hex) => setBackgroundColorSelected(hex)}
+              <SutonoteColorPicker
+                value={(node.data.backgroundColor as string) ?? ""}
+                onChange={(c) => setBackgroundColorSelected(c)}
+                palette="object"
               />
             </div>
           </div>
@@ -285,25 +287,19 @@ export function RightPropertiesSidebar() {
               </label>
               <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
                 <span className="w-12">Fill</span>
-                <input
-                  type="color"
-                  value={
-                    (node.data.fill as string) === "transparent"
-                      ? "#ffffff"
-                      : ((node.data.fill as string) ?? "#ffffff")
-                  }
-                  onChange={(e) => patchSelectedData({ fill: e.target.value })}
-                  className="h-6 w-6 rounded border border-border"
+                <SutonoteColorPicker
+                  value={(node.data.fill as string) ?? "transparent"}
+                  onChange={(c) => patchSelectedData({ fill: c })}
+                  palette="object"
                 />
                 <span className="text-[11px]">{(node.data.fill as string) || "none"}</span>
               </label>
               <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
                 <span className="w-12">Stroke</span>
-                <input
-                  type="color"
+                <SutonoteColorPicker
                   value={(node.data.stroke as string) ?? "#000000"}
-                  onChange={(e) => patchSelectedData({ stroke: e.target.value })}
-                  className="h-6 w-6 rounded border border-border"
+                  onChange={(c) => patchSelectedData({ stroke: c })}
+                  palette="object"
                 />
               </label>
               <Field
@@ -351,11 +347,10 @@ export function RightPropertiesSidebar() {
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
                 <span className="w-12">Color</span>
-                <input
-                  type="color"
+                <SutonoteColorPicker
                   value={(node.data.color as string) ?? "#6366f1"}
-                  onChange={(e) => patchSelectedData({ color: e.target.value })}
-                  className="h-6 w-6 rounded border border-border"
+                  onChange={(c) => patchSelectedData({ color: c })}
+                  palette="object"
                 />
               </label>
               <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
@@ -622,15 +617,7 @@ function CustomColorButton({
           ref={pickerRef}
           className="absolute bottom-full left-0 z-50 mb-2 w-[200px] rounded-[10px] border border-border bg-popover p-3 shadow-lg"
         >
-          <input
-            type="color"
-            value={hex}
-            onChange={(e) => {
-              setHex(e.target.value);
-              applyColor(e.target.value);
-            }}
-            className="mb-2 h-8 w-full cursor-pointer rounded border border-border"
-          />
+          <div className="mb-2 flex h-8 w-full items-center justify-center rounded border border-border" style={{ background: hex }} />
           <div className="flex gap-1">
             <span className="text-[12px] text-muted-foreground">#</span>
             <input
