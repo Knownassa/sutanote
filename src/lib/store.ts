@@ -433,6 +433,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
               }
 
               // Mark dirty with final (snapped) positions.
+              // Last-touched wins: dragged item moves to the top of the stack.
+              next = withTopZ(next, c.id);
               const finalNode = next.find((n) => n.id === c.id);
               if (finalNode) {
                 markNodeDirty(finalNode);
