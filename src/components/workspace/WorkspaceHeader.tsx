@@ -11,9 +11,8 @@ import {
 } from "lucide-react";
 import { useCanvasStore } from "@/lib/store";
 import { useHistoryStore } from "@/lib/history-store";
+import { useSettingsStore } from "@/lib/settings-store";
 import { SettingsDialog } from "./SettingsDialog";
-
-const crumbs = ["Workspace", "Studio Rebrand", "Moodboard"];
 
 function IconButton({
   label,
@@ -73,12 +72,14 @@ export function WorkspaceHeader() {
   const canRedo = useHistoryStore((s) => s.canRedo);
   const undo = useCanvasStore((s) => s.undo);
   const redo = useCanvasStore((s) => s.redo);
+  const vaultName = useSettingsStore((s) => s.vaultName);
+  const crumbs = ["Boards", vaultName];
 
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b border-border pl-5 pr-3">
       <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm">
         {crumbs.map((crumb, i) => (
-          <span key={crumb} className="flex min-w-0 items-center gap-1.5">
+          <span key={`${crumb}-${i}`} className="flex min-w-0 items-center gap-1.5">
             {i > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />}
             <span
               className={

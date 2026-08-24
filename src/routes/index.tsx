@@ -8,6 +8,7 @@ import { CanvasArea } from "@/components/workspace/CanvasArea";
 import { RightPropertiesSidebar } from "@/components/workspace/RightPropertiesSidebar";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { NoticeBar } from "@/components/workspace/NoticeBar";
+import { CanvasErrorBoundary } from "@/components/workspace/CanvasErrorBoundary";
 import { useCanvasStore } from "@/lib/store";
 import { useSettingsStore } from "@/lib/settings-store";
 import { useThemeManager } from "@/lib/theme";
@@ -111,7 +112,9 @@ function Workspace() {
 
       {/* Canvas — row 2, col 2 */}
       <div className="col-start-2 row-start-2 h-full w-full min-h-0 min-w-0">
-        <CanvasArea />
+        <CanvasErrorBoundary>
+          <CanvasArea />
+        </CanvasErrorBoundary>
       </div>
 
       {/* Right properties — row 1-2, col 3 */}
