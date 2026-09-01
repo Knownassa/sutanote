@@ -1,10 +1,15 @@
-import { memo, useState, useEffect } from "react";
+import { memo, useState, useEffect, lazy, Suspense } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { ResizeControls } from "./ResizeControls";
-import { RichTextEditor } from "./RichTextEditor";
+import { RichTextView } from "./RichTextView";
+
+/** Tiptap is only downloaded/mounted while a node is actually being edited. */
+const RichTextEditor = lazy(() =>
+  import("./RichTextEditor").then((m) => ({ default: m.RichTextEditor })),
+);
 
 function TextNode(props: NodeProps) {
   const { id, data, selected } = props;
