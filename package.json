@@ -9,7 +9,10 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "verify": "bun run typecheck && bun run lint && bun test && bun run build"
   },
   "overrides": {
     "rolldown": "1.2.1"
