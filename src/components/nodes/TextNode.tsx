@@ -141,15 +141,23 @@ function TextNode(props: NodeProps) {
           readOnly={!isEditing}
         />
         <div className={`nodrag nowheel ${isEditing ? "select-text cursor-text" : "select-none"}`}>
-          <RichTextEditor
-            id={id}
-            content={content}
-            contentJson={contentJson}
-            onChange={handleContentChange}
-            onBlur={handleContentBlur}
-            placeholder="Start writing..."
-            editable={isEditing}
-          />
+          {isEditing ? (
+            <Suspense
+              fallback={<RichTextView html={content} plainText={plainText} placeholder="Start writing..." />}
+            >
+              <RichTextEditor
+                id={id}
+                content={content}
+                contentJson={contentJson}
+                onChange={handleContentChange}
+                onBlur={handleContentBlur}
+                placeholder="Start writing..."
+                editable
+              />
+            </Suspense>
+          ) : (
+            <RichTextView html={content} plainText={plainText} placeholder="Start writing..." />
+          )}
         </div>
       </motion.div>
     </div>
