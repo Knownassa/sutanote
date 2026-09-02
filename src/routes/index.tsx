@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
-import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import { CanvasArea } from "@/components/workspace/CanvasArea";
 import { RightPropertiesSidebar } from "@/components/workspace/RightPropertiesSidebar";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
@@ -9,7 +8,6 @@ import { NoticeBar } from "@/components/workspace/NoticeBar";
 import { CanvasErrorBoundary } from "@/components/workspace/CanvasErrorBoundary";
 import { LayersPanel } from "@/components/workspace/LayersPanel";
 import { useCanvasStore } from "@/lib/store";
-import { useSettingsStore } from "@/lib/settings-store";
 import { useThemeManager } from "@/lib/theme";
 
 export const Route = createFileRoute("/")({
@@ -36,9 +34,6 @@ export const Route = createFileRoute("/")({
 function Workspace() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const selectedNodeIds = useCanvasStore((s) => s.selectedNodeIds);
-  const sidebarOpen = useSettingsStore((s) => s.leftSidebarOpen);
-  const toggleSidebar = useSettingsStore((s) => s.toggleLeftSidebar);
-  const setSidebarOpen = useSettingsStore((s) => s.setLeftSidebarOpen);
   const lastSaveError = useCanvasStore((s) => s.lastSaveError);
   useThemeManager();
 
@@ -74,17 +69,7 @@ function Workspace() {
 
       <div className="pointer-events-none absolute inset-0 z-30">
         <div className="pointer-events-auto absolute left-4 right-4 top-4">
-          <WorkspaceHeader onOpenNavigator={() => setSidebarOpen(true)} />
-        </div>
-
-        <div
-          className={`pointer-events-auto absolute left-4 top-16 overflow-hidden rounded-2xl border border-sidebar-border bg-sidebar/95 shadow-xl backdrop-blur-md transition-[width,opacity,transform] duration-150 ${sidebarOpen ? "w-[240px] opacity-100" : "pointer-events-none w-0 -translate-x-2 opacity-0"}`}
-        >
-          <WorkspaceSidebar
-            open={sidebarOpen}
-            onToggle={toggleSidebar}
-            onOpenPalette={() => setPaletteOpen(true)}
-          />
+          <WorkspaceHeader />
         </div>
 
         <div className="pointer-events-auto absolute right-4 top-20 max-h-[calc(100dvh-7rem)] w-[280px] overflow-y-auto">

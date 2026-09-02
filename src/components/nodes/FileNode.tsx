@@ -6,11 +6,13 @@ import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { storeAsset } from "@/lib/asset-store";
 import { ResizeControls } from "./ResizeControls";
+import { useDocumentPreviewStore } from "@/lib/document-preview-store";
 
 function FileNode(props: NodeProps) {
   const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
+  const openPreview = useDocumentPreviewStore((s) => s.open);
   const { editingNodeId, setEditingNode } = useInteractionStore();
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
@@ -62,6 +64,10 @@ function FileNode(props: NodeProps) {
             ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
             : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:border-border-strong hover:shadow-[0_6px_20px_rgba(0,0,0,0.06)]"
         }`}
+        onDoubleClick={(event) => {
+          event.stopPropagation();
+          if (assetId) openPreview(id);
+        }}
         style={{
           transform: `rotate(${rotation}deg)`,
           transformOrigin: "center",

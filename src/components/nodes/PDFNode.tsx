@@ -7,11 +7,13 @@ import { FileText, Download, Replace, ExternalLink, X } from "lucide-react";
 import { ResizeControls } from "./ResizeControls";
 import { EmptyAssetState } from "./EmptyAssetState";
 import { storeImageAsset, getAssetUrl } from "@/lib/asset-store";
+import { useDocumentPreviewStore } from "@/lib/document-preview-store";
 
 function PDFNode(props: NodeProps) {
   const { id, data, selected } = props;
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
   const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
+  const openPreview = useDocumentPreviewStore((s) => s.open);
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
   const opacity = (data.opacity as number) ?? 100;
@@ -125,6 +127,10 @@ function PDFNode(props: NodeProps) {
             ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
             : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
         }`}
+        onDoubleClick={(event) => {
+          event.stopPropagation();
+          if (!showEmpty) openPreview(id);
+        }}
         style={{
           transform: `rotate(${rotation}deg)`,
           transformOrigin: "center",

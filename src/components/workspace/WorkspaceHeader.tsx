@@ -67,7 +67,7 @@ function SaveStatus() {
   );
 }
 
-export function WorkspaceHeader({ onOpenNavigator }: { onOpenNavigator?: () => void }) {
+export function WorkspaceHeader() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const canUndo = useHistoryStore((s) => s.canUndo);
   const canRedo = useHistoryStore((s) => s.canRedo);
@@ -82,30 +82,37 @@ export function WorkspaceHeader({ onOpenNavigator }: { onOpenNavigator?: () => v
   const crumbs = [vaultName, activeBoard?.name ?? "Board"];
 
   return (
-    <header className="flex h-11 items-center justify-between rounded-2xl border border-border bg-popover/90 px-3 shadow-[0_8px_30px_rgba(0,0,0,0.08)] backdrop-blur-md">
-      <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm">
-        {crumbs.map((crumb, i) => (
-          <button
-            key={`${crumb}-${i}`}
-            type="button"
-            onClick={i === 0 ? onOpenNavigator : undefined}
-            className={`flex min-w-0 items-center gap-1.5 rounded-lg px-1.5 py-1 ${i === 0 ? "cursor-pointer hover:bg-surface-hover" : "cursor-default"}`}
-          >
-            {i > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />}
+    <header className="flex items-start justify-between">
+      <div className="flex flex-col gap-2">
+        <div className="flex h-[68px] items-center gap-3 rounded-[10px] border border-border bg-popover/95 px-3 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md">
+          <span className="h-12 w-12 shrink-0 rounded-full border border-border-strong bg-card" />
+          <div className="min-w-0">
+            <p className="max-w-[190px] truncate text-base font-semibold text-foreground">
+              {activeBoard?.name ?? "Project Name"}
+            </p>
+            <p className="truncate text-[10px] text-muted-foreground">{vaultName}</p>
+          </div>
+          <MoreHorizontal className="ml-2 h-5 w-5 text-muted-foreground" />
+        </div>
+        <nav
+          aria-label="Breadcrumb"
+          className="flex items-center gap-1 rounded-lg bg-popover/70 p-1 text-[11px] shadow-sm backdrop-blur-md"
+        >
+          {crumbs.map((crumb, i) => (
             <span
-              className={
-                i === crumbs.length - 1
-                  ? "truncate font-medium text-foreground"
-                  : "truncate text-muted-foreground"
-              }
+              key={`${crumb}-${i}`}
+              className="flex items-center gap-1 rounded-md border border-border/70 bg-popover/90 px-2 py-1 text-muted-foreground"
             >
-              {crumb}
+              {i > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground/60" />}
+              <span className={i === crumbs.length - 1 ? "font-medium text-foreground" : ""}>
+                {crumb}
+              </span>
             </span>
-          </button>
-        ))}
-      </nav>
+          ))}
+        </nav>
+      </div>
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex h-[68px] items-center gap-1.5 rounded-[10px] border border-border bg-popover/95 px-3 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-md">
         <SaveStatus />
         <IconButton label="Undo" disabled={!canUndo} onClick={undo}>
           <Undo2 className="h-4 w-4" />
