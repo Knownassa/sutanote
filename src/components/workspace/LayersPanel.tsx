@@ -21,12 +21,12 @@ export function LayersPanel() {
   const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
 
   return (
-    <section className="mt-3 overflow-hidden rounded-2xl border border-border bg-popover/95 shadow-xl backdrop-blur-md">
+    <section className="h-[275px] shrink-0 overflow-hidden rounded-[8px] border border-border bg-popover/95 shadow-xl backdrop-blur-md">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="text-xs font-semibold tracking-wide text-foreground">Layers</h2>
         <span className="text-[10px] tabular-nums text-muted-foreground">{nodes.length}</span>
       </div>
-      <div className="max-h-52 overflow-y-auto p-1.5">
+      <div className="h-[calc(100%-49px)] overflow-y-auto overscroll-contain p-1.5">
         {nodes.length === 0 ? (
           <p className="px-3 py-4 text-xs text-muted-foreground">No layers yet</p>
         ) : (

@@ -10,18 +10,7 @@ import ReactFlow, {
   type Viewport,
 } from "reactflow";
 import { AnimatePresence, motion } from "motion/react";
-import {
-  MousePointer2,
-  Hand,
-  ZoomIn,
-  ZoomOut,
-  Type,
-  StickyNote,
-  CheckSquare,
-  ImageIcon,
-  MoreHorizontal,
-  Link2,
-} from "lucide-react";
+import { MousePointer2, Hand, ZoomIn, ZoomOut, MoreHorizontal } from "lucide-react";
 import "reactflow/dist/style.css";
 import { useCanvasStore } from "@/lib/store";
 import { useSettingsStore } from "@/lib/settings-store";
@@ -55,6 +44,7 @@ import SectionNode from "@/components/nodes/SectionNode";
 import { ToolPicker } from "@/components/workspace/ToolPicker";
 import { ImageLightbox } from "@/components/workspace/ImageLightbox";
 import { DocumentPreview } from "@/components/workspace/DocumentPreview";
+import { getItemDef } from "@/lib/item-registry";
 
 const nodeTypes: NodeTypes = {
   sticky: StickyNoteNode,
@@ -581,12 +571,24 @@ function BottomToolbar() {
   };
 
   const tools = [
-    { type: "text", label: "Text", icon: Type },
-    { type: "sticky", label: "Sticky", icon: StickyNote },
-    { type: "todo", label: "To-do", icon: CheckSquare },
-    { type: "image", label: "Image", icon: ImageIcon },
-    { type: "connector", label: "Connector", icon: Link2 },
-  ] as const;
+    "text",
+    "sticky",
+    "todo",
+    "image",
+    "link",
+    "file",
+    "pdf",
+    "video",
+    "embed",
+    "shape",
+    "section",
+    "frame",
+    "column",
+    "connector",
+    "comment",
+  ]
+    .map((type) => getItemDef(type))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
   return (
     <>
@@ -610,17 +612,24 @@ function BottomToolbar() {
 
         <span className="mx-1 h-6 w-px bg-border" />
 
-        {tools.map(({ type, label, icon: Icon }) => (
-          <button
-            key={type}
-            type="button"
-            onClick={() => createWith(type)}
-            className={toolBtn(pressed === type)}
-            aria-label={label}
-          >
-            <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
-          </button>
-        ))}
+        <div className="flex max-w-[min(58vw,620px)] items-center gap-1 overflow-x-auto overscroll-contain scrollbar-thin">
+          {tools.map(({ type, label, icon: Icon, kind }) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() =>
+                kind === "tool"
+                  ? setActiveTool(type === "connector" ? "connector" : "select")
+                  : createWith(type)
+              }
+              className={toolBtn(pressed === type)}
+              aria-label={label}
+              title={label}
+            >
+              <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </button>
+          ))}
+        </div>
 
         <button
           type="button"

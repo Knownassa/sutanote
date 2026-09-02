@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { CanvasArea } from "@/components/workspace/CanvasArea";
 import { RightPropertiesSidebar } from "@/components/workspace/RightPropertiesSidebar";
@@ -72,12 +73,20 @@ function Workspace() {
           <WorkspaceHeader />
         </div>
 
-        <div className="pointer-events-auto absolute right-4 top-20 max-h-[calc(100dvh-7rem)] w-[280px] overflow-y-auto">
-          {selectedNodeIds.length > 0 && (
-            <div className="overflow-hidden rounded-2xl border border-border bg-popover/95 shadow-xl backdrop-blur-md">
-              <RightPropertiesSidebar />
-            </div>
-          )}
+        <div className="pointer-events-auto fixed bottom-4 right-4 flex max-h-[calc(100dvh-8rem)] w-[238px] flex-col justify-end overflow-y-auto overscroll-contain scrollbar-thin">
+          <AnimatePresence initial={false}>
+            {selectedNodeIds.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 16, scale: 0.96 }}
+                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                className="mb-3 h-[275px] shrink-0 overflow-hidden rounded-[8px] border border-border bg-popover/95 shadow-xl backdrop-blur-md"
+              >
+                <RightPropertiesSidebar />
+              </motion.div>
+            )}
+          </AnimatePresence>
           <LayersPanel />
         </div>
       </div>
