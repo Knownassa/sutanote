@@ -4,6 +4,7 @@ import { ITEM_REGISTRY, getItemDef } from "../item-registry";
 import { NODE_DEFINITIONS, getNodeDef } from "../node-definitions";
 import { useHistoryStore } from "../history-store";
 import { shouldVirtualize } from "../virtualization";
+import { heavyPhase } from "../../hooks/use-heavy-node";
 
 describe("registry invariants", () => {
   it("every available node has NODE_DEFINITIONS", () => {
@@ -89,5 +90,20 @@ describe("viewport virtualization", () => {
   it("uses hysteresis so it does not flap", () => {
     expect(shouldVirtualize(130, true)).toBe(true);
     expect(shouldVirtualize(120, true)).toBe(false);
+  });
+});
+
+describe("heavy node lifecycle", () => {
+  it("is idle off-screen even if activated", () => {
+    expect(heavyPhase(false, false)).toBe("idle");
+    expect(heavyPhase(false, true)).toBe("idle");
+  });
+
+  it("is visible but passive until activated", () => {
+    expect(heavyPhase(true, false)).toBe("visible");
+  });
+
+  it("is interactive when visible and activated", () => {
+    expect(heavyPhase(true, true)).toBe("interactive");
   });
 });

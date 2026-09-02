@@ -3,7 +3,8 @@ import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
-import { Globe, ExternalLink, X } from "lucide-react";
+import { Globe, ExternalLink, X, Play } from "lucide-react";
+import { useHeavyNode } from "@/hooks/use-heavy-node";
 import { ResizeControls } from "./ResizeControls";
 import { EmptyAssetState } from "./EmptyAssetState";
 
@@ -14,6 +15,8 @@ function EmbedNode(props: NodeProps) {
   const reduce = useReducedMotion();
   const rotation = (data.rotation as number) ?? 0;
   const opacity = (data.opacity as number) ?? 100;
+
+  const { ref: heavyRef, phase, activate, deactivate } = useHeavyNode();
 
   const remoteUrl = (data.remoteUrl as string) ?? "";
   const caption = (data.caption as string) ?? "";
@@ -81,8 +84,11 @@ function EmbedNode(props: NodeProps) {
           />
         ) : (
           <>
-            <div className="relative aspect-video bg-muted/30 flex items-center justify-center">
-              {hasPreview && (
+            <div
+              ref={heavyRef}
+              className="relative aspect-video bg-muted/30 flex items-center justify-center"
+            >
+              {hasPreview && phase === "interactive" ? (
                 <iframe
                   src={url}
                   className="w-full h-full border-0"
@@ -90,6 +96,29 @@ function EmbedNode(props: NodeProps) {
                   sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                   loading="lazy"
                 />
+              ) : (
+                // Lightweight poster: no iframe is mounted until the user asks.
+                <button
+                  type="button"
+                  onClick={activate}
+                  className="group/poster flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground transition-colors hover:bg-muted/50"
+                  aria-label={`Load embed from ${getDomain(url)}`}
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-popover shadow-sm transition-transform group-hover/poster:scale-105">
+                    <Play className="ml-0.5 h-4 w-4" strokeWidth={1.75} />
+                  </span>
+                  <span className="text-[11px]">{getDomain(url)}</span>
+                </button>
+              )}
+              {phase === "interactive" && (
+                <button
+                  type="button"
+                  onClick={deactivate}
+                  className="absolute bottom-2 right-2 rounded-md border border-border bg-popover/90 px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-surface-hover"
+                  aria-label="Unload embed"
+                >
+                  Esc to unload
+                </button>
               )}
               <button
                 type="button"
