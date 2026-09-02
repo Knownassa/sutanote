@@ -2,6 +2,7 @@ import { memo, useRef, useState, useEffect, useCallback } from "react";
 import { Handle, Position, NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
+import { useHeavyNode } from "@/hooks/use-heavy-node";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { Video as VideoIcon, Download, Replace, ExternalLink, X, Play } from "lucide-react";
 import { ResizeControls } from "./ResizeControls";
@@ -17,7 +18,7 @@ function VideoNode(props: NodeProps) {
   const opacity = (data.opacity as number) ?? 100;
   const fileRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState<string>("");
-  const [isPlaying, setIsPlaying] = useState(false);
+  const { ref: heavyRef, phase, activate, deactivate } = useHeavyNode();
 
   const assetId = (data.assetId as string) ?? "";
   const remoteUrl = (data.remoteUrl as string) ?? "";
@@ -27,6 +28,8 @@ function VideoNode(props: NodeProps) {
 
   useEffect(() => {
     let active = true;
+    // Don't resolve object URLs for off-screen videos.
+    if (phase === "idle") return;
     if (assetId) {
       getAssetUrl(assetId).then((u) => {
         if (active && u) setUrl(u);
@@ -39,7 +42,7 @@ function VideoNode(props: NodeProps) {
     return () => {
       active = false;
     };
-  }, [assetId, remoteUrl]);
+  }, [assetId, remoteUrl, phase]);
 
   const handleAssetId = useCallback(
     async (newAssetId: string, newFilename: string, mime?: string) => {
@@ -149,33 +152,35 @@ function VideoNode(props: NodeProps) {
               className="hidden"
               onChange={handleReplace}
             />
-            <div className="relative aspect-video bg-black">
-              {hasPreview ? (
-                <video
-                  src={url}
-                  className="w-full h-full object-cover"
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                />
+            <div ref={heavyRef} className="relative aspect-video bg-black">
+              {hasPreview && phase === "interactive" ? (
+                <>
+                  {/* Player mounts only after the user hits play (Esc unloads it). */}
+                  <video src={url} controls autoPlay className="w-full h-full object-contain" />
+                  <button
+                    type="button"
+                    onClick={deactivate}
+                    className="absolute bottom-2 right-2 rounded-md border border-border bg-popover/90 px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-surface-hover"
+                    aria-label="Unload video player"
+                  >
+                    Esc to unload
+                  </button>
+                </>
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <VideoIcon className="h-16 w-16 text-muted-foreground/30" />
-                </div>
-              )}
-              {isPlaying && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-16 w-16 rounded-full bg-black/50 flex items-center justify-center">
-                    <Play className="h-8 w-8 text-white ml-1" />
-                  </div>
-                </div>
-              )}
-              {!isPlaying && hasPreview && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-16 w-16 rounded-full bg-black/50 flex items-center justify-center">
-                    <Play className="h-8 w-8 text-white ml-1" />
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={hasPreview ? activate : undefined}
+                  className="group/poster h-full w-full flex items-center justify-center"
+                  aria-label={hasPreview ? "Play video" : "No video"}
+                >
+                  {hasPreview ? (
+                    <span className="h-16 w-16 rounded-full bg-black/50 flex items-center justify-center transition-transform group-hover/poster:scale-105">
+                      <Play className="h-8 w-8 text-white ml-1" />
+                    </span>
+                  ) : (
+                    <VideoIcon className="h-16 w-16 text-muted-foreground/30" />
+                  )}
+                </button>
               )}
               <button
                 type="button"
