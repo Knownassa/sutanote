@@ -136,6 +136,27 @@ function computeSelectedIds(nodes: CanvasNode[]): string[] {
 }
 
 export const useCanvasStore = create<CanvasState>((set, get) => {
+  /**
+   * Diff history bridge: call this immediately BEFORE (or right after) a
+   * mutation. It records the baseline, then on the next microtask — once the
+   * mutation has landed — replaces `present` with the baseline and pushes the
+   * live state, so the stored patch is baseline -> result.
+   */
+  let pendingBaseline: { nodes: CanvasNode[]; edges: CanvasEdge[] } | null = null;
+  const flushPendingHistory = () => {
+    if (!pendingBaseline) return;
+    const baseline = pendingBaseline;
+    pendingBaseline = null;
+    const history = useHistoryStore.getState();
+    history.replacePresent(baseline);
+    history.push({ nodes: get().nodes, edges: get().edges });
+  };
+  const pushHistoryAfterChange = (baseline?: { nodes: CanvasNode[]; edges: CanvasEdge[] }) => {
+    if (pendingBaseline) flushPendingHistory();
+    pendingBaseline = baseline ?? { nodes: get().nodes, edges: get().edges };
+    queueMicrotask(flushPendingHistory);
+  };
+
   const markNodeDirty = (node: CanvasNode) => {
     deletedNodeIds.delete(node.id);
     dirtyNodes.set(node.id, node);
@@ -485,7 +506,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
 
               // Push history entry for this drag operation.
               if (dragStartSnapshot) {
-                useHistoryStore.getState().push(dragStartSnapshot);
+                pushHistoryAfterChange(dragStartSnapshot);
                 dragStartSnapshot = null;
               }
             }
@@ -622,10 +643,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       commitNodes(next);
       markNodeDirty(newNode);
       scheduleFlush();
-      // History: push state before this node was added.
-      useHistoryStore
-        .getState()
-        .push({ nodes: get().nodes.filter((n) => n.id !== newNode.id), edges: get().edges });
+      // History: baseline is the board before this node was added.
+      pushHistoryAfterChange({
+        nodes: get().nodes.filter((n) => n.id !== newNode.id),
+        edges: get().edges,
+      });
     },
 
     updateNodeData: (id, data) => {
@@ -642,7 +664,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     updateNodeDataWithHistory: (id, data) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       const next = withTopZ(
         get().nodes.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...data } } : n)),
         id,
@@ -686,7 +708,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
 
     deleteNode: (id) => {
       // History: push state before deletion.
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       const next = get().nodes.filter((n) => n.id !== id);
       commitNodes(next);
       markNodeDeleted(id);
@@ -712,7 +734,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       const ids = new Set(get().selectedNodeIds);
       if (ids.size === 0) return;
       // History: push state before deletion.
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       const next = get().nodes.filter((n) => !ids.has(n.id));
       commitNodes(next);
       ids.forEach(markNodeDeleted);
@@ -814,7 +836,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     bringToFront: (id) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       const maxZ = get().nodes.reduce((m, n) => Math.max(m, n.zIndex ?? 0), 0);
       const next = get().nodes.map((n) => (n.id === id ? { ...n, zIndex: maxZ + 1 } : n));
       commitNodes(next);
@@ -826,7 +848,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     sendToBack: (id) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       const minZ = get().nodes.reduce(
         (m, n) => Math.min(m, n.zIndex ?? 0),
         Number.POSITIVE_INFINITY,
@@ -842,7 +864,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     bringForward: (id) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       const sorted = [...get().nodes].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
       const idx = sorted.findIndex((n) => n.id === id);
       if (idx < 0 || idx === sorted.length - 1) return;
@@ -864,7 +886,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     sendBackward: (id) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       const sorted = [...get().nodes].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
       const idx = sorted.findIndex((n) => n.id === id);
       if (idx <= 0) return;
@@ -886,7 +908,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     alignSelected: (edge) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       const sel = get().nodes.filter((n) => n.selected);
       if (sel.length < 2) return;
       const left = (n: CanvasNode) => n.position.x - (n.style?.width as number) / 2;
@@ -918,7 +940,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     distributeSelected: (axis) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       const sel = get()
         .nodes.filter((n) => n.selected)
         .sort((a, b) =>
@@ -942,7 +964,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     matchSizeSelected: (dim) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       const sel = get().nodes.filter((n) => n.selected);
       if (sel.length < 2) return;
       const ref =
@@ -957,32 +979,32 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     setColorSelected: (color) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       applyToSelected((n) => ({ ...n, data: { ...n.data, color } }));
     },
 
     setBackgroundColorSelected: (hex) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       applyToSelected((n) => ({ ...n, data: { ...n.data, backgroundColor: hex } }));
     },
 
     patchSelectedData: (patch) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       applyToSelected((n) => ({ ...n, data: { ...n.data, ...patch } }));
     },
 
     setRotationSelected: (deg) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       applyToSelected((n) => ({ ...n, data: { ...n.data, rotation: deg } }));
     },
 
     setOpacitySelected: (opacity) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       applyToSelected((n) => ({ ...n, data: { ...n.data, opacity } }));
     },
 
     setPositionSelected: (id, x, y) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       const next = get().nodes.map((n) =>
         n.id === id ? { ...n, position: { x, y } } : n,
       ) as CanvasNode[];
@@ -995,7 +1017,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     setSizeSelected: (id, width, height) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       const next = get().nodes.map((n) =>
         n.id === id ? { ...n, style: { ...n.style, width, minHeight: height } } : n,
       ) as CanvasNode[];
@@ -1008,22 +1030,22 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     setWidthSelected: (width) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       applyToSelected((n) => ({ ...n, style: { ...n.style, width } }));
     },
 
     setHeightSelected: (height) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       applyToSelected((n) => ({ ...n, style: { ...n.style, minHeight: height } }));
     },
 
     setLockedSelected: (locked) => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       applyToSelected((n) => ({ ...n, data: { ...n.data, locked } }));
     },
 
     groupSelected: () => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       const sel = get().nodes.filter((n) => n.selected);
       if (sel.length < 2) return;
       const groupId = nanoid();
@@ -1031,7 +1053,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     ungroupSelected: () => {
-      useHistoryStore.getState().push({ nodes: get().nodes, edges: get().edges });
+      pushHistoryAfterChange();
       applyToSelected((n) => {
         const { groupId, ...rest } = n.data;
         return { ...n, data: rest as CanvasNodeData };
@@ -1039,11 +1061,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     pushHistory: () => {
-      const { nodes, edges } = get();
-      useHistoryStore.getState().push({ nodes, edges });
+      pushHistoryAfterChange();
     },
 
     undo: () => {
+      flushPendingHistory();
       const snapshot = useHistoryStore.getState().undo();
       if (!snapshot) return;
       set({
@@ -1065,6 +1087,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
 
     redo: () => {
+      flushPendingHistory();
       const snapshot = useHistoryStore.getState().redo();
       if (!snapshot) return;
       set({
