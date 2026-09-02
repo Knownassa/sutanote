@@ -33,6 +33,7 @@ import {
   type BoardExtent,
 } from "@/lib/board-extent";
 import { loadViewport, saveViewport } from "@/lib/viewport";
+import { shouldVirtualize } from "@/lib/virtualization";
 import StickyNoteNode from "@/components/nodes/StickyNoteNode";
 import TextNode from "@/components/nodes/TextNode";
 import TodoNode from "@/components/nodes/TodoNode";
@@ -136,6 +137,13 @@ function CanvasInner() {
         ],
   );
   const [extent, setExtent] = useState<BoardExtent>(extentRef.current);
+
+  // Adaptive viewport virtualization: only pay React Flow's visibility pass on
+  // boards big enough to benefit from skipping off-screen nodes.
+  const [virtualized, setVirtualized] = useState(false);
+  useEffect(() => {
+    setVirtualized((cur) => shouldVirtualize(nodes.length, cur));
+  }, [nodes.length]);
 
   useEffect(() => {
     initializeStore();
@@ -478,6 +486,7 @@ function CanvasInner() {
         proOptions={{ hideAttribution: true }}
         defaultViewport={defaultViewport}
         translateExtent={extent}
+        onlyRenderVisibleElements={virtualized}
         className={`bg-canvas ${cursorClass}`}
         nodeOrigin={[0.5, 0.5]}
         minZoom={0.2}

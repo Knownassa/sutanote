@@ -3,6 +3,7 @@ import { describe, it, expect } from "bun:test";
 import { ITEM_REGISTRY, getItemDef } from "../item-registry";
 import { NODE_DEFINITIONS, getNodeDef } from "../node-definitions";
 import { useHistoryStore } from "../history-store";
+import { shouldVirtualize } from "../virtualization";
 
 describe("registry invariants", () => {
   it("every available node has NODE_DEFINITIONS", () => {
@@ -71,5 +72,22 @@ describe("container parentId", () => {
     const left = cx - w / 2, right = cx + w / 2, top = cy - h / 2, bottom = cy + h / 2;
     const inside = childPos.x >= left && childPos.x <= right && childPos.y >= top && childPos.y <= bottom;
     expect(inside).toBe(true);
+  });
+});
+
+describe("viewport virtualization", () => {
+  it("stays off on small boards", () => {
+    expect(shouldVirtualize(0, false)).toBe(false);
+    expect(shouldVirtualize(149, false)).toBe(false);
+  });
+
+  it("turns on at the threshold", () => {
+    expect(shouldVirtualize(150, false)).toBe(true);
+    expect(shouldVirtualize(4000, false)).toBe(true);
+  });
+
+  it("uses hysteresis so it does not flap", () => {
+    expect(shouldVirtualize(130, true)).toBe(true);
+    expect(shouldVirtualize(120, true)).toBe(false);
   });
 });

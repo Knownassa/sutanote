@@ -9,7 +9,7 @@ ownership of your files.
 - [x] Add `test` / `typecheck` / `verify` scripts + GitHub Actions running `verify`
 - [x] Lightweight rich-text rendering when not editing; lazy-load Tiptap only in edit mode (target: 0–1 editors per board)
 - [x] Replace snapshot undo/redo with command/diff history (Move/Resize/ChangeData/Create/Delete/Attach/Edge), budget ≤32–64 MB and ~200 commands
-- [ ] Viewport virtualization; benchmark React Flow `onlyRenderVisibleElements`
+- [x] Viewport virtualization: adaptive `onlyRenderVisibleElements` above 150 nodes with hysteresis (verified 160-node board mounts only visible nodes)
 - [ ] HeavyNode lifecycle: idle → visible → interactive
 - [ ] Embed = cached thumbnail until interact; destroy iframe on Escape
 - [ ] Video = poster until play
