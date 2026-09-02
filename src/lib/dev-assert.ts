@@ -15,6 +15,7 @@ const KNOWN_NODE_TYPES = new Set([
   "file",
   "pdf",
   "section",
+  "folder",
   "board",
   "column",
   "frame",
