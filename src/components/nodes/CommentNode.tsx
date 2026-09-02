@@ -32,7 +32,7 @@ function CommentNode(props: NodeProps) {
       initRef.current = true;
       updateNodeData(id, { createdAt: Date.now(), updatedAt: Date.now() });
     }
-  }, []);
+  }, [createdAt, id, updateNodeData]);
 
   // Update timestamp on text change.
   const handleTextChange = (value: string) => {
@@ -91,7 +91,9 @@ function CommentNode(props: NodeProps) {
         }`}
         style={{
           transform: `rotate(${rotation}deg)`,
-          transformOrigin: "center", padding: "14px 18px" }}
+          transformOrigin: "center",
+          padding: "14px 18px",
+        }}
         onDoubleClick={handleDoubleClick}
       >
         <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />

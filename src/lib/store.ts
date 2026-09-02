@@ -18,6 +18,7 @@ import { getNodeDef } from "./node-definitions";
 import { flushBoard } from "./persistence/persistence-manager";
 import { useSettingsStore } from "./settings-store";
 import { useHistoryStore } from "./history-store";
+import { useBoardTreeStore } from "./board-tree-store";
 import {
   DEFAULT_BOARD_ID,
   type CanvasNodeData,
@@ -35,6 +36,7 @@ interface CanvasState {
   lastSavedAt: number | null;
   lastSaveError: string | null;
   pendingChanges: number;
+  currentBoardId: string;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: (connection: Connection) => void;
@@ -73,6 +75,7 @@ interface CanvasState {
   ungroupSelected: () => void;
   flushNow: () => Promise<void>;
   initializeStore: () => Promise<void>;
+  switchBoard: (boardId: string) => Promise<void>;
   undo: () => void;
   redo: () => void;
   pushHistory: () => void;
@@ -123,6 +126,12 @@ let clipboard: CanvasNode[] = [];
 
 // Snapshot captured at drag/resize start for undo history.
 let dragStartSnapshot: { nodes: CanvasNode[]; edges: CanvasEdge[] } | null = null;
+
+function storageBoardId(boardId: string): string {
+  // Preserve data created before the board tree became persisted. The seeded
+  // Moodboard is the compatibility home for that original default board.
+  return boardId === "b-moodboard" ? DEFAULT_BOARD_ID : boardId;
+}
 
 let flushTimer: ReturnType<typeof setTimeout> | undefined;
 let flushing = false;
@@ -217,6 +226,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     lastSavedAt: null,
     lastSaveError: null,
     pendingChanges: 0,
+    currentBoardId: useBoardTreeStore.getState().activeBoardId,
 
     flushNow: async () => {
       if (flushing) return;
@@ -232,7 +242,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       flushing = true;
       set({ persistenceStatus: "saving" });
       try {
-        await flushBoard(DEFAULT_BOARD_ID, dn, dd, de, dde);
+        await flushBoard(storageBoardId(get().currentBoardId), dn, dd, de, dde);
         for (const [id, snap] of dn) {
           if (dirtyNodes.get(id) === snap) dirtyNodes.delete(id);
         }
@@ -268,8 +278,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     initializeStore: async () => {
       if (get().isLoaded) return;
       await initDB();
-      const dbNodes = await loadNodesByBoard(DEFAULT_BOARD_ID);
-      const dbEdges = await loadEdgesByBoard(DEFAULT_BOARD_ID);
+      const boardId = useBoardTreeStore.getState().activeBoardId;
+      const dbBoardId = storageBoardId(boardId);
+      const dbNodes = await loadNodesByBoard(dbBoardId);
+      const dbEdges = await loadEdgesByBoard(dbBoardId);
 
       if (dbNodes.length > 0) {
         set({
@@ -280,6 +292,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           persistenceStatus: "saved",
           lastSavedAt: Date.now(),
           pendingChanges: 0,
+          currentBoardId: boardId,
         });
         // Initialize history with loaded state.
         useHistoryStore.getState().init({
@@ -304,6 +317,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           persistenceStatus: "saved",
           lastSavedAt: Date.now(),
           pendingChanges: 0,
+          currentBoardId: boardId,
         });
         return;
       }
@@ -369,9 +383,52 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         isLoaded: true,
         persistenceStatus: "dirty",
         pendingChanges: seeded.length,
+        currentBoardId: boardId,
       });
       seeded.forEach(markNodeDirty);
       scheduleFlush();
+    },
+
+    switchBoard: async (boardId) => {
+      if (!boardId || boardId === get().currentBoardId) return;
+      if (!get().isLoaded) {
+        useBoardTreeStore.getState().setActiveBoard(boardId);
+        return;
+      }
+
+      // Finish the outgoing board before replacing in-memory state.
+      await get().flushNow();
+      await initDB();
+      const dbBoardId = storageBoardId(boardId);
+      const [dbNodes, dbEdges] = await Promise.all([
+        loadNodesByBoard(dbBoardId),
+        loadEdgesByBoard(dbBoardId),
+      ]);
+
+      dirtyNodes.clear();
+      deletedNodeIds.clear();
+      dirtyEdges.clear();
+      deletedEdgeIds.clear();
+      dragStartSnapshot = null;
+      if (flushTimer) {
+        clearTimeout(flushTimer);
+        flushTimer = undefined;
+      }
+
+      const nextNodes = dbNodes as CanvasNode[];
+      const nextEdges = dbEdges as CanvasEdge[];
+      set({
+        nodes: nextNodes,
+        edges: nextEdges,
+        selectedNodeIds: [],
+        currentBoardId: boardId,
+        persistenceStatus: "saved",
+        lastSavedAt: Date.now(),
+        lastSaveError: null,
+        pendingChanges: 0,
+      });
+      useHistoryStore.getState().init({ nodes: nextNodes, edges: nextEdges });
+      useBoardTreeStore.getState().setActiveBoard(boardId);
     },
 
     onNodesChange: (changes) => {
@@ -468,7 +525,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
                 // Section containment: attach/detach
                 if (!["section", "frame", "column"].includes(finalNode.type ?? "")) {
                   const containers = next.filter(
-                    (n) => ["section", "frame", "column"].includes(n.type ?? "") && n.id !== finalNode.id,
+                    (n) =>
+                      ["section", "frame", "column"].includes(n.type ?? "") &&
+                      n.id !== finalNode.id,
                   );
                   let newParent: string | undefined;
                   for (const cont of containers) {
@@ -622,7 +681,13 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           ...(type === "frame" ? { title: "", showTitle: true, opacity: 100 } : {}),
           ...(type === "column" ? { title: "Column", collapsed: false } : {}),
           ...(type === "shape"
-            ? { shape: "rectangle", fill: "transparent", stroke: "currentColor", strokeWidth: 2, cornerRadius: 12 }
+            ? {
+                shape: "rectangle",
+                fill: "transparent",
+                stroke: "currentColor",
+                strokeWidth: 2,
+                cornerRadius: 12,
+              }
             : {}),
           ...(type === "color_swatch" ? { color: "#6366f1", label: "" } : {}),
           ...(type === "board" ? { title: "Board", itemCount: 0 } : {}),
@@ -704,7 +769,6 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         scheduleFlush();
       }
     },
-
 
     deleteNode: (id) => {
       // History: push state before deletion.
@@ -1118,8 +1182,14 @@ if (typeof window !== "undefined") {
       const s = useCanvasStore.getState();
       if (s.pendingChanges > 0) void s.flushNow();
       try {
-        localStorage.setItem("sutonote:recovery", JSON.stringify({ nodes: s.nodes, edges: s.edges, at: Date.now() }));
-      } catch {}
+        localStorage.setItem(
+          "sutonote:recovery",
+          JSON.stringify({ nodes: s.nodes, edges: s.edges, at: Date.now() }),
+        );
+      } catch {
+        // Recovery is best-effort; persistence errors are surfaced by the
+        // normal save status instead of interrupting page hide handling.
+      }
     }
   };
   document.addEventListener("visibilitychange", onHide);

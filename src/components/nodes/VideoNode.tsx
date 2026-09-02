@@ -130,7 +130,9 @@ function VideoNode(props: NodeProps) {
         style={{
           transform: `rotate(${rotation}deg)`,
           transformOrigin: "center",
-          opacity: opacity / 100, maxWidth: 400 }}
+          opacity: opacity / 100,
+          maxWidth: 400,
+        }}
       >
         {showEmpty ? (
           <EmptyAssetState

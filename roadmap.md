@@ -20,15 +20,15 @@ ownership of your files.
 
 ### Performance budgets (targets)
 
-| Scenario | Target |
-| --- | --- |
+| Scenario                  | Target      |
+| ------------------------- | ----------- |
 | Empty workspace idle heap | <100–120 MB |
-| 100 cards | <150 MB |
-| 500 cards | <220–250 MB |
-| 2,000 lightweight cards | <350–400 MB |
-| History RAM | ≤32–64 MB |
-| Drag on 500-node board | ~60 FPS |
-| First usable UI (cached) | <1 s |
+| 100 cards                 | <150 MB     |
+| 500 cards                 | <220–250 MB |
+| 2,000 lightweight cards   | <350–400 MB |
+| History RAM               | ≤32–64 MB   |
+| Drag on 500-node board    | ~60 FPS     |
+| First usable UI (cached)  | <1 s        |
 
 ## Milestone: real workspace model
 

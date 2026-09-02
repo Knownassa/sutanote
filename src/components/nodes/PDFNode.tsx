@@ -128,7 +128,9 @@ function PDFNode(props: NodeProps) {
         style={{
           transform: `rotate(${rotation}deg)`,
           transformOrigin: "center",
-          opacity: opacity / 100, maxWidth: 320 }}
+          opacity: opacity / 100,
+          maxWidth: 320,
+        }}
       >
         {showEmpty ? (
           <EmptyAssetState

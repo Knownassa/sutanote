@@ -41,7 +41,10 @@ function ColorSwatchNode(props: NodeProps) {
         }`}
         style={{
           transform: `rotate(${rotation}deg)`,
-          transformOrigin: "center", padding: "16px", minHeight: 120 }}
+          transformOrigin: "center",
+          padding: "16px",
+          minHeight: 120,
+        }}
       >
         <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
         <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />

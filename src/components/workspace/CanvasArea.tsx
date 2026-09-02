@@ -178,6 +178,7 @@ function CanvasInner() {
     () =>
       nodes.map((n) => ({
         ...n,
+        hidden: n.data?.["hidden"] === true,
         draggable: !handMode && !n.data?.locked && editingNodeId !== n.id,
         className: n.data?.locked ? "locked" : "",
       })),
@@ -503,7 +504,7 @@ function CanvasInner() {
       >
         {gridVisible && <Background color="var(--canvas-dot)" gap={24} size={0.8} />}
         <MiniMap
-          position="bottom-right"
+          position="bottom-left"
           pannable
           zoomable
           nodeColor="var(--muted)"

@@ -22,7 +22,9 @@ function TextNode(props: NodeProps) {
 
   const [title, setTitle] = useState((data.title as string) ?? "");
   const [content, setContent] = useState((data.content as string) ?? (data.text as string) ?? "");
-  const [contentJson, setContentJson] = useState<unknown>((data.richText as { json: unknown } | undefined)?.json ?? null);
+  const [contentJson, setContentJson] = useState<unknown>(
+    (data.richText as { json: unknown } | undefined)?.json ?? null,
+  );
   const [plainText, setPlainText] = useState((data.plainText as string) ?? "");
 
   useEffect(() => {
@@ -43,10 +45,15 @@ function TextNode(props: NodeProps) {
       setContentJson(null);
       setPlainText((data.plainText as string) ?? (data.content as string) ?? "");
     }
-    if (((data as Record<string, unknown>)["bold"] || (data as Record<string, unknown>)["italic"] || (data as Record<string, unknown>)["highlight"]) && rich) {
+    if (
+      ((data as Record<string, unknown>)["bold"] ||
+        (data as Record<string, unknown>)["italic"] ||
+        (data as Record<string, unknown>)["highlight"]) &&
+      rich
+    ) {
       // will be cleared on next save via handleContentChange
     }
-  }, [data.content, data.text, data.richText, data.plainText]);
+  }, [data, data.content, data.text, data.richText, data.plainText]);
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
@@ -64,7 +71,12 @@ function TextNode(props: NodeProps) {
     setContent(html);
     setContentJson(json);
     setPlainText(plain);
-    const patch: Record<string, unknown> = { content: html, text: html, plainText: plain, richText: { version: 1, json } };
+    const patch: Record<string, unknown> = {
+      content: html,
+      text: html,
+      plainText: plain,
+      richText: { version: 1, json },
+    };
     const d = data as Record<string, unknown>;
     if (d["bold"] || d["italic"] || d["highlight"] || d["fontSize"] || d["textColor"]) {
       patch["bold"] = false;
@@ -82,7 +94,10 @@ function TextNode(props: NodeProps) {
     if (contentJson) {
       patch["richText"] = { version: 1, json: contentJson };
     }
-    updateNodeDataWithHistory(id, patch as Partial<import("@/lib/persistence/types").CanvasNodeData>);
+    updateNodeDataWithHistory(
+      id,
+      patch as Partial<import("@/lib/persistence/types").CanvasNodeData>,
+    );
     if (editingNodeId === id) {
       setEditingNode(null);
     }
@@ -143,7 +158,9 @@ function TextNode(props: NodeProps) {
         <div className={`nodrag nowheel ${isEditing ? "select-text cursor-text" : "select-none"}`}>
           {isEditing ? (
             <Suspense
-              fallback={<RichTextView html={content} plainText={plainText} placeholder="Start writing..." />}
+              fallback={
+                <RichTextView html={content} plainText={plainText} placeholder="Start writing..." />
+              }
             >
               <RichTextEditor
                 id={id}

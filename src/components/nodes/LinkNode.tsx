@@ -87,7 +87,9 @@ function LinkNode(props: NodeProps) {
         }`}
         style={{
           transform: `rotate(${rotation}deg)`,
-          transformOrigin: "center", padding: "14px 18px" }}
+          transformOrigin: "center",
+          padding: "14px 18px",
+        }}
         onDoubleClick={() => {
           if (!isEditing) setEditingNode(id, "body");
         }}
@@ -145,7 +147,11 @@ function LinkNode(props: NodeProps) {
               aria-label="URL"
               readOnly={!isEditing && !!url}
             />
-            {!isValidUrl && url && <p className="mb-1 text-[10px] text-destructive">Invalid URL — use http:// or https://</p>}
+            {!isValidUrl && url && (
+              <p className="mb-1 text-[10px] text-destructive">
+                Invalid URL — use http:// or https://
+              </p>
+            )}
             {domain && <p className="mb-1 text-[10px] text-muted-foreground/60">{domain}</p>}
             <input
               value={description}

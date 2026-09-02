@@ -34,11 +34,19 @@ const TEXT_PALETTE: ColorOption[] = [
 
 const HIGHLIGHT_PALETTE: ColorOption[] = [
   { name: "Sand", value: "var(--sut-highlight-sand)", display: "var(--sut-highlight-sand)" },
-  { name: "Apricot", value: "var(--sut-highlight-apricot)", display: "var(--sut-highlight-apricot)" },
+  {
+    name: "Apricot",
+    value: "var(--sut-highlight-apricot)",
+    display: "var(--sut-highlight-apricot)",
+  },
   { name: "Rose", value: "var(--sut-highlight-rose)", display: "var(--sut-highlight-rose)" },
   { name: "Sage", value: "var(--sut-highlight-sage)", display: "var(--sut-highlight-sage)" },
   { name: "Sky", value: "var(--sut-highlight-sky)", display: "var(--sut-highlight-sky)" },
-  { name: "Lavender", value: "var(--sut-highlight-lavender)", display: "var(--sut-highlight-lavender)" },
+  {
+    name: "Lavender",
+    value: "var(--sut-highlight-lavender)",
+    display: "var(--sut-highlight-lavender)",
+  },
 ];
 
 const PALETTES: Record<ColorPalette, ColorOption[]> = {
@@ -62,7 +70,9 @@ function pushRecentColor(color: string) {
     const recent = getRecentColors().filter((c) => c !== color);
     recent.unshift(color);
     localStorage.setItem("sutonote:recent-colors", JSON.stringify(recent.slice(0, 8)));
-  } catch {}
+  } catch {
+    // Recent colors are a convenience and may be unavailable in restricted storage.
+  }
 }
 
 interface SutonoteColorPickerProps {
@@ -128,7 +138,9 @@ export function SutonoteColorPicker({
             "flex h-7 w-7 items-center justify-center rounded-[5px] border border-border shadow-sm transition-colors hover:scale-105",
             triggerClassName,
           )}
-          style={{ background: value || "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)" }}
+          style={{
+            background: value || "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
+          }}
           aria-label="Pick color"
         >
           {!value && <Pipette className="h-3 w-3 text-white drop-shadow" />}

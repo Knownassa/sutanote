@@ -117,7 +117,9 @@ function ImageNode(props: NodeProps) {
         style={{
           transform: `rotate(${rotation}deg)`,
           transformOrigin: "center",
-          opacity: opacity / 100, maxWidth: 360 }}
+          opacity: opacity / 100,
+          maxWidth: 360,
+        }}
       >
         {showEmpty ? (
           <EmptyAssetState
@@ -148,7 +150,11 @@ function ImageNode(props: NodeProps) {
                 e.stopPropagation();
                 const allIds = useCanvasStore
                   .getState()
-                  .nodes.filter((n) => n.type === "image" && ((n.data.assetId as string) || (n.data.remoteUrl as string)))
+                  .nodes.filter(
+                    (n) =>
+                      n.type === "image" &&
+                      ((n.data.assetId as string) || (n.data.remoteUrl as string)),
+                  )
                   .map((n) => n.id);
                 useLightboxStore.getState().open(id, allIds);
               }}

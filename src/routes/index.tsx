@@ -1,7 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { PanelLeftOpen } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import { CanvasArea } from "@/components/workspace/CanvasArea";
@@ -9,6 +7,7 @@ import { RightPropertiesSidebar } from "@/components/workspace/RightPropertiesSi
 import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { NoticeBar } from "@/components/workspace/NoticeBar";
 import { CanvasErrorBoundary } from "@/components/workspace/CanvasErrorBoundary";
+import { LayersPanel } from "@/components/workspace/LayersPanel";
 import { useCanvasStore } from "@/lib/store";
 import { useSettingsStore } from "@/lib/settings-store";
 import { useThemeManager } from "@/lib/theme";
@@ -63,58 +62,39 @@ function Workspace() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const rightPanelOpen = selectedNodeIds.length > 0;
-
   return (
-    <div
-      className="grid h-screen w-screen overflow-hidden bg-background"
-      style={{
-        gridTemplateColumns: `${sidebarOpen ? "240px" : "0px"} minmax(0, 1fr) ${rightPanelOpen ? "260px" : "0px"}`,
-        gridTemplateRows: "48px minmax(0, 1fr)",
-        transition: "grid-template-columns 160ms ease",
-      }}
-    >
-      {/* Left sidebar — row 1-2, col 1 */}
-      <div className="col-start-1 row-span-2 overflow-hidden border-r border-sidebar-border bg-sidebar">
-        <WorkspaceSidebar
-          open={sidebarOpen}
-          onToggle={toggleSidebar}
-          onOpenPalette={() => setPaletteOpen(true)}
-        />
-      </div>
-
-      {/* Header — row 1, col 2 */}
-      <div className="col-start-2 row-start-1 min-w-0">
-        <div className="flex h-12 items-center">
-          {!sidebarOpen && (
-            <button
-              type="button"
-              aria-label="Open sidebar"
-              onClick={() => setSidebarOpen(true)}
-              className="ml-3 flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
-            >
-              <PanelLeftOpen className="h-4 w-4" />
-            </button>
-          )}
-          <div className="min-w-0 flex-1">
-            <WorkspaceHeader />
-          </div>
-        </div>
-      </div>
-
-      {/* Canvas — row 2, col 2 */}
-      <div
-        className="col-start-2 row-start-2 h-full w-full min-h-0 min-w-0"
-        style={{ width: "100%", height: "100%" }}
-      >
+    <div className="relative h-dvh w-screen overflow-hidden bg-background">
+      {/* The board is the application. All chrome floats above it without
+          changing the canvas viewport when opened or closed. */}
+      <div className="absolute inset-0 z-0">
         <CanvasErrorBoundary>
           <CanvasArea />
         </CanvasErrorBoundary>
       </div>
 
-      {/* Right properties — row 1-2, col 3 */}
-      <div className="col-start-3 row-span-2 overflow-hidden border-l border-border bg-popover">
-        <RightPropertiesSidebar />
+      <div className="pointer-events-none absolute inset-0 z-30">
+        <div className="pointer-events-auto absolute left-4 right-4 top-4">
+          <WorkspaceHeader onOpenNavigator={() => setSidebarOpen(true)} />
+        </div>
+
+        <div
+          className={`pointer-events-auto absolute left-4 top-16 overflow-hidden rounded-2xl border border-sidebar-border bg-sidebar/95 shadow-xl backdrop-blur-md transition-[width,opacity,transform] duration-150 ${sidebarOpen ? "w-[240px] opacity-100" : "pointer-events-none w-0 -translate-x-2 opacity-0"}`}
+        >
+          <WorkspaceSidebar
+            open={sidebarOpen}
+            onToggle={toggleSidebar}
+            onOpenPalette={() => setPaletteOpen(true)}
+          />
+        </div>
+
+        <div className="pointer-events-auto absolute right-4 top-20 max-h-[calc(100dvh-7rem)] w-[280px] overflow-y-auto">
+          {selectedNodeIds.length > 0 && (
+            <div className="overflow-hidden rounded-2xl border border-border bg-popover/95 shadow-xl backdrop-blur-md">
+              <RightPropertiesSidebar />
+            </div>
+          )}
+          <LayersPanel />
+        </div>
       </div>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />

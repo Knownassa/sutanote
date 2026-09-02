@@ -160,502 +160,521 @@ export function RightPropertiesSidebar() {
       </div>
       <ScrollArea className="flex-1 p-4">
         <div className="flex flex-col gap-5">
-
-        {/* TRANSFORM */}
-        <div>
-          <SectionLabel>Transform</SectionLabel>
-          {!multi ? (
-            <div className="grid grid-cols-2 gap-2">
-              <Field
-                label="X"
-                value={Math.round(node.position.x)}
-                onCommit={(n) => setPositionSelected(node.id, n, node.position.y)}
-              />
-              <Field
-                label="Y"
-                value={Math.round(node.position.y)}
-                onCommit={(n) => setPositionSelected(node.id, node.position.x, n)}
-              />
-              <Field
-                label="W"
-                value={commonStyle("width")}
-                onCommit={(n) =>
-                  setSizeSelected(
-                    node.id,
-                    Math.max(def.minWidth, n),
-                    node.style?.minHeight as number,
-                  )
-                }
-              />
-              <Field
-                label="H"
-                value={commonStyle("minHeight")}
-                onCommit={(n) =>
-                  setSizeSelected(node.id, node.style?.width as number, Math.max(def.minHeight, n))
-                }
-              />
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              <Field label="W" value={commonStyle("width")} onCommit={(n) => setWidthSelected(n)} />
-              <Field label="H" value={commonStyle("minHeight")} onCommit={(n) => setHeightSelected(n)} />
-            </div>
-          )}
-          <div className="mt-2 flex items-center gap-2">
-            <Field
-              label="R"
-              value={rotationVal !== null ? Math.round(rotationVal as number) : null}
-              onCommit={(n) => setRotationSelected(n)}
-            />
-            <button
-              type="button"
-              onClick={() => setRotationSelected(0)}
-              className="rounded-[5px] border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
-            >
-              Reset
-            </button>
-          </div>
-          <div className="mt-2">
-            <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-              <span className="w-4 text-center">O</span>
-              <input
-                type="range"
-                min={20}
-                max={100}
-                value={opacityVal ?? 100}
-                onChange={(e) => setOpacitySelected(parseInt(e.target.value))}
-                className="flex-1"
-              />
-              <span className="w-8 text-right text-[11px] tabular-nums">
-                {opacityVal === null ? "Mixed" : `${opacityVal}%`}
-              </span>
-            </label>
-          </div>
-        </div>
-
-        {/* APPEARANCE - capability gated */}
-        {(capabilities.background ||
-          node.type === "text" ||
-          node.type === "sticky" ||
-          node.type === "todo" ||
-          node.type === "shape" ||
-          node.type === "section" ||
-          node.type === "frame" ||
-          node.type === "column") && (
+          {/* TRANSFORM */}
           <div>
-            <SectionLabel>Appearance</SectionLabel>
-            <div className="grid grid-cols-6 gap-2">
-              {colors.map((color, i) => (
-                <button
-                  key={`${color.name}-${i}`}
-                  type="button"
-                  onClick={() => setColorSelected(color.class)}
-                  aria-label={color.name}
-                  title={color.name}
-                  className={`aspect-square rounded-[5px] border border-border-strong transition-all ${
-                    colorMatches && node.data.color === color.class
-                      ? "ring-2 ring-foreground/40 ring-offset-1"
-                      : "hover:scale-105"
-                  } ${color.class}`}
+            <SectionLabel>Transform</SectionLabel>
+            {!multi ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Field
+                  label="X"
+                  value={Math.round(node.position.x)}
+                  onCommit={(n) => setPositionSelected(node.id, n, node.position.y)}
                 />
-              ))}
-              <SutonoteColorPicker
-                value={(node.data.backgroundColor as string) ?? ""}
-                onChange={(c) => setBackgroundColorSelected(c)}
-                palette="object"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* SHAPE specific */}
-        {!multi && node.type === "shape" && (
-          <div>
-            <SectionLabel>Shape</SectionLabel>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                <span className="w-12">Type</span>
-                <select
-                  value={(node.data.shape as string) ?? "rectangle"}
-                  onChange={(e) => patchSelectedData({ shape: e.target.value })}
-                  className="flex-1 rounded-[5px] border border-border bg-surface px-2 py-1 text-foreground outline-none"
-                >
-                  <option value="rectangle">Rectangle</option>
-                  <option value="rounded-rectangle">Rounded</option>
-                  <option value="circle">Circle</option>
-                  <option value="diamond">Diamond</option>
-                </select>
-              </label>
-              <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                <span className="w-12">Fill</span>
-                <SutonoteColorPicker
-                  value={(node.data.fill as string) ?? "transparent"}
-                  onChange={(c) => patchSelectedData({ fill: c })}
-                  palette="object"
+                <Field
+                  label="Y"
+                  value={Math.round(node.position.y)}
+                  onCommit={(n) => setPositionSelected(node.id, node.position.x, n)}
                 />
-                <span className="text-[11px]">{(node.data.fill as string) || "none"}</span>
-              </label>
-              <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                <span className="w-12">Stroke</span>
-                <SutonoteColorPicker
-                  value={(node.data.stroke as string) ?? "#000000"}
-                  onChange={(c) => patchSelectedData({ stroke: c })}
-                  palette="object"
+                <Field
+                  label="W"
+                  value={commonStyle("width")}
+                  onCommit={(n) =>
+                    setSizeSelected(
+                      node.id,
+                      Math.max(def.minWidth, n),
+                      node.style?.minHeight as number,
+                    )
+                  }
                 />
-              </label>
-              <Field
-                label="W"
-                value={(node.data.strokeWidth as number) ?? 2}
-                onCommit={(n) => patchSelectedData({ strokeWidth: n })}
-                step={1}
-              />
+                <Field
+                  label="H"
+                  value={commonStyle("minHeight")}
+                  onCommit={(n) =>
+                    setSizeSelected(
+                      node.id,
+                      node.style?.width as number,
+                      Math.max(def.minHeight, n),
+                    )
+                  }
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <Field
+                  label="W"
+                  value={commonStyle("width")}
+                  onCommit={(n) => setWidthSelected(n)}
+                />
+                <Field
+                  label="H"
+                  value={commonStyle("minHeight")}
+                  onCommit={(n) => setHeightSelected(n)}
+                />
+              </div>
+            )}
+            <div className="mt-2 flex items-center gap-2">
               <Field
                 label="R"
-                value={(node.data.rotation as number) ?? 0}
-                onCommit={(n) => patchSelectedData({ rotation: n })}
-                step={1}
+                value={rotationVal !== null ? Math.round(rotationVal as number) : null}
+                onCommit={(n) => setRotationSelected(n)}
               />
+              <button
+                type="button"
+                onClick={() => setRotationSelected(0)}
+                className="rounded-[5px] border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+              >
+                Reset
+              </button>
+            </div>
+            <div className="mt-2">
               <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                <span className="w-12">Opacity</span>
+                <span className="w-4 text-center">O</span>
                 <input
                   type="range"
                   min={20}
                   max={100}
-                  value={(node.data.opacity as number) ?? 100}
-                  onChange={(e) => patchSelectedData({ opacity: parseInt(e.target.value) })}
+                  value={opacityVal ?? 100}
+                  onChange={(e) => setOpacitySelected(parseInt(e.target.value))}
                   className="flex-1"
                 />
                 <span className="w-8 text-right text-[11px] tabular-nums">
-                  {`${(node.data.opacity as number) ?? 100}%`}
+                  {opacityVal === null ? "Mixed" : `${opacityVal}%`}
                 </span>
               </label>
-              {(node.data.shape as string) === "rounded-rectangle" && (
+            </div>
+          </div>
+
+          {/* APPEARANCE - capability gated */}
+          {(capabilities.background ||
+            node.type === "text" ||
+            node.type === "sticky" ||
+            node.type === "todo" ||
+            node.type === "shape" ||
+            node.type === "section" ||
+            node.type === "frame" ||
+            node.type === "column") && (
+            <div>
+              <SectionLabel>Appearance</SectionLabel>
+              <div className="grid grid-cols-6 gap-2">
+                {colors.map((color, i) => (
+                  <button
+                    key={`${color.name}-${i}`}
+                    type="button"
+                    onClick={() => setColorSelected(color.class)}
+                    aria-label={color.name}
+                    title={color.name}
+                    className={`aspect-square rounded-[5px] border border-border-strong transition-all ${
+                      colorMatches && node.data.color === color.class
+                        ? "ring-2 ring-foreground/40 ring-offset-1"
+                        : "hover:scale-105"
+                    } ${color.class}`}
+                  />
+                ))}
+                <SutonoteColorPicker
+                  value={(node.data.backgroundColor as string) ?? ""}
+                  onChange={(c) => setBackgroundColorSelected(c)}
+                  palette="object"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* SHAPE specific */}
+          {!multi && node.type === "shape" && (
+            <div>
+              <SectionLabel>Shape</SectionLabel>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                  <span className="w-12">Type</span>
+                  <select
+                    value={(node.data.shape as string) ?? "rectangle"}
+                    onChange={(e) => patchSelectedData({ shape: e.target.value })}
+                    className="flex-1 rounded-[5px] border border-border bg-surface px-2 py-1 text-foreground outline-none"
+                  >
+                    <option value="rectangle">Rectangle</option>
+                    <option value="rounded-rectangle">Rounded</option>
+                    <option value="circle">Circle</option>
+                    <option value="diamond">Diamond</option>
+                  </select>
+                </label>
+                <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                  <span className="w-12">Fill</span>
+                  <SutonoteColorPicker
+                    value={(node.data.fill as string) ?? "transparent"}
+                    onChange={(c) => patchSelectedData({ fill: c })}
+                    palette="object"
+                  />
+                  <span className="text-[11px]">{(node.data.fill as string) || "none"}</span>
+                </label>
+                <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                  <span className="w-12">Stroke</span>
+                  <SutonoteColorPicker
+                    value={(node.data.stroke as string) ?? "#000000"}
+                    onChange={(c) => patchSelectedData({ stroke: c })}
+                    palette="object"
+                  />
+                </label>
                 <Field
-                  label="CR"
-                  value={(node.data.cornerRadius as number) ?? 12}
-                  onCommit={(n) => patchSelectedData({ cornerRadius: n })}
+                  label="W"
+                  value={(node.data.strokeWidth as number) ?? 2}
+                  onCommit={(n) => patchSelectedData({ strokeWidth: n })}
                   step={1}
+                />
+                <Field
+                  label="R"
+                  value={(node.data.rotation as number) ?? 0}
+                  onCommit={(n) => patchSelectedData({ rotation: n })}
+                  step={1}
+                />
+                <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                  <span className="w-12">Opacity</span>
+                  <input
+                    type="range"
+                    min={20}
+                    max={100}
+                    value={(node.data.opacity as number) ?? 100}
+                    onChange={(e) => patchSelectedData({ opacity: parseInt(e.target.value) })}
+                    className="flex-1"
+                  />
+                  <span className="w-8 text-right text-[11px] tabular-nums">
+                    {`${(node.data.opacity as number) ?? 100}%`}
+                  </span>
+                </label>
+                {(node.data.shape as string) === "rounded-rectangle" && (
+                  <Field
+                    label="CR"
+                    value={(node.data.cornerRadius as number) ?? 12}
+                    onCommit={(n) => patchSelectedData({ cornerRadius: n })}
+                    step={1}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* COLOR SWATCH */}
+          {!multi && node.type === "color_swatch" && (
+            <div>
+              <SectionLabel>Swatch</SectionLabel>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                  <span className="w-12">Color</span>
+                  <SutonoteColorPicker
+                    value={(node.data.color as string) ?? "#6366f1"}
+                    onChange={(c) => patchSelectedData({ color: c })}
+                    palette="object"
+                  />
+                </label>
+                <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                  <span className="w-12">Label</span>
+                  <input
+                    value={(node.data.label as string) ?? ""}
+                    onChange={(e) => patchSelectedData({ label: e.target.value })}
+                    placeholder="Color name"
+                    className="flex-1 rounded-[5px] border border-border bg-surface px-2 py-1 text-foreground outline-none"
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* FOLDER */}
+          {!multi && node.type === "folder" && (
+            <div>
+              <SectionLabel>Folder</SectionLabel>
+              <input
+                value={(node.data.title as string) ?? ""}
+                onChange={(e) => patchSelectedData({ title: e.target.value })}
+                placeholder="Folder name"
+                className="mb-2 w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+              />
+              <div className="mb-2 grid grid-cols-8 gap-1">
+                {FOLDER_ICONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    title={opt.label}
+                    aria-label={opt.label}
+                    onClick={() => patchSelectedData({ icon: opt.id })}
+                    className={`flex aspect-square items-center justify-center rounded-[5px] border transition-colors ${
+                      ((node.data["icon"] as string) ?? DEFAULT_FOLDER_ICON) === opt.id
+                        ? "border-border-strong bg-surface-active text-foreground"
+                        : "border-border text-muted-foreground hover:bg-surface-hover hover:text-foreground"
+                    }`}
+                  >
+                    <opt.icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                <span className="w-12">Icon</span>
+                <SutonoteColorPicker
+                  value={(node.data["iconColor"] as string) ?? ""}
+                  onChange={(c) => patchSelectedData({ iconColor: c })}
+                  palette="object"
+                />
+                <button
+                  type="button"
+                  onClick={() => patchSelectedData({ iconColor: "" })}
+                  className="rounded-[5px] border border-border px-2 py-1 text-[11px] hover:bg-surface-hover"
+                >
+                  Default
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* BOARD */}
+          {!multi && node.type === "board" && (
+            <div>
+              <SectionLabel>Board</SectionLabel>
+              <input
+                value={(node.data.title as string) ?? ""}
+                onChange={(e) => patchSelectedData({ title: e.target.value })}
+                placeholder="Board name"
+                className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+              />
+            </div>
+          )}
+
+          {/* LINK */}
+          {!multi && node.type === "link" && (
+            <div>
+              <SectionLabel>Link</SectionLabel>
+              <input
+                value={(node.data.url as string) ?? ""}
+                onChange={(e) => patchSelectedData({ url: e.target.value })}
+                placeholder="https://…"
+                className="mb-2 w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+              />
+              <input
+                value={(node.data.title as string) ?? ""}
+                onChange={(e) => patchSelectedData({ title: e.target.value })}
+                placeholder="Title"
+                className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+              />
+            </div>
+          )}
+
+          {/* ARRANGE - single */}
+          {!multi && (
+            <div>
+              <SectionLabel>Arrange</SectionLabel>
+              <div className="flex w-full gap-1 rounded-lg border border-border p-1">
+                <IconBtn
+                  label="Bring forward"
+                  icon={ArrowUp}
+                  onClick={() => bringForward(node.id)}
+                />
+                <IconBtn
+                  label="Send backward"
+                  icon={ArrowDown}
+                  onClick={() => sendBackward(node.id)}
+                />
+                <IconBtn
+                  label="Bring to front"
+                  icon={BringToFront}
+                  onClick={() => bringToFront(node.id)}
+                />
+                <IconBtn
+                  label="Send to back"
+                  icon={SendToBack}
+                  onClick={() => sendToBack(node.id)}
+                />
+              </div>
+            </div>
+          )}
+
+          {multi && (
+            <div>
+              <SectionLabel>Arrange</SectionLabel>
+              <div className="flex w-full gap-1 rounded-lg border border-border p-1">
+                <IconBtn
+                  label="Bring to front"
+                  icon={BringToFront}
+                  onClick={() => selected.forEach((n) => bringToFront(n.id))}
+                />
+                <IconBtn
+                  label="Send to back"
+                  icon={SendToBack}
+                  onClick={() => selected.forEach((n) => sendToBack(n.id))}
+                />
+              </div>
+            </div>
+          )}
+
+          {multi && (
+            <>
+              <div>
+                <SectionLabel>Align</SectionLabel>
+                <div className="grid grid-cols-3 gap-1">
+                  <button
+                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    onClick={() => alignSelected("left")}
+                  >
+                    Left
+                  </button>
+                  <button
+                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    onClick={() => alignSelected("centerX")}
+                  >
+                    Center
+                  </button>
+                  <button
+                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    onClick={() => alignSelected("right")}
+                  >
+                    Right
+                  </button>
+                  <button
+                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    onClick={() => alignSelected("top")}
+                  >
+                    Top
+                  </button>
+                  <button
+                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    onClick={() => alignSelected("centerY")}
+                  >
+                    Middle
+                  </button>
+                  <button
+                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    onClick={() => alignSelected("bottom")}
+                  >
+                    Bottom
+                  </button>
+                </div>
+              </div>
+              <div>
+                <SectionLabel>Distribute</SectionLabel>
+                <div className="grid grid-cols-2 gap-1">
+                  <button
+                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    onClick={() => distributeSelected("horizontal")}
+                  >
+                    Horizontally
+                  </button>
+                  <button
+                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    onClick={() => distributeSelected("vertical")}
+                  >
+                    Vertically
+                  </button>
+                </div>
+              </div>
+              <div>
+                <SectionLabel>Size</SectionLabel>
+                <div className="grid grid-cols-2 gap-1">
+                  <button
+                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    onClick={() => matchSizeSelected("width")}
+                  >
+                    Match width
+                  </button>
+                  <button
+                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    onClick={() => matchSizeSelected("height")}
+                  >
+                    Match height
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {!multi && node.type === "todo" && (
+            <div>
+              <SectionLabel>To-do</SectionLabel>
+              <input
+                value={(node.data.title as string) ?? "To-do"}
+                onChange={(e) => patchSelectedData({ title: e.target.value })}
+                placeholder="Title"
+                className="mb-2 w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+              />
+              <div className="flex items-center justify-between text-[12px] text-muted-foreground">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={(node.data.showCompleted as boolean) ?? true}
+                    onChange={(e) => patchSelectedData({ showCompleted: e.target.checked })}
+                  />
+                  Show completed
+                </label>
+                <button
+                  type="button"
+                  className="rounded-[5px] border border-border px-2 py-1 hover:bg-surface-hover"
+                  onClick={() => {
+                    const todos = Array.isArray(node.data.todos)
+                      ? (node.data.todos as Array<{ label: string; done: boolean }>)
+                      : [];
+                    patchSelectedData({ todos: todos.filter((t) => !t.done) });
+                  }}
+                >
+                  Clear completed
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!multi && node.type === "image" && (
+            <div>
+              <SectionLabel>Image</SectionLabel>
+              <input
+                ref={imageRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const assetId = await storeImageAsset(file, file.name);
+                  patchSelectedData({ assetId, caption: file.name });
+                  e.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => imageRef.current?.click()}
+                className="mb-2 flex w-full items-center justify-center gap-2 rounded-[5px] border border-border py-1.5 text-[12px] text-muted-foreground hover:bg-surface-hover"
+              >
+                <Replace className="h-3.5 w-3.5" /> Replace image
+              </button>
+              <label className="mb-2 flex items-center gap-2 text-[12px] text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={(node.data.captionVisible as boolean) ?? true}
+                  onChange={(e) => patchSelectedData({ captionVisible: e.target.checked })}
+                />
+                Show caption
+              </label>
+              <input
+                value={(node.data.alt as string) ?? ""}
+                onChange={(e) => patchSelectedData({ alt: e.target.value })}
+                placeholder="Alt text"
+                className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+              />
+            </div>
+          )}
+
+          <div>
+            <SectionLabel>Actions</SectionLabel>
+            <div className="flex w-full gap-1 rounded-lg border border-border p-1">
+              <IconBtn label="Duplicate" icon={Copy} onClick={duplicateSelected} />
+              <IconBtn
+                label={locked ? "Unlock" : "Lock"}
+                icon={locked ? Unlock : Lock}
+                onClick={() => setLockedSelected(!locked)}
+              />
+              {multi && selected.length >= 2 && (
+                <IconBtn
+                  label={hasGroup ? "Ungroup" : "Group"}
+                  icon={hasGroup ? Ungroup : Group}
+                  onClick={() => (hasGroup ? ungroupSelected() : groupSelected())}
                 />
               )}
             </div>
           </div>
-        )}
-
-        {/* COLOR SWATCH */}
-        {!multi && node.type === "color_swatch" && (
-          <div>
-            <SectionLabel>Swatch</SectionLabel>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                <span className="w-12">Color</span>
-                <SutonoteColorPicker
-                  value={(node.data.color as string) ?? "#6366f1"}
-                  onChange={(c) => patchSelectedData({ color: c })}
-                  palette="object"
-                />
-              </label>
-              <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                <span className="w-12">Label</span>
-                <input
-                  value={(node.data.label as string) ?? ""}
-                  onChange={(e) => patchSelectedData({ label: e.target.value })}
-                  placeholder="Color name"
-                  className="flex-1 rounded-[5px] border border-border bg-surface px-2 py-1 text-foreground outline-none"
-                />
-              </label>
-            </div>
-          </div>
-        )}
-
-        {/* FOLDER */}
-        {!multi && node.type === "folder" && (
-          <div>
-            <SectionLabel>Folder</SectionLabel>
-            <input
-              value={(node.data.title as string) ?? ""}
-              onChange={(e) => patchSelectedData({ title: e.target.value })}
-              placeholder="Folder name"
-              className="mb-2 w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
-            />
-            <div className="mb-2 grid grid-cols-8 gap-1">
-              {FOLDER_ICONS.map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  title={opt.label}
-                  aria-label={opt.label}
-                  onClick={() => patchSelectedData({ icon: opt.id })}
-                  className={`flex aspect-square items-center justify-center rounded-[5px] border transition-colors ${
-                    ((node.data["icon"] as string) ?? DEFAULT_FOLDER_ICON) === opt.id
-                      ? "border-border-strong bg-surface-active text-foreground"
-                      : "border-border text-muted-foreground hover:bg-surface-hover hover:text-foreground"
-                  }`}
-                >
-                  <opt.icon className="h-3.5 w-3.5" strokeWidth={1.75} />
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-              <span className="w-12">Icon</span>
-              <SutonoteColorPicker
-                value={(node.data["iconColor"] as string) ?? ""}
-                onChange={(c) => patchSelectedData({ iconColor: c })}
-                palette="object"
-              />
-              <button
-                type="button"
-                onClick={() => patchSelectedData({ iconColor: "" })}
-                className="rounded-[5px] border border-border px-2 py-1 text-[11px] hover:bg-surface-hover"
-              >
-                Default
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* BOARD */}
-        {!multi && node.type === "board" && (
-          <div>
-            <SectionLabel>Board</SectionLabel>
-            <input
-              value={(node.data.title as string) ?? ""}
-              onChange={(e) => patchSelectedData({ title: e.target.value })}
-              placeholder="Board name"
-              className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
-            />
-          </div>
-        )}
-
-        {/* LINK */}
-        {!multi && node.type === "link" && (
-          <div>
-            <SectionLabel>Link</SectionLabel>
-            <input
-              value={(node.data.url as string) ?? ""}
-              onChange={(e) => patchSelectedData({ url: e.target.value })}
-              placeholder="https://…"
-              className="mb-2 w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
-            />
-            <input
-              value={(node.data.title as string) ?? ""}
-              onChange={(e) => patchSelectedData({ title: e.target.value })}
-              placeholder="Title"
-              className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
-            />
-          </div>
-        )}
-
-        {/* ARRANGE - single */}
-        {!multi && (
-          <div>
-            <SectionLabel>Arrange</SectionLabel>
-            <div className="flex w-full gap-1 rounded-lg border border-border p-1">
-              <IconBtn label="Bring forward" icon={ArrowUp} onClick={() => bringForward(node.id)} />
-              <IconBtn
-                label="Send backward"
-                icon={ArrowDown}
-                onClick={() => sendBackward(node.id)}
-              />
-              <IconBtn
-                label="Bring to front"
-                icon={BringToFront}
-                onClick={() => bringToFront(node.id)}
-              />
-              <IconBtn label="Send to back" icon={SendToBack} onClick={() => sendToBack(node.id)} />
-            </div>
-          </div>
-        )}
-
-        {multi && (
-          <div>
-            <SectionLabel>Arrange</SectionLabel>
-            <div className="flex w-full gap-1 rounded-lg border border-border p-1">
-              <IconBtn
-                label="Bring to front"
-                icon={BringToFront}
-                onClick={() => selected.forEach((n) => bringToFront(n.id))}
-              />
-              <IconBtn
-                label="Send to back"
-                icon={SendToBack}
-                onClick={() => selected.forEach((n) => sendToBack(n.id))}
-              />
-            </div>
-          </div>
-        )}
-
-        {multi && (
-          <>
-            <div>
-              <SectionLabel>Align</SectionLabel>
-              <div className="grid grid-cols-3 gap-1">
-                <button
-                  className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
-                  onClick={() => alignSelected("left")}
-                >
-                  Left
-                </button>
-                <button
-                  className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
-                  onClick={() => alignSelected("centerX")}
-                >
-                  Center
-                </button>
-                <button
-                  className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
-                  onClick={() => alignSelected("right")}
-                >
-                  Right
-                </button>
-                <button
-                  className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
-                  onClick={() => alignSelected("top")}
-                >
-                  Top
-                </button>
-                <button
-                  className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
-                  onClick={() => alignSelected("centerY")}
-                >
-                  Middle
-                </button>
-                <button
-                  className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
-                  onClick={() => alignSelected("bottom")}
-                >
-                  Bottom
-                </button>
-              </div>
-            </div>
-            <div>
-              <SectionLabel>Distribute</SectionLabel>
-              <div className="grid grid-cols-2 gap-1">
-                <button
-                  className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
-                  onClick={() => distributeSelected("horizontal")}
-                >
-                  Horizontally
-                </button>
-                <button
-                  className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
-                  onClick={() => distributeSelected("vertical")}
-                >
-                  Vertically
-                </button>
-              </div>
-            </div>
-            <div>
-              <SectionLabel>Size</SectionLabel>
-              <div className="grid grid-cols-2 gap-1">
-                <button
-                  className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
-                  onClick={() => matchSizeSelected("width")}
-                >
-                  Match width
-                </button>
-                <button
-                  className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
-                  onClick={() => matchSizeSelected("height")}
-                >
-                  Match height
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-
-        {!multi && node.type === "todo" && (
-          <div>
-            <SectionLabel>To-do</SectionLabel>
-            <input
-              value={(node.data.title as string) ?? "To-do"}
-              onChange={(e) => patchSelectedData({ title: e.target.value })}
-              placeholder="Title"
-              className="mb-2 w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
-            />
-            <div className="flex items-center justify-between text-[12px] text-muted-foreground">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={(node.data.showCompleted as boolean) ?? true}
-                  onChange={(e) => patchSelectedData({ showCompleted: e.target.checked })}
-                />
-                Show completed
-              </label>
-              <button
-                type="button"
-                className="rounded-[5px] border border-border px-2 py-1 hover:bg-surface-hover"
-                onClick={() => {
-                  const todos = Array.isArray(node.data.todos)
-                    ? (node.data.todos as Array<{ label: string; done: boolean }>)
-                    : [];
-                  patchSelectedData({ todos: todos.filter((t) => !t.done) });
-                }}
-              >
-                Clear completed
-              </button>
-            </div>
-          </div>
-        )}
-
-        {!multi && node.type === "image" && (
-          <div>
-            <SectionLabel>Image</SectionLabel>
-            <input
-              ref={imageRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                const assetId = await storeImageAsset(file, file.name);
-                patchSelectedData({ assetId, caption: file.name });
-                e.target.value = "";
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => imageRef.current?.click()}
-              className="mb-2 flex w-full items-center justify-center gap-2 rounded-[5px] border border-border py-1.5 text-[12px] text-muted-foreground hover:bg-surface-hover"
-            >
-              <Replace className="h-3.5 w-3.5" /> Replace image
-            </button>
-            <label className="mb-2 flex items-center gap-2 text-[12px] text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={(node.data.captionVisible as boolean) ?? true}
-                onChange={(e) => patchSelectedData({ captionVisible: e.target.checked })}
-              />
-              Show caption
-            </label>
-            <input
-              value={(node.data.alt as string) ?? ""}
-              onChange={(e) => patchSelectedData({ alt: e.target.value })}
-              placeholder="Alt text"
-              className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
-            />
-          </div>
-        )}
-
-        <div>
-          <SectionLabel>Actions</SectionLabel>
-          <div className="flex w-full gap-1 rounded-lg border border-border p-1">
-            <IconBtn label="Duplicate" icon={Copy} onClick={duplicateSelected} />
-            <IconBtn
-              label={locked ? "Unlock" : "Lock"}
-              icon={locked ? Unlock : Lock}
-              onClick={() => setLockedSelected(!locked)}
-            />
-            {multi && selected.length >= 2 && (
-              <IconBtn
-                label={hasGroup ? "Ungroup" : "Group"}
-                icon={hasGroup ? Ungroup : Group}
-                onClick={() => (hasGroup ? ungroupSelected() : groupSelected())}
-              />
-            )}
-          </div>
-        </div>
         </div>
       </ScrollArea>
     </div>
@@ -696,7 +715,10 @@ function CustomColorButton({
           ref={pickerRef}
           className="absolute bottom-full left-0 z-50 mb-2 w-[200px] rounded-[10px] border border-border bg-popover p-3 shadow-lg"
         >
-          <div className="mb-2 flex h-8 w-full items-center justify-center rounded border border-border" style={{ background: hex }} />
+          <div
+            className="mb-2 flex h-8 w-full items-center justify-center rounded border border-border"
+            style={{ background: hex }}
+          />
           <div className="flex gap-1">
             <span className="text-[12px] text-muted-foreground">#</span>
             <input

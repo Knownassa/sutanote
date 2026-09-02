@@ -46,7 +46,11 @@ function BoardNode(props: NodeProps) {
         }`}
         style={{
           transform: `rotate(${rotation}deg)`,
-          transformOrigin: "center", padding: "16px", minHeight: 100, cursor: "pointer" }}
+          transformOrigin: "center",
+          padding: "16px",
+          minHeight: 100,
+          cursor: "pointer",
+        }}
         onDoubleClick={handleDoubleClick}
       >
         <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
@@ -90,7 +94,9 @@ function BoardNode(props: NodeProps) {
         </div>
 
         <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
-          <span className="text-[11px] text-muted-foreground/50">Experimental • navigation soon</span>
+          <span className="text-[11px] text-muted-foreground/50">
+            Experimental • navigation soon
+          </span>
           <button
             type="button"
             onClick={(e) => {

@@ -16,7 +16,10 @@ function FrameNode(props: NodeProps) {
   const showTitle = (data.showTitle as boolean) ?? true;
   const opacity = (data.opacity as number) ?? 100;
   const allNodes = useCanvasStore((s) => s.nodes);
-  const children = useMemo(() => allNodes.filter((n) => (n.data.parentId as string | undefined) === id), [allNodes, id]);
+  const children = useMemo(
+    () => allNodes.filter((n) => (n.data.parentId as string | undefined) === id),
+    [allNodes, id],
+  );
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
   const handleTitleBlur = () => {

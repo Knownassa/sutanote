@@ -85,7 +85,14 @@ function nodeKey(n: CanvasNode): string {
 }
 
 function edgeKey(e: CanvasEdge): string {
-  return JSON.stringify([e.source, e.target, e.sourceHandle ?? null, e.targetHandle ?? null, e.type ?? null, e.data ?? null]);
+  return JSON.stringify([
+    e.source,
+    e.target,
+    e.sourceHandle ?? null,
+    e.targetHandle ?? null,
+    e.type ?? null,
+    e.data ?? null,
+  ]);
 }
 
 function diffList<T>(
@@ -130,8 +137,12 @@ function makePatch(before: BoardSnapshot, after: BoardSnapshot): HistoryPatch | 
 }
 
 /** Apply a patch to a snapshot. `direction` -1 restores `before` (undo). */
-function applyPatch(snapshot: BoardSnapshot, patch: HistoryPatch, direction: 1 | -1): BoardSnapshot {
-  const applyTo = <T,>(list: T[], patches: EntryPatch<T>[], getId: (v: T) => string): T[] => {
+function applyPatch(
+  snapshot: BoardSnapshot,
+  patch: HistoryPatch,
+  direction: 1 | -1,
+): BoardSnapshot {
+  const applyTo = <T>(list: T[], patches: EntryPatch<T>[], getId: (v: T) => string): T[] => {
     if (patches.length === 0) return list;
     const target = new Map<string, T | null>();
     for (const p of patches) {
@@ -162,7 +173,8 @@ function applyPatch(snapshot: BoardSnapshot, patch: HistoryPatch, direction: 1 |
 
 function trim(past: HistoryPatch[], future: HistoryPatch[]) {
   let nextPast = past.slice(-MAX_COMMANDS);
-  let bytes = nextPast.reduce((sum, p) => sum + p.bytes, 0) + future.reduce((sum, p) => sum + p.bytes, 0);
+  let bytes =
+    nextPast.reduce((sum, p) => sum + p.bytes, 0) + future.reduce((sum, p) => sum + p.bytes, 0);
   while (bytes > MAX_HISTORY_BYTES && nextPast.length > 1) {
     bytes -= nextPast[0]!.bytes;
     nextPast = nextPast.slice(1);

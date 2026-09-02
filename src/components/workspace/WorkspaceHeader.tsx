@@ -12,6 +12,7 @@ import {
 import { useCanvasStore } from "@/lib/store";
 import { useHistoryStore } from "@/lib/history-store";
 import { useSettingsStore } from "@/lib/settings-store";
+import { useBoardTreeStore } from "@/lib/board-tree-store";
 import { SettingsDialog } from "./SettingsDialog";
 
 function IconButton({
@@ -66,20 +67,30 @@ function SaveStatus() {
   );
 }
 
-export function WorkspaceHeader() {
+export function WorkspaceHeader({ onOpenNavigator }: { onOpenNavigator?: () => void }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const canUndo = useHistoryStore((s) => s.canUndo);
   const canRedo = useHistoryStore((s) => s.canRedo);
   const undo = useCanvasStore((s) => s.undo);
   const redo = useCanvasStore((s) => s.redo);
   const vaultName = useSettingsStore((s) => s.vaultName);
-  const crumbs = ["Boards", vaultName];
+  const activeBoardId = useBoardTreeStore((s) => s.activeBoardId);
+  const groups = useBoardTreeStore((s) => s.groups);
+  const activeBoard = groups
+    .flatMap((group) => group.boards)
+    .find((board) => board.id === activeBoardId);
+  const crumbs = [vaultName, activeBoard?.name ?? "Board"];
 
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between border-b border-border pl-5 pr-3">
+    <header className="flex h-11 items-center justify-between rounded-2xl border border-border bg-popover/90 px-3 shadow-[0_8px_30px_rgba(0,0,0,0.08)] backdrop-blur-md">
       <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-sm">
         {crumbs.map((crumb, i) => (
-          <span key={`${crumb}-${i}`} className="flex min-w-0 items-center gap-1.5">
+          <button
+            key={`${crumb}-${i}`}
+            type="button"
+            onClick={i === 0 ? onOpenNavigator : undefined}
+            className={`flex min-w-0 items-center gap-1.5 rounded-lg px-1.5 py-1 ${i === 0 ? "cursor-pointer hover:bg-surface-hover" : "cursor-default"}`}
+          >
             {i > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />}
             <span
               className={
@@ -90,7 +101,7 @@ export function WorkspaceHeader() {
             >
               {crumb}
             </span>
-          </span>
+          </button>
         ))}
       </nav>
 

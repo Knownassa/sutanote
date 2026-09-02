@@ -69,7 +69,9 @@ function EmbedNode(props: NodeProps) {
         style={{
           transform: `rotate(${rotation}deg)`,
           transformOrigin: "center",
-          opacity: opacity / 100, maxWidth: 480 }}
+          opacity: opacity / 100,
+          maxWidth: 480,
+        }}
       >
         {showEmpty ? (
           <EmptyAssetState

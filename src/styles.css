@@ -126,13 +126,13 @@
   --highlight-pink: oklch(0.88 0.06 350);
   --highlight-blue: oklch(0.88 0.05 250);
   --highlight-green: oklch(0.88 0.06 150);
-  --highlight-orange: oklch(0.90 0.07 60);
+  --highlight-orange: oklch(0.9 0.07 60);
   --highlight-sand: oklch(0.94 0.04 85);
   --highlight-apricot: oklch(0.92 0.05 55);
   --highlight-rose: oklch(0.89 0.06 15);
   --highlight-sage: oklch(0.89 0.05 150);
-  --highlight-sky: oklch(0.90 0.05 200);
-  --highlight-lavender: oklch(0.90 0.04 280);
+  --highlight-sky: oklch(0.9 0.05 200);
+  --highlight-lavender: oklch(0.9 0.04 280);
   --sut-highlight-sand: var(--highlight-sand);
   --sut-highlight-apricot: var(--highlight-apricot);
   --sut-highlight-rose: var(--highlight-rose);
@@ -178,14 +178,14 @@
   --sidebar: oklch(0.1476 0.0031 285.9);
   --sidebar-foreground: oklch(0.9276 0.0058 264.53);
   --sidebar-border: oklch(0.2472 0.0056 286);
-  --highlight-yellow: oklch(0.60 0.08 90);
-  --highlight-pink: oklch(0.55 0.10 350);
+  --highlight-yellow: oklch(0.6 0.08 90);
+  --highlight-pink: oklch(0.55 0.1 350);
   --highlight-blue: oklch(0.55 0.08 250);
   --highlight-green: oklch(0.55 0.09 150);
-  --highlight-orange: oklch(0.58 0.10 60);
+  --highlight-orange: oklch(0.58 0.1 60);
   --highlight-sand: oklch(0.65 0.07 80);
-  --highlight-apricot: oklch(0.60 0.08 50);
-  --highlight-rose: oklch(0.55 0.10 15);
+  --highlight-apricot: oklch(0.6 0.08 50);
+  --highlight-rose: oklch(0.55 0.1 15);
   --highlight-sage: oklch(0.55 0.08 150);
   --highlight-sky: oklch(0.58 0.07 200);
   --highlight-lavender: oklch(0.58 0.07 280);
@@ -223,11 +223,13 @@
 }
 
 /* Hide ReactFlow attribution watermark */
-.react-flow__attribution { display: none !important; }
+.react-flow__attribution {
+  display: none !important;
+}
 
 /* Temporary marquee selection — visible during drag, hidden after. */
 .react-flow__selection {
-  background: oklch(0.9232 0.0026 106.42 / 0.10) !important;
+  background: oklch(0.9232 0.0026 106.42 / 0.1) !important;
   border: 1px dashed oklch(0.8695 0.0036 106.42 / 0.6) !important;
   border-radius: 6px;
 }
@@ -253,10 +255,17 @@
   stroke-width: 1.5px;
   stroke-dasharray: 4 4;
 }
-.react-flow__node.selected { outline: none !important; box-shadow: none !important; }
+.react-flow__node.selected {
+  outline: none !important;
+  box-shadow: none !important;
+}
 
 /* Hide handles completely — cards, not graph nodes */
-.react-flow__handle { opacity: 0 !important; width: 0 !important; height: 0 !important; }
+.react-flow__handle {
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
 
 /* While dragging, kill expensive animations so the node tracks the cursor. */
 .react-flow__node.dragging [data-node-surface],
@@ -267,15 +276,29 @@
 }
 
 /* Cursor system — toolbar/tool state drives pane cursor. */
-.sut-cursor-default .react-flow__pane { cursor: default; }
-.sut-cursor-grab .react-flow__pane { cursor: grab; }
-.sut-cursor-grabbing .react-flow__pane { cursor: grabbing; }
-.sut-cursor-crosshair .react-flow__pane { cursor: crosshair; }
+.sut-cursor-default .react-flow__pane {
+  cursor: default;
+}
+.sut-cursor-grab .react-flow__pane {
+  cursor: grab;
+}
+.sut-cursor-grabbing .react-flow__pane {
+  cursor: grabbing;
+}
+.sut-cursor-crosshair .react-flow__pane {
+  cursor: crosshair;
+}
 
 /* Hovering a movable node shows grab; dragging shows grabbing. */
-.react-flow__node:not(.locked) { cursor: grab; }
-.react-flow__node.dragging { cursor: grabbing; }
-.react-flow__node.locked { cursor: not-allowed; }
+.react-flow__node:not(.locked) {
+  cursor: grab;
+}
+.react-flow__node.dragging {
+  cursor: grabbing;
+}
+.react-flow__node.locked {
+  cursor: not-allowed;
+}
 
 /* Resize corner handles: refined 5px dots with generous hit area. */
 .react-flow__resize-control.handle {
@@ -304,18 +327,22 @@
   border: 1px solid var(--border-strong) !important;
   border-radius: 9999px !important;
 }
-.react-flow__resize-control.line { display: none !important; }
-.react-flow__background { opacity: 1 !important; }
+.react-flow__resize-control.line {
+  display: none !important;
+}
+.react-flow__background {
+  opacity: 1 !important;
+}
 
 /* Node polish: subtle shadows, no scale on selection */
 [data-node-surface] {
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 .react-flow__node:hover [data-node-surface] {
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
 }
 .react-flow__node.selected [data-node-surface] {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
 }
 .react-flow__minimap {
   background: var(--color-popover) !important;
@@ -371,11 +398,27 @@ body::after {
   padding-left: 1.2rem;
   margin: 0.4rem 0;
 }
-.ProseMirror ul { list-style: disc; }
-.ProseMirror ol { list-style: decimal; }
-.ProseMirror h1 { font-size: 1.6rem; font-weight: 600; margin: 0.6rem 0 0.3rem; }
-.ProseMirror h2 { font-size: 1.3rem; font-weight: 600; margin: 0.5rem 0 0.2rem; }
-.ProseMirror h3 { font-size: 1.1rem; font-weight: 600; margin: 0.4rem 0 0.2rem; }
+.ProseMirror ul {
+  list-style: disc;
+}
+.ProseMirror ol {
+  list-style: decimal;
+}
+.ProseMirror h1 {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 0.6rem 0 0.3rem;
+}
+.ProseMirror h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0.5rem 0 0.2rem;
+}
+.ProseMirror h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.4rem 0 0.2rem;
+}
 .ProseMirror blockquote {
   border-left: 2px solid var(--border-strong);
   padding-left: 0.8rem;
@@ -398,8 +441,14 @@ body::after {
   gap: 0.4rem;
   align-items: flex-start;
 }
-.ProseMirror ul[data-type="taskList"] li > label { flex-shrink: 0; margin-top: 0.25rem; }
-.ProseMirror a { color: var(--primary); text-decoration: underline; }
+.ProseMirror ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+.ProseMirror a {
+  color: var(--primary);
+  text-decoration: underline;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -409,4 +458,3 @@ body::after {
     transition-duration: 0.01ms !important;
   }
 }
-

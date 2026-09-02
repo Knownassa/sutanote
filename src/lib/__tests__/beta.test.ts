@@ -1,4 +1,4 @@
-// @ts-ignore - bun:test types only available in bun runtime
+// @ts-expect-error Bun provides bun:test at runtime; the app TypeScript config does not include Bun types.
 import { describe, it, expect } from "bun:test";
 import { ITEM_REGISTRY, getItemDef } from "../item-registry";
 import { NODE_DEFINITIONS, getNodeDef } from "../node-definitions";
@@ -9,7 +9,10 @@ import { heavyPhase } from "../../hooks/use-heavy-node";
 describe("registry invariants", () => {
   it("every available node has NODE_DEFINITIONS", () => {
     for (const item of ITEM_REGISTRY.filter((i) => i.status === "available" && i.kind === "node")) {
-      expect(NODE_DEFINITIONS[item.type], `missing NODE_DEFINITIONS for ${item.type}`).toBeDefined();
+      expect(
+        NODE_DEFINITIONS[item.type],
+        `missing NODE_DEFINITIONS for ${item.type}`,
+      ).toBeDefined();
       expect(getNodeDef(item.type).defaultWidth).toBeGreaterThan(0);
     }
   });
@@ -41,7 +44,10 @@ describe("history", () => {
     h.clear();
     h.init({ nodes: [], edges: [] });
     expect(h.canUndo).toBe(false);
-    h.push({ nodes: [{ id: "a", position: { x: 0, y: 0 }, data: {}, style: {} } as never], edges: [] });
+    h.push({
+      nodes: [{ id: "a", position: { x: 0, y: 0 }, data: {}, style: {} } as never],
+      edges: [],
+    });
     expect(useHistoryStore.getState().canUndo).toBe(true);
     const snap = h.undo();
     expect(snap).toBeDefined();
@@ -55,7 +61,12 @@ describe("history", () => {
     const h = useHistoryStore.getState();
     h.clear();
     h.init({ nodes: [], edges: [] });
-    const s = { nodes: [{ id: "a", position: { x: 0, y: 0 }, data: { text: "hi" }, style: { width: 100 } } as never], edges: [] };
+    const s = {
+      nodes: [
+        { id: "a", position: { x: 0, y: 0 }, data: { text: "hi" }, style: { width: 100 } } as never,
+      ],
+      edges: [],
+    };
     h.push(s);
     const before = useHistoryStore.getState().past.length;
     h.push(s);
@@ -67,11 +78,24 @@ describe("history", () => {
 describe("container parentId", () => {
   it("section contains real parentId", async () => {
     // Simulate parentId attach logic: node inside section gets parentId
-    const section = { id: "sec1", type: "section", position: { x: 0, y: 0 }, style: { width: 560, minHeight: 360 }, data: {} } as never;
+    const section = {
+      id: "sec1",
+      type: "section",
+      position: { x: 0, y: 0 },
+      style: { width: 560, minHeight: 360 },
+      data: {},
+    } as never;
     const childPos = { x: 10, y: 10 };
-    const w = 560, h = 360, cx = 0, cy = 0;
-    const left = cx - w / 2, right = cx + w / 2, top = cy - h / 2, bottom = cy + h / 2;
-    const inside = childPos.x >= left && childPos.x <= right && childPos.y >= top && childPos.y <= bottom;
+    const w = 560,
+      h = 360,
+      cx = 0,
+      cy = 0;
+    const left = cx - w / 2,
+      right = cx + w / 2,
+      top = cy - h / 2,
+      bottom = cy + h / 2;
+    const inside =
+      childPos.x >= left && childPos.x <= right && childPos.y >= top && childPos.y <= bottom;
     expect(inside).toBe(true);
   });
 });

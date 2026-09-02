@@ -61,7 +61,11 @@ function CodeBlockNode(props: NodeProps) {
         }`}
         style={{
           transform: `rotate(${rotation}deg)`,
-          transformOrigin: "center", padding: "0", minHeight: 160, maxWidth: 600 }}
+          transformOrigin: "center",
+          padding: "0",
+          minHeight: 160,
+          maxWidth: 600,
+        }}
         onDoubleClick={() => {
           if (!isEditing) setEditingNode(id, "body");
         }}

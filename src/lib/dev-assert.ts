@@ -50,7 +50,9 @@ export function assertRegistryInvariants(): void {
 
     if (item.kind === "node") {
       if (!KNOWN_NODE_TYPES.has(item.type)) {
-        errors.push(`[registry] available node "${item.type}" has no renderer (missing in KNOWN_NODE_TYPES)`);
+        errors.push(
+          `[registry] available node "${item.type}" has no renderer (missing in KNOWN_NODE_TYPES)`,
+        );
       }
       if (!NODE_DEFINITIONS[item.type]) {
         errors.push(`[registry] available node "${item.type}" missing in NODE_DEFINITIONS`);
@@ -63,11 +65,15 @@ export function assertRegistryInvariants(): void {
       }
     } else if (item.kind === "tool") {
       if (!KNOWN_TOOLS.has(item.type)) {
-        errors.push(`[registry] available tool "${item.type}" has no activation handler (missing in KNOWN_TOOLS)`);
+        errors.push(
+          `[registry] available tool "${item.type}" has no activation handler (missing in KNOWN_TOOLS)`,
+        );
       }
     } else if (item.kind === "action") {
       if (!KNOWN_ACTIONS.has(item.type)) {
-        errors.push(`[registry] available action "${item.type}" has no handler (missing in KNOWN_ACTIONS)`);
+        errors.push(
+          `[registry] available action "${item.type}" has no handler (missing in KNOWN_ACTIONS)`,
+        );
       }
     }
   }

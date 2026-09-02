@@ -97,9 +97,15 @@ export function ImageLightbox() {
         onClick={(e) => e.stopPropagation()}
       >
         {url ? (
-          <img src={url} alt={caption || "image"} className="max-h-[75vh] w-auto max-w-[90vw] object-contain" />
+          <img
+            src={url}
+            alt={caption || "image"}
+            className="max-h-[75vh] w-auto max-w-[90vw] object-contain"
+          />
         ) : (
-          <div className="flex h-64 w-96 items-center justify-center text-muted-foreground">No image</div>
+          <div className="flex h-64 w-96 items-center justify-center text-muted-foreground">
+            No image
+          </div>
         )}
         {caption && (
           <div className="border-t border-border bg-card px-4 py-3 text-center text-sm text-foreground">

@@ -8,13 +8,15 @@ import { memo, useMemo } from "react";
  * board mounts 0 editors instead of one per card.
  */
 function sanitize(html: string): string {
-  return html
-    // drop script/style/iframe/object blocks entirely
-    .replace(/<\s*(script|style|iframe|object|embed)[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
-    // drop inline event handlers
-    .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-    // neutralise javascript: urls
-    .replace(/(href|src)\s*=\s*("|')\s*javascript:[^"']*\2/gi, '$1="#"');
+  return (
+    html
+      // drop script/style/iframe/object blocks entirely
+      .replace(/<\s*(script|style|iframe|object|embed)[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
+      // drop inline event handlers
+      .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+      // neutralise javascript: urls
+      .replace(/(href|src)\s*=\s*("|')\s*javascript:[^"']*\2/gi, '$1="#"')
+  );
 }
 
 interface RichTextViewProps {
@@ -23,7 +25,11 @@ interface RichTextViewProps {
   placeholder?: string;
 }
 
-function RichTextViewImpl({ html, plainText, placeholder = "Start writing..." }: RichTextViewProps) {
+function RichTextViewImpl({
+  html,
+  plainText,
+  placeholder = "Start writing...",
+}: RichTextViewProps) {
   const safe = useMemo(() => sanitize(html ?? ""), [html]);
   const isEmpty = !plainText?.trim() && !safe.replace(/<[^>]*>/g, "").trim();
 

@@ -3,9 +3,9 @@ import { useSettingsStore } from "./settings-store";
 import { DEFAULT_BOARD_ID } from "./persistence/types";
 import { db } from "./database";
 
-async function getAllAssetsForNodes(nodes: { data: Record<string, unknown> }[]): Promise<
-  { id: string; name: string; mime: string; size: number; data: string }[]
-> {
+async function getAllAssetsForNodes(
+  nodes: { data: Record<string, unknown> }[],
+): Promise<{ id: string; name: string; mime: string; size: number; data: string }[]> {
   const assetIds = new Set<string>();
   for (const n of nodes) {
     const aid = n.data["assetId"] as string | undefined;
@@ -41,7 +41,9 @@ async function getAllAssetsForNodes(nodes: { data: Record<string, unknown> }[]):
         size: row?.size ?? blob.length,
         data: b64,
       });
-    } catch {}
+    } catch {
+      // An unreadable asset should not prevent the rest of the workspace export.
+    }
   }
   return assets;
 }
@@ -49,7 +51,9 @@ async function getAllAssetsForNodes(nodes: { data: Record<string, unknown> }[]):
 export async function exportWorkspace(): Promise<void> {
   const state = useCanvasStore.getState();
   const settings = useSettingsStore.getState();
-  const assets = await getAllAssetsForNodes(state.nodes as unknown as { data: Record<string, unknown> }[]);
+  const assets = await getAllAssetsForNodes(
+    state.nodes as unknown as { data: Record<string, unknown> }[],
+  );
 
   const payload = {
     manifest: {
@@ -96,8 +100,10 @@ export async function importWorkspace(file: File): Promise<void> {
   } catch {
     throw new Error("Invalid file: not JSON");
   }
-  if (!payload.manifest || payload.manifest.version !== 1) throw new Error("Invalid or unsupported .sutonote version");
-  if (!Array.isArray(payload.nodes) || !Array.isArray(payload.edges)) throw new Error("Invalid file: missing nodes/edges");
+  if (!payload.manifest || payload.manifest.version !== 1)
+    throw new Error("Invalid or unsupported .sutonote version");
+  if (!Array.isArray(payload.nodes) || !Array.isArray(payload.edges))
+    throw new Error("Invalid file: missing nodes/edges");
   if (!Array.isArray(payload.assets)) payload.assets = [];
 
   const confirmed = window.confirm(
@@ -117,7 +123,9 @@ export async function importWorkspace(file: File): Promise<void> {
         `INSERT INTO canvas_assets (id, name, mime, size) VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, mime=EXCLUDED.mime, size=EXCLUDED.size`,
         [a.id, a.name, a.mime, a.size],
       );
-    } catch {}
+    } catch {
+      // Skip malformed imported assets and continue restoring the workspace.
+    }
   }
 
   // Clear current board and insert imported
@@ -169,21 +177,37 @@ export async function importWorkspace(file: File): Promise<void> {
     }[]) {
       await tx.query(
         `INSERT INTO canvas_edges (id, board_id, source_id, target_id, source_handle, target_handle, type, data) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [e.id, DEFAULT_BOARD_ID, e.source, e.target, e.sourceHandle ?? null, e.targetHandle ?? null, e.type ?? null, e.data ? JSON.stringify(e.data) : null],
+        [
+          e.id,
+          DEFAULT_BOARD_ID,
+          e.source,
+          e.target,
+          e.sourceHandle ?? null,
+          e.targetHandle ?? null,
+          e.type ?? null,
+          e.data ? JSON.stringify(e.data) : null,
+        ],
       );
     }
   });
 
   // Update settings if present
-  if (payload.settings?.vaultName) useSettingsStore.getState().setVaultName(payload.settings.vaultName);
-  if (payload.settings?.displayName) useSettingsStore.getState().setDisplayName(payload.settings.displayName);
+  if (payload.settings?.vaultName)
+    useSettingsStore.getState().setVaultName(payload.settings.vaultName);
+  if (payload.settings?.displayName)
+    useSettingsStore.getState().setDisplayName(payload.settings.displayName);
 
   // Reload store from DB
   const { loadNodesByBoard } = await import("./persistence/node-repository");
   const { loadEdgesByBoard } = await import("./persistence/edge-repository");
   const nodes = await loadNodesByBoard(DEFAULT_BOARD_ID);
   const edges = await loadEdgesByBoard(DEFAULT_BOARD_ID);
-  store.setState({ nodes: nodes as never, edges: edges as never, selectedNodeIds: [], isLoaded: true });
+  store.setState({
+    nodes: nodes as never,
+    edges: edges as never,
+    selectedNodeIds: [],
+    isLoaded: true,
+  });
   useHistoryStore.getState().init({ nodes: nodes as never, edges: edges as never });
 
   const { useNoticeStore } = await import("./notice-store");

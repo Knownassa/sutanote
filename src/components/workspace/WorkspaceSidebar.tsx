@@ -9,26 +9,10 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSettingsStore } from "@/lib/settings-store";
+import { useBoardTreeStore } from "@/lib/board-tree-store";
+import { useCanvasStore } from "@/lib/store";
 import { getAssetUrl } from "@/lib/asset-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-type Board = { name: string };
-type Group = { name: string; boards: Board[] };
-
-const tree: Group[] = [
-  {
-    name: "Studio Rebrand",
-    boards: [{ name: "Moodboard" }, { name: "Typography" }, { name: "Logo drafts" }],
-  },
-  {
-    name: "Research",
-    boards: [{ name: "Interviews" }, { name: "Competitors" }],
-  },
-  {
-    name: "Personal",
-    boards: [{ name: "Reading list" }],
-  },
-];
 
 export function WorkspaceSidebar({
   open,
@@ -39,12 +23,15 @@ export function WorkspaceSidebar({
   onToggle: () => void;
   onOpenPalette: () => void;
 }) {
-  const [active, setActive] = useState("Moodboard");
   const [collapsed, setCollapsed] = useState<string[]>([]);
   const displayName = useSettingsStore((s) => s.displayName);
   const vaultName = useSettingsStore((s) => s.vaultName);
   const avatarAssetId = useSettingsStore((s) => s.avatarAssetId);
   const [avatarUrl, setAvatarUrl] = useState("");
+  const groups = useBoardTreeStore((s) => s.groups);
+  const activeBoardId = useBoardTreeStore((s) => s.activeBoardId);
+  const addBoard = useBoardTreeStore((s) => s.addBoard);
+  const switchBoard = useCanvasStore((s) => s.switchBoard);
 
   useEffect(() => {
     if (!avatarAssetId) {
@@ -81,8 +68,10 @@ export function WorkspaceSidebar({
         <button
           type="button"
           onClick={async () => {
-            const { useNoticeStore } = await import("@/lib/notice-store");
-            useNoticeStore.getState().show("New Board coming soon", "info");
+            const group = groups[0];
+            if (!group) return;
+            const id = addBoard(group.id);
+            await switchBoard(id);
           }}
           className="flex w-full items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
         >
@@ -102,7 +91,7 @@ export function WorkspaceSidebar({
 
       <ScrollArea className="flex-1 px-3 pb-4">
         <div className="space-y-5">
-          {tree.map((group) => {
+          {groups.map((group) => {
             const isCollapsed = collapsed.includes(group.name);
             return (
               <div key={group.name} className="space-y-1">
@@ -124,9 +113,9 @@ export function WorkspaceSidebar({
                       <li key={board.name}>
                         <button
                           type="button"
-                          onClick={() => setActive(board.name)}
+                          onClick={() => void switchBoard(board.id)}
                           className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors ${
-                            active === board.name
+                            activeBoardId === board.id
                               ? "bg-surface-active font-medium text-foreground"
                               : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
                           }`}

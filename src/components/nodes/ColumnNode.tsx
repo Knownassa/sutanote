@@ -74,7 +74,9 @@ function ColumnNode(props: NodeProps) {
                 {title}
               </h3>
             )}
-            <span className="ml-2 text-xs tabular-nums text-muted-foreground/60">{children.length}</span>
+            <span className="ml-2 text-xs tabular-nums text-muted-foreground/60">
+              {children.length}
+            </span>
             <button
               type="button"
               onClick={() => updateNodeDataWithHistory(id, { collapsed: !collapsed })}
@@ -90,9 +92,7 @@ function ColumnNode(props: NodeProps) {
           {!collapsed && (
             <div className="space-y-2 border-t border-border/50 pt-2">
               {children.length === 0 ? (
-                <p className="py-6 text-center text-xs text-muted-foreground/50">
-                  Drop items here
-                </p>
+                <p className="py-6 text-center text-xs text-muted-foreground/50">Drop items here</p>
               ) : (
                 <div className="space-y-1">
                   {children.map((child) => (
@@ -101,7 +101,9 @@ function ColumnNode(props: NodeProps) {
                       className="flex items-center gap-2 rounded-[5px] bg-card px-2 py-1 text-xs text-foreground border border-border/50"
                     >
                       <span className="flex-1 truncate">
-                        {(child.data.title as string) || (child.data.text as string)?.slice(0, 24) || child.type}
+                        {(child.data.title as string) ||
+                          (child.data.text as string)?.slice(0, 24) ||
+                          child.type}
                       </span>
                       <span className="text-[10px] text-muted-foreground/60">{child.type}</span>
                     </div>
@@ -109,7 +111,8 @@ function ColumnNode(props: NodeProps) {
                 </div>
               )}
               <p className="text-center text-[10px] text-muted-foreground/40">
-                {children.length} {children.length === 1 ? "item" : "items"} • move Column to move children
+                {children.length} {children.length === 1 ? "item" : "items"} • move Column to move
+                children
               </p>
             </div>
           )}
