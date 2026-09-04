@@ -701,6 +701,26 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
             ? { filename: "", assetId: "", remoteUrl: "", sourceType: "local" }
             : {}),
           ...(type === "embed" ? { remoteUrl: "" } : {}),
+          ...(type === "audio"
+            ? { filename: "", assetId: "", remoteUrl: "", sourceType: "local" }
+            : {}),
+          ...(type === "table"
+            ? {
+                title: "Table",
+                table: {
+                  columns: [
+                    { id: nanoid(6), label: "Name", kind: "text" },
+                    { id: nanoid(6), label: "Status", kind: "text" },
+                    { id: nanoid(6), label: "Done", kind: "checkbox" },
+                  ],
+                  rows: [
+                    { id: nanoid(6), cells: ["", "In progress", "false"] },
+                    { id: nanoid(6), cells: ["", "Not started", "false"] },
+                  ],
+                },
+              }
+            : {}),
+          ...(type === "drawing" ? { points: [], strokeColor: "#ef4444", strokeWidth: 3 } : {}),
         },
         style: { width: def.defaultWidth, minHeight: def.defaultHeight },
       };

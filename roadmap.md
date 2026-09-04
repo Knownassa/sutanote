@@ -43,7 +43,9 @@ ownership of your files.
 - [ ] Templates + save board as template (starter set)
 - [ ] Unsorted notes / inbox + quick capture
 - [ ] Web capture / clipper, rich link metadata + thumbnails
-- [ ] Table, drawing/pen, audio
+- [x] Table v1 (editable text/number/checkbox/date cells, row/column controls, local persistence)
+- [x] Drawing/pen/highlighter/eraser (lightweight persisted SVG strokes)
+- [x] Audio (local upload or URL, play/scrub/download, lazy media lifecycle)
 - [ ] Comment threads, @mentions, reactions
 
 ## Milestone: Miro canvas parity

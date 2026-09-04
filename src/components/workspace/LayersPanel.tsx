@@ -12,6 +12,9 @@ const labels: Record<string, string> = {
   column: "Column",
   board: "Board",
   folder: "Folder",
+  audio: "Audio",
+  table: "Table",
+  drawing: "Drawing",
 };
 
 export function LayersPanel() {

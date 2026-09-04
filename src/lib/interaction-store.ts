@@ -1,6 +1,16 @@
 import { create } from "zustand";
 
-export type CanvasTool = "select" | "hand" | "text" | "sticky" | "todo" | "image" | "connector";
+export type CanvasTool =
+  | "select"
+  | "hand"
+  | "text"
+  | "sticky"
+  | "todo"
+  | "image"
+  | "connector"
+  | "pen"
+  | "highlighter"
+  | "eraser";
 
 export type InteractionMode =
   "canvas" | "text-edit" | "embed-interact" | "media-interact" | "resize" | "connect" | "draw";

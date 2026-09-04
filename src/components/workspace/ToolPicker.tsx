@@ -59,11 +59,7 @@ export function ToolPicker({ open, onClose }: ToolPickerProps) {
     (item: ItemDefinition) => {
       if (item.status !== "available") return;
       if (item.kind === "tool") {
-        if (item.type === "connector") setActiveTool("connector");
-        else {
-          // drawing tools etc - for now just select
-          setActiveTool("select");
-        }
+        setActiveTool(item.type as "connector" | "pen" | "highlighter" | "eraser");
         onClose();
         return;
       }

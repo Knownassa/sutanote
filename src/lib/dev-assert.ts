@@ -35,6 +35,7 @@ const KNOWN_NODE_TYPES = new Set([
   "group",
   "map",
   "webcapture",
+  "drawing",
 ]);
 
 const KNOWN_TOOLS = new Set(["connector", "pen", "highlighter", "eraser", "lasso"]);

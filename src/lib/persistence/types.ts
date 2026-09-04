@@ -2,6 +2,27 @@ import type { Node, Edge } from "reactflow";
 
 export type PersistenceStatus = "clean" | "dirty" | "saving" | "saved" | "error";
 
+export interface TableColumn {
+  id: string;
+  label: string;
+  kind?: "text" | "number" | "checkbox" | "date";
+}
+
+export interface TableRow {
+  id: string;
+  cells: string[];
+}
+
+export interface TableData {
+  columns: TableColumn[];
+  rows: TableRow[];
+}
+
+export interface DrawingPoint {
+  x: number;
+  y: number;
+}
+
 export interface CanvasNodeData {
   text: string;
   color: string;
@@ -44,6 +65,9 @@ export interface CanvasNodeData {
   // Shared asset fields
   remoteUrl?: string;
   sourceType?: "local" | "remote";
+  table?: TableData;
+  points?: DrawingPoint[];
+  strokeColor?: string;
   // Appearance
   opacity?: number;
   fill?: string;

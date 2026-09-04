@@ -174,6 +174,32 @@ export const NODE_DEFINITIONS: Record<string, NodeDefinition> = {
     resizeMode: "both",
     editableText: true,
   },
+  audio: {
+    defaultWidth: DEFAULT_ITEM_WIDTH,
+    defaultHeight: 112,
+    minWidth: 280,
+    minHeight: 88,
+    maxWidth: 520,
+    resizeMode: "width",
+  },
+  table: {
+    defaultWidth: 480,
+    defaultHeight: 280,
+    minWidth: 320,
+    minHeight: 160,
+    maxWidth: 1200,
+    maxHeight: 800,
+    resizeMode: "both",
+  },
+  drawing: {
+    defaultWidth: 160,
+    defaultHeight: 120,
+    minWidth: 40,
+    minHeight: 40,
+    maxWidth: 1600,
+    maxHeight: 1200,
+    resizeMode: "both",
+  },
 };
 
 const FALLBACK: NodeDefinition = {

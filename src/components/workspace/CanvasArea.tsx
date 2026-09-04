@@ -41,10 +41,14 @@ import VideoNode from "@/components/nodes/VideoNode";
 import EmbedNode from "@/components/nodes/EmbedNode";
 import CodeBlockNode from "@/components/nodes/CodeBlockNode";
 import SectionNode from "@/components/nodes/SectionNode";
+import AudioNode from "@/components/nodes/AudioNode";
+import TableNode from "@/components/nodes/TableNode";
+import DrawingNode from "@/components/nodes/DrawingNode";
 import { ToolPicker } from "@/components/workspace/ToolPicker";
 import { ImageLightbox } from "@/components/workspace/ImageLightbox";
 import { DocumentPreview } from "@/components/workspace/DocumentPreview";
 import { getItemDef } from "@/lib/item-registry";
+import type { DrawingPoint } from "@/lib/persistence/types";
 
 const nodeTypes: NodeTypes = {
   sticky: StickyNoteNode,
@@ -65,7 +69,13 @@ const nodeTypes: NodeTypes = {
   embed: EmbedNode,
   code: CodeBlockNode,
   section: SectionNode,
+  audio: AudioNode,
+  table: TableNode,
+  drawing: DrawingNode,
 };
+
+const isDrawingTool = (tool: string) =>
+  tool === "pen" || tool === "highlighter" || tool === "eraser";
 
 function centerViewport(): Viewport {
   if (typeof window === "undefined") return { x: 0, y: 0, zoom: 0.9 };
@@ -128,6 +138,7 @@ function CanvasInner() {
         ],
   );
   const [extent, setExtent] = useState<BoardExtent>(extentRef.current);
+  const drawingPointsRef = useRef<DrawingPoint[]>([]);
 
   // Adaptive viewport virtualization: only pay React Flow's visibility pass on
   // boards big enough to benefit from skipping off-screen nodes.
@@ -170,10 +181,11 @@ function CanvasInner() {
       nodes.map((n) => ({
         ...n,
         hidden: n.data?.["hidden"] === true,
-        draggable: !handMode && !n.data?.locked && editingNodeId !== n.id,
+        draggable:
+          !handMode && !isDrawingTool(activeTool) && !n.data?.locked && editingNodeId !== n.id,
         className: n.data?.locked ? "locked" : "",
       })),
-    [nodes, handMode, editingNodeId],
+    [nodes, handMode, editingNodeId, activeTool],
   );
 
   const handleNodeDragStart = useCallback(() => {
@@ -445,6 +457,63 @@ function CanvasInner() {
     }
   }, []);
 
+  const handlePaneMouseDown = useCallback(
+    (event: React.MouseEvent) => {
+      if (!isDrawingTool(activeTool) || event.button !== 0) return;
+      if (!(event.target as Element).closest(".react-flow__pane")) return;
+      event.preventDefault();
+      drawingPointsRef.current = [screenToFlowPosition({ x: event.clientX, y: event.clientY })];
+      useInteractionStore.getState().setInteractionMode("draw");
+    },
+    [activeTool, screenToFlowPosition],
+  );
+
+  const handlePaneMouseMove = useCallback(
+    (event: React.MouseEvent) => {
+      if (!isDrawingTool(useInteractionStore.getState().activeTool)) return;
+      if (drawingPointsRef.current.length === 0) return;
+      const point = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+      const previous = drawingPointsRef.current[drawingPointsRef.current.length - 1];
+      if (!previous || Math.hypot(point.x - previous.x, point.y - previous.y) < 2) return;
+      drawingPointsRef.current.push(point);
+    },
+    [screenToFlowPosition],
+  );
+
+  const handlePaneMouseUp = useCallback(() => {
+    const points = drawingPointsRef.current;
+    drawingPointsRef.current = [];
+    if (points.length < 2) {
+      useInteractionStore.getState().setInteractionMode("canvas");
+      return;
+    }
+
+    const minX = Math.min(...points.map((point) => point.x));
+    const maxX = Math.max(...points.map((point) => point.x));
+    const minY = Math.min(...points.map((point) => point.y));
+    const maxY = Math.max(...points.map((point) => point.y));
+    const padding = 12;
+    const normalized = points.map((point) => ({
+      x: point.x - minX + padding,
+      y: point.y - minY + padding,
+    }));
+    const width = Math.max(40, maxX - minX + padding * 2);
+    const height = Math.max(40, maxY - minY + padding * 2);
+    const tool = useInteractionStore.getState().activeTool;
+    const canvas = useCanvasStore.getState();
+    canvas.addNode("drawing", { x: (minX + maxX) / 2, y: (minY + maxY) / 2 });
+    const drawingId = useCanvasStore.getState().selectedNodeIds[0];
+    if (drawingId) {
+      canvas.updateNodeDataWithHistory(drawingId, {
+        points: normalized,
+        strokeColor: tool === "highlighter" ? "rgba(250, 204, 21, 0.55)" : "#ef4444",
+        strokeWidth: tool === "highlighter" ? 12 : 3,
+      });
+      canvas.updateNodeSize(drawingId, width, height);
+    }
+    useInteractionStore.getState().setInteractionMode("canvas");
+  }, []);
+
   const cursorClass =
     isDragging || useInteractionStore.getState().isPanning
       ? "sut-cursor-grabbing"
@@ -462,6 +531,9 @@ function CanvasInner() {
       className="relative w-full h-full"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
+      onMouseDown={handlePaneMouseDown}
+      onMouseMove={handlePaneMouseMove}
+      onMouseUp={handlePaneMouseUp}
     >
       <ReactFlow
         nodes={displayNodes}
@@ -487,9 +559,9 @@ function CanvasInner() {
         snapGrid={[16, 16]}
         deleteKeyCode={null}
         multiSelectionKeyCode={["Meta", "Shift", "Control"]}
-        selectionOnDrag={!handMode && activeTool !== "connector"}
+        selectionOnDrag={!handMode && activeTool !== "connector" && !isDrawingTool(activeTool)}
         panOnDrag={handMode ? [0, 1, 2] : activeTool === "connector" ? [] : [1, 2]}
-        nodesDraggable={!handMode && activeTool !== "connector"}
+        nodesDraggable={!handMode && activeTool !== "connector" && !isDrawingTool(activeTool)}
         connectionRadius={30}
         connectOnClick={activeTool === "connector"}
       >
@@ -578,13 +650,18 @@ function BottomToolbar() {
     "link",
     "file",
     "pdf",
+    "audio",
     "video",
     "embed",
     "shape",
     "section",
     "frame",
     "column",
+    "table",
     "connector",
+    "pen",
+    "highlighter",
+    "eraser",
     "comment",
   ]
     .map((type) => getItemDef(type))
@@ -619,10 +696,10 @@ function BottomToolbar() {
               type="button"
               onClick={() =>
                 kind === "tool"
-                  ? setActiveTool(type === "connector" ? "connector" : "select")
+                  ? setActiveTool(type as "connector" | "pen" | "highlighter" | "eraser")
                   : createWith(type)
               }
-              className={toolBtn(pressed === type)}
+              className={toolBtn(pressed === type || activeTool === type)}
               aria-label={label}
               title={label}
             >

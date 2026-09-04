@@ -29,7 +29,11 @@ function ResizeDot({ position }: { position: CornerPosition }) {
 
 const CORNERS: CornerPosition[] = ["top-left", "top-right", "bottom-left", "bottom-right"];
 
-export function ResizeControls({ id, type, selected }: NodeProps) {
+export function ResizeControls({
+  id,
+  type,
+  selected,
+}: Pick<NodeProps, "id" | "type" | "selected">) {
   const locked = useCanvasStore((s) => {
     const node = s.nodes.find((n) => n.id === id);
     return (node?.data?.locked as boolean) ?? false;
