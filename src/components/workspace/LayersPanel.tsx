@@ -88,7 +88,7 @@ export function LayersPanel() {
         <button
           type="button"
           aria-label={hidden ? "Show layer" : "Hide layer"}
-          className="rounded p-1 opacity-60 hover:bg-surface-active hover:opacity-100"
+          className="rounded p-1 opacity-60 transition-colors hover:bg-surface-active hover:opacity-100"
           onClick={() => updateNodeDataWithHistory(node.id, { hidden: !hidden })}
         >
           {hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -96,7 +96,7 @@ export function LayersPanel() {
         <button
           type="button"
           aria-label={locked ? "Unlock layer" : "Lock layer"}
-          className="rounded p-1 opacity-60 hover:bg-surface-active hover:opacity-100"
+          className="rounded p-1 opacity-60 transition-colors hover:bg-surface-active hover:opacity-100"
           onClick={() => updateNodeDataWithHistory(node.id, { locked: !locked })}
         >
           {locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
@@ -114,7 +114,7 @@ export function LayersPanel() {
   );
 
   return (
-    <section className="h-[275px] shrink-0 overflow-hidden rounded-[8px] border border-border bg-popover/95 shadow-xl backdrop-blur-md">
+    <section className="h-[275px] shrink-0 overflow-hidden rounded-[var(--radius-panel)] border border-border bg-popover/95 shadow-xl backdrop-blur-md">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="text-xs font-semibold tracking-wide text-foreground">Layers</h2>
         <span className="text-[10px] tabular-nums text-muted-foreground">{nodes.length}</span>

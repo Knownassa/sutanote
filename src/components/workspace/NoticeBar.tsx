@@ -34,7 +34,7 @@ export function NoticeBar() {
                 className={`pointer-events-auto flex items-center gap-2 rounded-xl border px-4 py-2 shadow-lg backdrop-blur-md ${kindStyles[notice.kind]}`}
               >
                 <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
-                <span className="text-[13px] font-medium">{notice.message}</span>
+                <span className="text-sm font-medium">{notice.message}</span>
                 <button
                   type="button"
                   onClick={dismiss}

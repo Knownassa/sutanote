@@ -150,12 +150,12 @@ export function SettingsDialog({
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Display name"
-                className="rounded-md border border-border bg-surface px-2 py-1 text-sm text-foreground outline-none focus:ring-0"
+                className="rounded-md border border-border bg-surface px-2 py-1 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-1 focus:ring-ring/20"
               />
               <div className="flex gap-2 text-xs">
                 <button
                   type="button"
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-muted-foreground transition-colors hover:text-foreground"
                   onClick={() => avatarInput.current?.click()}
                 >
                   Upload
@@ -163,7 +163,7 @@ export function SettingsDialog({
                 {avatarAssetId && (
                   <button
                     type="button"
-                    className="text-muted-foreground hover:text-foreground"
+                    className="text-muted-foreground transition-colors hover:text-foreground"
                     onClick={() => setAvatarAssetId("")}
                   >
                     Remove
@@ -183,7 +183,7 @@ export function SettingsDialog({
             <input
               value={vaultName}
               onChange={(e) => setVaultName(e.target.value)}
-              className="w-40 rounded-md border border-border bg-surface px-2 py-1 text-sm text-foreground outline-none focus:ring-0"
+              className="w-40 rounded-md border border-border bg-surface px-2 py-1 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-1 focus:ring-ring/20"
             />
           </Row>
         </Section>
@@ -245,14 +245,14 @@ export function SettingsDialog({
               <button
                 type="button"
                 onClick={exportData}
-                className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-surface-hover"
+                className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-surface-hover"
               >
                 Export .sutonote
               </button>
               <button
                 type="button"
                 onClick={() => importInput.current?.click()}
-                className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-surface-hover"
+                className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-surface-hover"
               >
                 Import
               </button>
@@ -271,8 +271,12 @@ export function SettingsDialog({
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span>V — Select</span>
             <span>H — Hand / pan</span>
-            <span>Space (hold) — Pan</span>
+            <span>P — Pen</span>
+            <span>L — Highlighter</span>
+            <span>E — Eraser</span>
+            <span>C — Connector</span>
             <span>T / S / D — Add note</span>
+            <span>Space (hold) — Pan</span>
             <span>⌘/Ctrl + A — Select all</span>
             <span>⌘/Ctrl + C — Copy</span>
             <span>⌘/Ctrl + X — Cut</span>
@@ -281,7 +285,7 @@ export function SettingsDialog({
             <span>Delete — Remove</span>
             <span>Arrows — Nudge</span>
             <span>Shift + Arrows — Nudge 10px</span>
-            <span>Esc — Deselect</span>
+            <span>Esc — Deselect / Cancel</span>
             <span>Shift/Ctrl + Click — Multi-select</span>
           </div>
         </Section>

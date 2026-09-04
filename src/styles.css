@@ -229,9 +229,9 @@
 
 /* Temporary marquee selection — visible during drag, hidden after. */
 .react-flow__selection {
-  background: oklch(0.9232 0.0026 106.42 / 0.1) !important;
-  border: 1px dashed oklch(0.8695 0.0036 106.42 / 0.6) !important;
-  border-radius: 6px;
+  background: var(--surface-active) !important;
+  border: 1px dashed var(--border-strong) !important;
+  border-radius: var(--radius-control);
 }
 
 /* Persistent multi-selection rectangle — must NOT render. */
@@ -242,16 +242,16 @@
   pointer-events: none;
 }
 .react-flow__edge-path {
-  stroke: oklch(0.5534 0.0117 106.5) !important;
+  stroke: var(--muted-foreground) !important;
   stroke-width: 1.5px;
 }
 .react-flow__edge.selected .react-flow__edge-path,
 .react-flow__edge:focus .react-flow__edge-path {
-  stroke: oklch(0.4525 0.0345 45.5) !important;
+  stroke: var(--primary) !important;
   stroke-width: 2px;
 }
 .react-flow__connection-line {
-  stroke: oklch(0.5534 0.0117 106.5) !important;
+  stroke: var(--muted-foreground) !important;
   stroke-width: 1.5px;
   stroke-dasharray: 4 4;
 }
@@ -348,9 +348,9 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
 }
 .react-flow__minimap {
-  background: var(--color-popover) !important;
-  border: 1px solid var(--color-border) !important;
-  border-radius: 8px;
+  background: var(--popover) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-panel);
 }
 
 /* ScrollArea: subtle 6px track, 4px thumb. */
@@ -363,12 +363,13 @@
 }
 [data-radix-scroll-area-thumb] {
   width: 4px !important;
-  background: oklch(0.5 0 0 / 0.25) !important;
+  background: var(--muted-foreground) !important;
+  opacity: 0.25;
   border-radius: 9999px !important;
-  transition: background 0.15s;
+  transition: background 0.15s, opacity 0.15s;
 }
 [data-radix-scroll-area-thumb]:hover {
-  background: oklch(0.5 0 0 / 0.4) !important;
+  opacity: 0.4;
 }
 
 /* Subliminal paper grain — makes the whole app feel material, not digital. */

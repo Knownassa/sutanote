@@ -51,7 +51,7 @@ function Field({
   step?: number;
 }) {
   return (
-    <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+    <label className="flex items-center gap-2 text-xs text-muted-foreground">
       <span className="w-4 text-center">{label}</span>
       <input
         type="number"
@@ -62,7 +62,7 @@ function Field({
           const n = parseFloat(e.target.value);
           if (!Number.isNaN(n)) onCommit(n);
         }}
-        className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-foreground outline-none focus:ring-0"
+        className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-foreground outline-none transition-colors focus:border-ring focus:ring-1 focus:ring-ring/20"
       />
     </label>
   );
@@ -241,7 +241,7 @@ export function RightPropertiesSidebar() {
               </button>
             </div>
             <div className="mt-2">
-              <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="w-4 text-center">O</span>
                 <input
                   type="range"
@@ -299,11 +299,12 @@ export function RightPropertiesSidebar() {
                 <SectionLabel>Container</SectionLabel>
                 <div className="space-y-2">
                   {node.type !== "column" && (
-                    <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
                       <input
                         type="checkbox"
                         checked={(node.data["showTitle"] as boolean) ?? true}
                         onChange={(event) => patchSelectedData({ showTitle: event.target.checked })}
+                        className="accent-primary"
                       />
                       Show title
                     </label>
@@ -320,13 +321,14 @@ export function RightPropertiesSidebar() {
                         value={(node.data.padding as number) ?? 12}
                         onCommit={(value) => patchSelectedData({ padding: Math.max(0, value) })}
                       />
-                      <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                      <label className="flex items-center gap-2 text-xs text-muted-foreground">
                         <input
                           type="checkbox"
                           checked={(node.data.autoHeight as boolean) ?? false}
                           onChange={(event) =>
                             patchSelectedData({ autoHeight: event.target.checked })
                           }
+                          className="accent-primary"
                         />
                         Auto height
                       </label>
@@ -350,12 +352,12 @@ export function RightPropertiesSidebar() {
             <div>
               <SectionLabel>Shape</SectionLabel>
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="w-12">Type</span>
                   <select
                     value={(node.data.shape as string) ?? "rectangle"}
                     onChange={(e) => patchSelectedData({ shape: e.target.value })}
-                    className="flex-1 rounded-[5px] border border-border bg-surface px-2 py-1 text-foreground outline-none"
+                    className="flex-1 rounded-[5px] border border-border bg-surface px-2 py-1 text-foreground outline-none transition-colors focus:border-ring focus:ring-1 focus:ring-ring/20"
                   >
                     <option value="rectangle">Rectangle</option>
                     <option value="rounded-rectangle">Rounded</option>
@@ -363,7 +365,7 @@ export function RightPropertiesSidebar() {
                     <option value="diamond">Diamond</option>
                   </select>
                 </label>
-                <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="w-12">Fill</span>
                   <SutonoteColorPicker
                     value={(node.data.fill as string) ?? "transparent"}
@@ -372,7 +374,7 @@ export function RightPropertiesSidebar() {
                   />
                   <span className="text-[11px]">{(node.data.fill as string) || "none"}</span>
                 </label>
-                <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="w-12">Stroke</span>
                   <SutonoteColorPicker
                     value={(node.data.stroke as string) ?? "#000000"}
@@ -392,7 +394,7 @@ export function RightPropertiesSidebar() {
                   onCommit={(n) => patchSelectedData({ rotation: n })}
                   step={1}
                 />
-                <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="w-12">Opacity</span>
                   <input
                     type="range"
@@ -423,7 +425,7 @@ export function RightPropertiesSidebar() {
             <div>
               <SectionLabel>Swatch</SectionLabel>
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="w-12">Color</span>
                   <SutonoteColorPicker
                     value={(node.data.color as string) ?? "#6366f1"}
@@ -431,13 +433,13 @@ export function RightPropertiesSidebar() {
                     palette="object"
                   />
                 </label>
-                <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="w-12">Label</span>
                   <input
                     value={(node.data.label as string) ?? ""}
                     onChange={(e) => patchSelectedData({ label: e.target.value })}
                     placeholder="Color name"
-                    className="flex-1 rounded-[5px] border border-border bg-surface px-2 py-1 text-foreground outline-none"
+                    className="flex-1 rounded-[5px] border border-border bg-surface px-2 py-1 text-foreground outline-none transition-colors focus:border-ring focus:ring-1 focus:ring-ring/20"
                   />
                 </label>
               </div>
@@ -452,7 +454,7 @@ export function RightPropertiesSidebar() {
                 value={(node.data.title as string) ?? ""}
                 onChange={(e) => patchSelectedData({ title: e.target.value })}
                 placeholder="Folder name"
-                className="mb-2 w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+                className="mb-2 w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-1 focus:ring-ring/20"
               />
               <div className="mb-2 grid grid-cols-8 gap-1">
                 {FOLDER_ICONS.map((opt) => (
@@ -472,7 +474,7 @@ export function RightPropertiesSidebar() {
                   </button>
                 ))}
               </div>
-              <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="w-12">Icon</span>
                 <SutonoteColorPicker
                   value={(node.data["iconColor"] as string) ?? ""}
@@ -498,7 +500,7 @@ export function RightPropertiesSidebar() {
                 value={(node.data.title as string) ?? ""}
                 onChange={(e) => patchSelectedData({ title: e.target.value })}
                 placeholder="Board name"
-                className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+                className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-1 focus:ring-ring/20"
               />
             </div>
           )}
@@ -511,13 +513,13 @@ export function RightPropertiesSidebar() {
                 value={(node.data.url as string) ?? ""}
                 onChange={(e) => patchSelectedData({ url: e.target.value })}
                 placeholder="https://…"
-                className="mb-2 w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+                className="mb-2 w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-1 focus:ring-ring/20"
               />
               <input
                 value={(node.data.title as string) ?? ""}
                 onChange={(e) => patchSelectedData({ title: e.target.value })}
                 placeholder="Title"
-                className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+                className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-1 focus:ring-ring/20"
               />
             </div>
           )}
@@ -526,7 +528,7 @@ export function RightPropertiesSidebar() {
           {!multi && (
             <div>
               <SectionLabel>Arrange</SectionLabel>
-              <div className="flex w-full gap-1 rounded-lg border border-border p-1">
+              <div className="flex w-full gap-1 rounded-[var(--radius-panel)] border border-border p-1">
                 <IconBtn
                   label="Bring forward"
                   icon={ArrowUp}
@@ -554,7 +556,7 @@ export function RightPropertiesSidebar() {
           {multi && (
             <div>
               <SectionLabel>Arrange</SectionLabel>
-              <div className="flex w-full gap-1 rounded-lg border border-border p-1">
+              <div className="flex w-full gap-1 rounded-[var(--radius-panel)] border border-border p-1">
                 <IconBtn
                   label="Bring to front"
                   icon={BringToFront}
@@ -575,37 +577,37 @@ export function RightPropertiesSidebar() {
                 <SectionLabel>Align</SectionLabel>
                 <div className="grid grid-cols-3 gap-1">
                   <button
-                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    className="rounded-[5px] border border-border py-1 text-xs text-muted-foreground transition-colors hover:bg-surface-hover"
                     onClick={() => alignSelected("left")}
                   >
                     Left
                   </button>
                   <button
-                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    className="rounded-[5px] border border-border py-1 text-xs text-muted-foreground transition-colors hover:bg-surface-hover"
                     onClick={() => alignSelected("centerX")}
                   >
                     Center
                   </button>
                   <button
-                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    className="rounded-[5px] border border-border py-1 text-xs text-muted-foreground transition-colors hover:bg-surface-hover"
                     onClick={() => alignSelected("right")}
                   >
                     Right
                   </button>
                   <button
-                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    className="rounded-[5px] border border-border py-1 text-xs text-muted-foreground transition-colors hover:bg-surface-hover"
                     onClick={() => alignSelected("top")}
                   >
                     Top
                   </button>
                   <button
-                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    className="rounded-[5px] border border-border py-1 text-xs text-muted-foreground transition-colors hover:bg-surface-hover"
                     onClick={() => alignSelected("centerY")}
                   >
                     Middle
                   </button>
                   <button
-                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    className="rounded-[5px] border border-border py-1 text-xs text-muted-foreground transition-colors hover:bg-surface-hover"
                     onClick={() => alignSelected("bottom")}
                   >
                     Bottom
@@ -616,13 +618,13 @@ export function RightPropertiesSidebar() {
                 <SectionLabel>Distribute</SectionLabel>
                 <div className="grid grid-cols-2 gap-1">
                   <button
-                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    className="rounded-[5px] border border-border py-1 text-xs text-muted-foreground transition-colors hover:bg-surface-hover"
                     onClick={() => distributeSelected("horizontal")}
                   >
                     Horizontally
                   </button>
                   <button
-                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    className="rounded-[5px] border border-border py-1 text-xs text-muted-foreground transition-colors hover:bg-surface-hover"
                     onClick={() => distributeSelected("vertical")}
                   >
                     Vertically
@@ -633,13 +635,13 @@ export function RightPropertiesSidebar() {
                 <SectionLabel>Size</SectionLabel>
                 <div className="grid grid-cols-2 gap-1">
                   <button
-                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    className="rounded-[5px] border border-border py-1 text-xs text-muted-foreground transition-colors hover:bg-surface-hover"
                     onClick={() => matchSizeSelected("width")}
                   >
                     Match width
                   </button>
                   <button
-                    className="rounded-[5px] border border-border py-1 text-[11px] text-muted-foreground hover:bg-surface-hover"
+                    className="rounded-[5px] border border-border py-1 text-xs text-muted-foreground transition-colors hover:bg-surface-hover"
                     onClick={() => matchSizeSelected("height")}
                   >
                     Match height
@@ -656,14 +658,15 @@ export function RightPropertiesSidebar() {
                 value={(node.data.title as string) ?? "To-do"}
                 onChange={(e) => patchSelectedData({ title: e.target.value })}
                 placeholder="Title"
-                className="mb-2 w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+                className="mb-2 w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-1 focus:ring-ring/20"
               />
-              <div className="flex items-center justify-between text-[12px] text-muted-foreground">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={(node.data.showCompleted as boolean) ?? true}
                     onChange={(e) => patchSelectedData({ showCompleted: e.target.checked })}
+                    className="accent-primary"
                   />
                   Show completed
                 </label>
@@ -702,15 +705,16 @@ export function RightPropertiesSidebar() {
               <button
                 type="button"
                 onClick={() => imageRef.current?.click()}
-                className="mb-2 flex w-full items-center justify-center gap-2 rounded-[5px] border border-border py-1.5 text-[12px] text-muted-foreground hover:bg-surface-hover"
+                className="mb-2 flex w-full items-center justify-center gap-2 rounded-[5px] border border-border py-1.5 text-xs text-muted-foreground hover:bg-surface-hover"
               >
                 <Replace className="h-3.5 w-3.5" /> Replace image
               </button>
-              <label className="mb-2 flex items-center gap-2 text-[12px] text-muted-foreground">
+              <label className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
                 <input
                   type="checkbox"
                   checked={(node.data.captionVisible as boolean) ?? true}
                   onChange={(e) => patchSelectedData({ captionVisible: e.target.checked })}
+                  className="accent-primary"
                 />
                 Show caption
               </label>
@@ -718,14 +722,14 @@ export function RightPropertiesSidebar() {
                 value={(node.data.alt as string) ?? ""}
                 onChange={(e) => patchSelectedData({ alt: e.target.value })}
                 placeholder="Alt text"
-                className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-[13px] text-foreground outline-none focus:ring-0"
+                className="w-full rounded-[5px] border border-border bg-surface px-2 py-1 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-1 focus:ring-ring/20"
               />
             </div>
           )}
 
           <div>
             <SectionLabel>Actions</SectionLabel>
-            <div className="flex w-full gap-1 rounded-lg border border-border p-1">
+            <div className="flex w-full gap-1 rounded-[var(--radius-panel)] border border-border p-1">
               <IconBtn label="Duplicate" icon={Copy} onClick={duplicateSelected} />
               <IconBtn
                 label={locked ? "Unlock" : "Lock"}
@@ -786,7 +790,7 @@ function CustomColorButton({
             style={{ background: hex }}
           />
           <div className="flex gap-1">
-            <span className="text-[12px] text-muted-foreground">#</span>
+            <span className="text-xs text-muted-foreground">#</span>
             <input
               value={hex.replace("#", "")}
               onChange={(e) => {
@@ -794,7 +798,7 @@ function CustomColorButton({
                 setHex(v);
                 if (/^#[0-9a-f]{6}$/i.test(v)) applyColor(v);
               }}
-              className="flex-1 bg-transparent text-[12px] font-mono text-foreground outline-none"
+              className="flex-1 bg-transparent text-xs font-mono text-foreground outline-none"
               maxLength={6}
               placeholder="c79872"
             />
