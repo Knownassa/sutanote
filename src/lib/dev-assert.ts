@@ -2,7 +2,7 @@ import { ITEM_REGISTRY } from "./item-registry";
 import { NODE_DEFINITIONS } from "./node-definitions";
 
 // Known nodeTypes that have a renderer (central list, keep in sync with CanvasArea)
-const KNOWN_NODE_TYPES = new Set([
+export const KNOWN_NODE_TYPES = new Set([
   "text",
   "sticky",
   "todo",
@@ -38,7 +38,7 @@ const KNOWN_NODE_TYPES = new Set([
   "drawing",
 ]);
 
-const KNOWN_TOOLS = new Set(["connector", "pen", "highlighter", "eraser", "lasso"]);
+export const KNOWN_TOOLS = new Set(["connector", "pen", "highlighter", "eraser", "lasso"]);
 const KNOWN_ACTIONS = new Set(["presentation_mode"]);
 
 export function assertRegistryInvariants(): void {

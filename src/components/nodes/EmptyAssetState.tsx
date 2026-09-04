@@ -106,7 +106,7 @@ export function EmptyAssetState({
 
   return (
     <div
-      className="flex w-full flex-col items-center justify-center gap-3 bg-surface/50 py-12 px-4"
+      className="nodrag nowheel flex w-full flex-col items-center justify-center gap-3 bg-surface/50 py-12 px-4"
       onKeyDown={handleKeyDown}
     >
       {isIdle && (

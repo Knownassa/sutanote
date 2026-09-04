@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Handle, NodeProps, Position } from "reactflow";
+import { NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { AudioLines, Download, ExternalLink, Pause, Play, Replace, X } from "lucide-react";
 import { useCanvasStore } from "@/lib/store";
@@ -7,6 +7,7 @@ import { useHeavyNode } from "@/hooks/use-heavy-node";
 import { storeAsset, getAssetUrl } from "@/lib/asset-store";
 import { ResizeControls } from "./ResizeControls";
 import { EmptyAssetState } from "./EmptyAssetState";
+import { ConnectorPorts } from "./ConnectorPorts";
 
 function AudioNode({ id, data, selected }: NodeProps) {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
@@ -121,13 +122,10 @@ function AudioNode({ id, data, selected }: NodeProps) {
         initial={reduce ? false : { scale: 0.96, opacity: 0 }}
         animate={{ scale: 1, opacity: opacity / 100 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 18 }}
-        className={`relative w-full overflow-hidden rounded-[8px] border bg-card transition-shadow ${selected ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.08)]" : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)]"}`}
+        className={`nodrag nowheel relative w-full overflow-hidden rounded-[8px] border bg-card transition-shadow ${selected ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.08)]" : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)]"}`}
         style={{ transform: `rotate(${(data.rotation as number) ?? 0}deg)` }}
       >
-        <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Left} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
+        <ConnectorPorts />
 
         {!assetId && !remoteUrl ? (
           <EmptyAssetState
@@ -147,7 +145,7 @@ function AudioNode({ id, data, selected }: NodeProps) {
             onCancel={removeAudio}
           />
         ) : (
-          <div ref={heavyRef} className="p-3">
+          <div ref={heavyRef} className="nodrag nowheel p-3">
             <audio
               ref={audioRef}
               src={phase === "idle" ? undefined : url}

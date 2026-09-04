@@ -5,6 +5,15 @@ import { NODE_DEFINITIONS, getNodeDef } from "../node-definitions";
 import { useHistoryStore } from "../history-store";
 import { shouldVirtualize } from "../virtualization";
 import { heavyPhase } from "../../hooks/use-heavy-node";
+import { executeCanvasItem } from "../canvas-executor";
+import { reduceStroke } from "../drawing";
+import { KNOWN_NODE_TYPES, KNOWN_TOOLS } from "../dev-assert";
+import {
+  createDefaultTable,
+  reorderTableColumns,
+  reorderTableRows,
+  updateTableCell,
+} from "../table";
 
 describe("registry invariants", () => {
   it("every available node has NODE_DEFINITIONS", () => {
@@ -35,6 +44,49 @@ describe("registry invariants", () => {
       expect(seen.has(item.type), `duplicate type ${item.type}`).toBe(false);
       seen.add(item.type);
     }
+  });
+
+  it("new beta tools have execution and renderer contracts", () => {
+    for (const type of ["audio", "table", "drawing"]) {
+      const item = getItemDef(type);
+      expect(item?.status).toBe("available");
+      expect(KNOWN_NODE_TYPES.has(type)).toBe(true);
+      expect(NODE_DEFINITIONS[type]).toBeDefined();
+    }
+    for (const type of ["pen", "highlighter", "eraser"]) {
+      expect(getItemDef(type)?.status).toBe("available");
+      expect(KNOWN_TOOLS.has(type)).toBe(true);
+    }
+  });
+
+  it("executor routes inserts and tools through one boundary", () => {
+    const before = useHistoryStore.getState().past.length;
+    expect(executeCanvasItem("pen")).toBe(true);
+    expect(executeCanvasItem("highlighter")).toBe(true);
+    expect(executeCanvasItem("eraser")).toBe(true);
+    expect(executeCanvasItem("coming-soon-item")).toBe(false);
+    expect(useHistoryStore.getState().past.length).toBe(before);
+  });
+
+  it("reduces long strokes while retaining endpoints", () => {
+    const points = Array.from({ length: 1000 }, (_, index) => ({ x: index, y: index % 7 }));
+    const reduced = reduceStroke(points, 64);
+    expect(reduced.length).toBe(64);
+    expect(reduced[0]).toEqual(points[0]);
+    expect(reduced.at(-1)).toEqual(points.at(-1));
+  });
+
+  it("creates and mutates a valid table data model", () => {
+    const table = createDefaultTable();
+    expect(table.columns.length).toBe(3);
+    expect(table.rows.length).toBe(2);
+    const edited = updateTableCell(table, 0, 0, "Sutonote");
+    expect(edited.rows[0]?.cells[0]).toBe("Sutonote");
+    const rows = reorderTableRows(edited, 0, 1);
+    expect(rows.rows[1]?.cells[0]).toBe("Sutonote");
+    const columns = reorderTableColumns(rows, 0, 1);
+    expect(columns.columns[1]?.label).toBe("Name");
+    expect(columns.rows[1]?.cells[1]).toBe("Sutonote");
   });
 });
 

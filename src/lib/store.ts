@@ -19,6 +19,7 @@ import { flushBoard } from "./persistence/persistence-manager";
 import { useSettingsStore } from "./settings-store";
 import { useHistoryStore } from "./history-store";
 import { useBoardTreeStore } from "./board-tree-store";
+import { createDefaultTable } from "./table";
 import {
   DEFAULT_BOARD_ID,
   type CanvasNodeData,
@@ -707,17 +708,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           ...(type === "table"
             ? {
                 title: "Table",
-                table: {
-                  columns: [
-                    { id: nanoid(6), label: "Name", kind: "text" },
-                    { id: nanoid(6), label: "Status", kind: "text" },
-                    { id: nanoid(6), label: "Done", kind: "checkbox" },
-                  ],
-                  rows: [
-                    { id: nanoid(6), cells: ["", "In progress", "false"] },
-                    { id: nanoid(6), cells: ["", "Not started", "false"] },
-                  ],
-                },
+                table: createDefaultTable(),
               }
             : {}),
           ...(type === "drawing" ? { points: [], strokeColor: "#ef4444", strokeWidth: 3 } : {}),

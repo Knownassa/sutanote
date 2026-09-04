@@ -49,6 +49,8 @@ import { ImageLightbox } from "@/components/workspace/ImageLightbox";
 import { DocumentPreview } from "@/components/workspace/DocumentPreview";
 import { getItemDef } from "@/lib/item-registry";
 import type { DrawingPoint } from "@/lib/persistence/types";
+import { executeCanvasItem } from "@/lib/canvas-executor";
+import { reduceStroke } from "@/lib/drawing";
 
 const nodeTypes: NodeTypes = {
   sticky: StickyNoteNode,
@@ -95,16 +97,17 @@ function getCanvasCenter(): { x: number; y: number } {
 
 const addAtViewportCenter = (
   getViewport: () => { x: number; y: number; zoom: number },
-  addNode: (type: string, position: { x: number; y: number }) => void,
   type: string,
 ) => {
   const vp = getViewport();
   const center = getCanvasCenter();
   const x = (center.x - vp.x) / vp.zoom;
   const y = (center.y - vp.y) / vp.zoom;
-  addNode(type, {
-    x: x + (Math.floor(Math.random() * 200) - 100),
-    y: y + (Math.floor(Math.random() * 200) - 100),
+  executeCanvasItem(type, {
+    position: {
+      x: x + (Math.floor(Math.random() * 200) - 100),
+      y: y + (Math.floor(Math.random() * 200) - 100),
+    },
   });
 };
 
@@ -333,22 +336,32 @@ function CanvasInner() {
       }
 
       if (k === "v") {
-        useInteractionStore.getState().setActiveTool("select");
+        executeCanvasItem("select");
       } else if (k === "h") {
-        useInteractionStore.getState().setActiveTool("hand");
+        executeCanvasItem("hand");
       } else if (k === "c") {
-        useInteractionStore.getState().setActiveTool("connector");
+        executeCanvasItem("connector");
       } else if (k === "t") {
-        addAtViewportCenter(getViewport, canvas.addNode, "text");
+        addAtViewportCenter(getViewport, "text");
       } else if (k === "s") {
-        addAtViewportCenter(getViewport, canvas.addNode, "sticky");
+        addAtViewportCenter(getViewport, "sticky");
       } else if (k === "d") {
-        addAtViewportCenter(getViewport, canvas.addNode, "todo");
+        addAtViewportCenter(getViewport, "todo");
       } else if (e.key === "Escape") {
         const { editingNodeId, setEditingNode } = useInteractionStore.getState();
         if (editingNodeId) {
           e.preventDefault();
           setEditingNode(null);
+          return;
+        }
+        if (
+          isDrawingTool(useInteractionStore.getState().activeTool) ||
+          activeTool === "connector"
+        ) {
+          e.preventDefault();
+          useInteractionStore.getState().setActiveTool("select");
+          useInteractionStore.getState().setInteractionMode("canvas");
+          drawingPointsRef.current = [];
           return;
         }
         canvas.clearSelection();
@@ -382,7 +395,7 @@ function CanvasInner() {
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [getViewport]);
+  }, [getViewport, activeTool]);
 
   const handlePaneClick = useCallback(() => useCanvasStore.getState().clearSelection(), []);
   const handleMoveEnd = useCallback((_e: unknown, vp: Viewport) => saveViewport(vp), []);
@@ -434,7 +447,7 @@ function CanvasInner() {
         }
       }
       const canvas = useCanvasStore.getState();
-      canvas.addNode(nodeType, pos);
+      executeCanvasItem(nodeType, { position: pos });
       const id = useCanvasStore.getState().selectedNodeIds[0];
       if (id) {
         const assetId = await storeImageAsset(file, file.name);
@@ -493,18 +506,23 @@ function CanvasInner() {
     const minY = Math.min(...points.map((point) => point.y));
     const maxY = Math.max(...points.map((point) => point.y));
     const padding = 12;
-    const normalized = points.map((point) => ({
-      x: point.x - minX + padding,
-      y: point.y - minY + padding,
-    }));
+    const normalized = reduceStroke(
+      points.map((point) => ({
+        x: point.x - minX + padding,
+        y: point.y - minY + padding,
+      })),
+    );
     const width = Math.max(40, maxX - minX + padding * 2);
     const height = Math.max(40, maxY - minY + padding * 2);
     const tool = useInteractionStore.getState().activeTool;
     const canvas = useCanvasStore.getState();
-    canvas.addNode("drawing", { x: (minX + maxX) / 2, y: (minY + maxY) / 2 });
+    executeCanvasItem("drawing", {
+      position: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
+      preserveTool: true,
+    });
     const drawingId = useCanvasStore.getState().selectedNodeIds[0];
     if (drawingId) {
-      canvas.updateNodeDataWithHistory(drawingId, {
+      canvas.updateNodeData(drawingId, {
         points: normalized,
         strokeColor: tool === "highlighter" ? "rgba(250, 204, 21, 0.55)" : "#ef4444",
         strokeWidth: tool === "highlighter" ? 12 : 3,
@@ -627,19 +645,22 @@ const toolBtn = (active: boolean) =>
   }`;
 
 function BottomToolbar() {
-  const addNode = useCanvasStore((state) => state.addNode);
   const { getViewport, zoomIn, zoomOut } = useReactFlow();
   const { zoom } = useViewport();
   const activeTool = useInteractionStore((s) => s.activeTool);
-  const setActiveTool = useInteractionStore((s) => s.setActiveTool);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pressed, setPressed] = useState<string | null>(null);
 
   const createWith = (type: string) => {
     setPressed(type);
     setTimeout(() => setPressed(null), 180);
-    addAtViewportCenter(getViewport, addNode, type);
-    setActiveTool("select");
+    const vp = getViewport();
+    const center = getCanvasCenter();
+    const position = {
+      x: (center.x - vp.x) / vp.zoom + (Math.floor(Math.random() * 200) - 100),
+      y: (center.y - vp.y) / vp.zoom + (Math.floor(Math.random() * 200) - 100),
+    };
+    executeCanvasItem(type, { position });
   };
 
   const tools = [
@@ -672,7 +693,7 @@ function BottomToolbar() {
       <div className="pointer-events-auto fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-border bg-popover/92 p-2 shadow-[0_8px_30px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
         <button
           type="button"
-          onClick={() => setActiveTool("select")}
+          onClick={() => executeCanvasItem("select")}
           className={toolBtn(activeTool === "select")}
           aria-label="Select (V)"
         >
@@ -680,7 +701,7 @@ function BottomToolbar() {
         </button>
         <button
           type="button"
-          onClick={() => setActiveTool("hand")}
+          onClick={() => executeCanvasItem("hand")}
           className={toolBtn(activeTool === "hand")}
           aria-label="Hand / pan (H)"
         >
@@ -694,11 +715,7 @@ function BottomToolbar() {
             <button
               key={type}
               type="button"
-              onClick={() =>
-                kind === "tool"
-                  ? setActiveTool(type as "connector" | "pen" | "highlighter" | "eraser")
-                  : createWith(type)
-              }
+              onClick={() => (kind === "tool" ? executeCanvasItem(type) : createWith(type))}
               className={toolBtn(pressed === type || activeTool === type)}
               aria-label={label}
               title={label}

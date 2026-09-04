@@ -6,6 +6,7 @@ export interface TableColumn {
   id: string;
   label: string;
   kind?: "text" | "number" | "checkbox" | "date";
+  width?: number;
 }
 
 export interface TableRow {

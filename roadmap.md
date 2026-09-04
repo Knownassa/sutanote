@@ -4,6 +4,18 @@ Positioning: a fast, local-first visual workspace — Milanote-level creative
 organization, Figma-like precision, Miro-style canvas tools, Obsidian-like
 ownership of your files.
 
+## Integration hardening: Alpha 0.2.8.3
+
+- [x] Central canvas executor shared by dock, picker, command palette, shortcuts, and drops
+- [x] Registry-driven command palette with usable experimental items
+- [x] Table editing guards, transaction-oriented draft editing, reorder, resize, navigation, and clipboard paste
+- [x] Audio controls guarded from canvas drag/zoom and heavy media lifecycle
+- [x] Pen/highlighter/eraser stroke contract with compact persisted point arrays
+- [x] Explicit registry, renderer, executor, table, and drawing domain tests
+- [x] CI verify workflow covers typecheck, lint, test, and build
+- [ ] Migrate all legacy node renderers to the shared connector-port component
+- [ ] Complete available-item end-to-end browser contract audit
+
 ## Milestone: Beta Performance Architecture (do this before new item types)
 
 - [x] Add `test` / `typecheck` / `verify` scripts + GitHub Actions running `verify`

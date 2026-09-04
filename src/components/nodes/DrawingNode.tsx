@@ -1,9 +1,10 @@
 import { memo } from "react";
-import { Handle, NodeProps, Position } from "reactflow";
+import { NodeProps } from "reactflow";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
 import type { DrawingPoint } from "@/lib/persistence/types";
 import { ResizeControls } from "./ResizeControls";
+import { ConnectorPorts } from "./ConnectorPorts";
 
 function DrawingNode({ id, data, selected }: NodeProps) {
   const deleteNode = useCanvasStore((s) => s.deleteNode);
@@ -27,8 +28,7 @@ function DrawingNode({ id, data, selected }: NodeProps) {
       title={activeTool === "eraser" ? "Click to erase this stroke" : undefined}
     >
       <ResizeControls id={id} type="drawing" selected={selected} />
-      <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
-      <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
+      <ConnectorPorts />
       <svg
         width="100%"
         height="100%"

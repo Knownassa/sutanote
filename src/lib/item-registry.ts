@@ -648,6 +648,23 @@ export const ITEM_REGISTRY: ItemDefinition[] = [
     resizeMode: "none",
     capabilities: { drawing: true, opacity: true },
   },
+  {
+    type: "drawing",
+    label: "Drawing",
+    icon: PenTool,
+    category: "drawing",
+    status: "available",
+    kind: "node",
+    keywords: ["drawing", "stroke", "ink", "freehand"],
+    defaultWidth: 160,
+    defaultHeight: 120,
+    minWidth: 40,
+    minHeight: 40,
+    maxWidth: 1600,
+    maxHeight: 1200,
+    resizeMode: "both",
+    capabilities: { drawing: true, stroke: true, opacity: true },
+  },
 
   // ── STRUCTURED ───────────────────────────────────────────────────
   {

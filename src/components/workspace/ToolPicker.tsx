@@ -1,9 +1,8 @@
 import { useCallback, useRef, useEffect, useState, useMemo } from "react";
 import { useReactFlow } from "reactflow";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Search, ChevronRight } from "lucide-react";
+import { X, Search } from "lucide-react";
 import {
-  AVAILABLE_ITEMS,
   ITEM_REGISTRY,
   CATEGORY_LABELS,
   type ItemCategory,
@@ -12,8 +11,7 @@ import {
   ALL_CATEGORIES,
   STATUS_LABELS,
 } from "@/lib/item-registry";
-import { useCanvasStore } from "@/lib/store";
-import { useInteractionStore } from "@/lib/interaction-store";
+import { executeCanvasItem } from "@/lib/canvas-executor";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ToolPickerProps {
@@ -22,8 +20,6 @@ interface ToolPickerProps {
 }
 
 export function ToolPicker({ open, onClose }: ToolPickerProps) {
-  const addNode = useCanvasStore((s) => s.addNode);
-  const setActiveTool = useInteractionStore((s) => s.setActiveTool);
   const panelRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
   const [query, setQuery] = useState("");
@@ -57,26 +53,15 @@ export function ToolPicker({ open, onClose }: ToolPickerProps) {
 
   const pick = useCallback(
     (item: ItemDefinition) => {
-      if (item.status !== "available") return;
-      if (item.kind === "tool") {
-        setActiveTool(item.type as "connector" | "pen" | "highlighter" | "eraser");
-        onClose();
-        return;
-      }
-      if (item.kind === "action") {
-        onClose();
-        return;
-      }
+      if (item.status === "coming-soon") return;
       const canvasEl = document.querySelector(".react-flow");
       const rect = canvasEl?.getBoundingClientRect();
       const cx = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
       const cy = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
       const pos = screenToFlowPosition({ x: cx, y: cy });
-      addNode(item.type, pos);
-      setActiveTool("select");
-      onClose();
+      if (executeCanvasItem(item.type, { position: pos })) onClose();
     },
-    [addNode, setActiveTool, onClose, screenToFlowPosition],
+    [onClose, screenToFlowPosition],
   );
 
   // Show all categories, not just available ones
@@ -168,7 +153,7 @@ export function ToolPicker({ open, onClose }: ToolPickerProps) {
                         key={item.type}
                         type="button"
                         onClick={() => pick(item)}
-                        disabled={item.status !== "available"}
+                        disabled={item.status === "coming-soon"}
                         className={`flex flex-col items-center gap-1 rounded-xl p-2 transition-colors ${
                           item.status === "available"
                             ? "text-muted-foreground hover:bg-surface-hover hover:text-foreground active:scale-95"

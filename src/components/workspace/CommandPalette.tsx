@@ -1,6 +1,6 @@
 import { useCallback, useState, useMemo, useRef, useEffect } from "react";
-import type { ReactElement } from "react";
-import { CheckSquare, Image, StickyNote, Type, Download } from "lucide-react";
+import { Download } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -11,10 +11,12 @@ import {
 } from "@/components/ui/command";
 import { useCanvasStore } from "@/lib/store";
 import { useNoticeStore } from "@/lib/notice-store";
+import { ITEM_REGISTRY } from "@/lib/item-registry";
+import { executeCanvasItem } from "@/lib/canvas-executor";
 
 type Action = {
   label: string;
-  icon: typeof Type;
+  icon: LucideIcon;
   action: () => void;
 };
 
@@ -25,7 +27,6 @@ export function CommandPalette({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const addNode = useCanvasStore((s) => s.addNode);
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -35,14 +36,11 @@ export function CommandPalette({
     }
   }, [open]);
 
-  const insert = useCallback(
+  const execute = useCallback(
     (type: string) => {
-      const nodes = useCanvasStore.getState().nodes;
-      const maxX = nodes.reduce((m, n) => Math.max(m, n.position.x), 0);
-      addNode(type, { x: maxX + 300, y: 0 });
-      onOpenChange(false);
+      if (executeCanvasItem(type)) onOpenChange(false);
     },
-    [addNode, onOpenChange],
+    [onOpenChange],
   );
 
   const exportBoard = useCallback(() => {
@@ -59,16 +57,21 @@ export function CommandPalette({
     useNoticeStore.getState().show("Board exported", "success");
   }, [onOpenChange]);
 
-  const allActions: Action[] = useMemo(
-    () => [
-      { label: "Add Text", icon: Type, action: () => insert("text") },
-      { label: "Add Image", icon: Image, action: () => insert("image") },
-      { label: "Add To-do", icon: CheckSquare, action: () => insert("todo") },
-      { label: "Add Sticky Note", icon: StickyNote, action: () => insert("sticky") },
-      { label: "Export board", icon: Download, action: exportBoard },
-    ],
-    [insert, exportBoard],
-  );
+  const allActions: Action[] = useMemo(() => {
+    const itemActions = ITEM_REGISTRY.filter((item) => item.status !== "coming-soon").map(
+      (item) => ({
+        label:
+          item.kind === "node"
+            ? `Add ${item.label}`
+            : item.type === "pen"
+              ? "Pen Tool"
+              : item.label,
+        icon: item.icon,
+        action: () => execute(item.type),
+      }),
+    );
+    return [...itemActions, { label: "Export board", icon: Download, action: exportBoard }];
+  }, [execute, exportBoard]);
 
   const filteredActions = useMemo(
     () => allActions.filter((a) => a.label.toLowerCase().includes(query.toLowerCase())),
