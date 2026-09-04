@@ -81,7 +81,7 @@ const nodeTypes: NodeTypes = {
 };
 
 const isDrawingTool = (tool: string) =>
-  tool === "pen" || tool === "highlighter" || tool === "eraser";
+  tool === "pen" || tool === "highlighter";
 
 function centerViewport(): Viewport {
   if (typeof window === "undefined") return { x: 0, y: 0, zoom: 0.9 };
@@ -345,6 +345,12 @@ function CanvasInner() {
         executeCanvasItem("hand");
       } else if (k === "c") {
         executeCanvasItem("connector");
+      } else if (k === "p") {
+        executeCanvasItem("pen");
+      } else if (k === "l") {
+        executeCanvasItem("highlighter");
+      } else if (k === "e") {
+        executeCanvasItem("eraser");
       } else if (k === "t") {
         addAtViewportCenter(getViewport, "text");
       } else if (k === "s") {
@@ -360,6 +366,7 @@ function CanvasInner() {
         }
         if (
           isDrawingTool(useInteractionStore.getState().activeTool) ||
+          useInteractionStore.getState().activeTool === "eraser" ||
           activeTool === "connector"
         ) {
           e.preventDefault();
@@ -560,8 +567,8 @@ function CanvasInner() {
         ? "sut-cursor-grab"
         : activeTool === "select"
           ? "sut-cursor-default"
-          : activeTool === "connector"
-            ? "sut-cursor-crosshair"
+          : activeTool === "eraser"
+            ? "sut-cursor-eraser"
             : "sut-cursor-crosshair";
 
   return (
@@ -684,6 +691,10 @@ function BottomToolbar() {
     executeCanvasItem(type, { position });
   };
 
+  const drawingTools = ["pen", "highlighter", "eraser"]
+    .map((type) => getItemDef(type))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+
   const tools = ["text", "sticky", "todo", "image", "link", "shape", "section", "connector"]
     .map((type) => getItemDef(type))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
@@ -696,6 +707,7 @@ function BottomToolbar() {
           onClick={() => executeCanvasItem("select")}
           className={toolBtn(activeTool === "select")}
           aria-label="Select (V)"
+          title="Select (V)"
         >
           <MousePointer2 className="h-[18px] w-[18px]" strokeWidth={1.75} />
         </button>
@@ -704,6 +716,7 @@ function BottomToolbar() {
           onClick={() => executeCanvasItem("hand")}
           className={toolBtn(activeTool === "hand")}
           aria-label="Hand / pan (H)"
+          title="Hand / pan (H)"
         >
           <Hand className="h-[18px] w-[18px]" strokeWidth={1.75} />
         </button>
@@ -738,6 +751,21 @@ function BottomToolbar() {
         >
           <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
         </button>
+
+        <span className="mx-1 h-6 w-px bg-border" />
+
+        {drawingTools.map(({ type, label, icon: Icon }) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => executeCanvasItem(type)}
+            className={toolBtn(activeTool === type)}
+            aria-label={label}
+            title={label}
+          >
+            <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          </button>
+        ))}
 
         <span className="mx-1 h-6 w-px bg-border" />
 
