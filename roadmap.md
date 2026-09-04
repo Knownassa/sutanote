@@ -11,9 +11,12 @@ ownership of your files.
 - [x] Table editing guards, transaction-oriented draft editing, reorder, resize, navigation, and clipboard paste
 - [x] Audio controls guarded from canvas drag/zoom and heavy media lifecycle
 - [x] Pen/highlighter/eraser stroke contract with compact persisted point arrays
+- [x] Shared ConnectorPorts migrated across all current canvas node renderers
+- [x] Compact, non-scrolling primary dock with draggable item insertion and searchable secondary picker
+- [x] In-app ItemEditorRegistry/ItemEditorStore/FloatingItemEditor foundation with Table editor v1
+- [x] Layers panel shows persisted parent/child hierarchy and container child order is updated on attach/detach
 - [x] Explicit registry, renderer, executor, table, and drawing domain tests
 - [x] CI verify workflow covers typecheck, lint, test, and build
-- [ ] Migrate all legacy node renderers to the shared connector-port component
 - [ ] Complete available-item end-to-end browser contract audit
 
 ## Milestone: Beta Performance Architecture (do this before new item types)

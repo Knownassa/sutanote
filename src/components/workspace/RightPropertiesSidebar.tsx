@@ -11,6 +11,7 @@ import {
   Group,
   Ungroup,
   Replace,
+  Table2,
 } from "lucide-react";
 import { useCanvasStore } from "@/lib/store";
 import { getNodeDef } from "@/lib/node-definitions";
@@ -19,6 +20,7 @@ import { storeImageAsset } from "@/lib/asset-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SutonoteColorPicker } from "@/components/ui/SutonoteColorPicker";
 import { FOLDER_ICONS, DEFAULT_FOLDER_ICON } from "@/lib/folder-icons";
+import { useItemEditorStore } from "@/lib/item-editor-store";
 
 const colors = [
   { name: "Yellow", class: "bg-note-yellow" },
@@ -145,7 +147,7 @@ export function RightPropertiesSidebar() {
   const opacityVal = commonData("opacity") as number | null;
 
   return (
-    <div className="flex h-full w-[260px] flex-col">
+    <div className="flex h-full w-full flex-col">
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 p-4">
         <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
           {multi ? `${selected.length} items selected` : "Properties"}
@@ -158,6 +160,18 @@ export function RightPropertiesSidebar() {
           <Trash2 size={16} />
         </button>
       </div>
+      {!multi && node.type === "table" && (
+        <div className="border-b border-border/50 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => useItemEditorStore.getState().open(node.id, "table", "window")}
+            className="flex w-full items-center justify-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-surface-hover"
+          >
+            <Table2 className="h-3.5 w-3.5" />
+            Edit table
+          </button>
+        </div>
+      )}
       <ScrollArea className="flex-1 p-4">
         <div className="flex flex-col gap-5">
           {/* TRANSFORM */}
@@ -278,6 +292,58 @@ export function RightPropertiesSidebar() {
               </div>
             </div>
           )}
+
+          {!multi &&
+            (node.type === "section" || node.type === "frame" || node.type === "column") && (
+              <div>
+                <SectionLabel>Container</SectionLabel>
+                <div className="space-y-2">
+                  {node.type !== "column" && (
+                    <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={(node.data["showTitle"] as boolean) ?? true}
+                        onChange={(event) => patchSelectedData({ showTitle: event.target.checked })}
+                      />
+                      Show title
+                    </label>
+                  )}
+                  {node.type === "column" && (
+                    <>
+                      <Field
+                        label="G"
+                        value={(node.data.gap as number) ?? 10}
+                        onCommit={(value) => patchSelectedData({ gap: Math.max(0, value) })}
+                      />
+                      <Field
+                        label="P"
+                        value={(node.data.padding as number) ?? 12}
+                        onCommit={(value) => patchSelectedData({ padding: Math.max(0, value) })}
+                      />
+                      <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          checked={(node.data.autoHeight as boolean) ?? false}
+                          onChange={(event) =>
+                            patchSelectedData({ autoHeight: event.target.checked })
+                          }
+                        />
+                        Auto height
+                      </label>
+                    </>
+                  )}
+                  {node.type === "section" && (
+                    <Field
+                      label="BO"
+                      value={(node.data["borderOpacity"] as number) ?? 70}
+                      onCommit={(value) =>
+                        patchSelectedData({ borderOpacity: Math.max(0, Math.min(100, value)) })
+                      }
+                    />
+                  )}
+                </div>
+              </div>
+            )}
 
           {/* SHAPE specific */}
           {!multi && node.type === "shape" && (

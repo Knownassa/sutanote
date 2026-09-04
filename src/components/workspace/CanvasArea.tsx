@@ -49,7 +49,11 @@ import { ImageLightbox } from "@/components/workspace/ImageLightbox";
 import { DocumentPreview } from "@/components/workspace/DocumentPreview";
 import { getItemDef } from "@/lib/item-registry";
 import type { DrawingPoint } from "@/lib/persistence/types";
-import { executeCanvasItem } from "@/lib/canvas-executor";
+import {
+  executeCanvasItem,
+  setCanvasItemDragData,
+  SUTONOTE_ITEM_MIME,
+} from "@/lib/canvas-executor";
 import { reduceStroke } from "@/lib/drawing";
 
 const nodeTypes: NodeTypes = {
@@ -403,9 +407,45 @@ function CanvasInner() {
   const handleDrop = useCallback(
     async (e: React.DragEvent) => {
       e.preventDefault();
-      const file = e.dataTransfer.files?.[0];
+      const draggedType = e.dataTransfer.getData(SUTONOTE_ITEM_MIME);
+      if (draggedType) {
+        executeCanvasItem(draggedType, {
+          position: screenToFlowPosition({ x: e.clientX, y: e.clientY }),
+        });
+        return;
+      }
+      const files = Array.from(e.dataTransfer.files ?? []);
+      const file = files[0];
       if (!file) return;
       const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      const createFileNode = async (fileToPlace: File, index: number) => {
+        const typeMap: Record<string, string> = {
+          "image/": "image",
+          "video/": "video",
+          "audio/": "audio",
+          "application/pdf": "pdf",
+        };
+        let nodeType = "file";
+        for (const [prefix, type] of Object.entries(typeMap)) {
+          if (fileToPlace.type.startsWith(prefix) || fileToPlace.type === prefix) {
+            nodeType = type;
+            break;
+          }
+        }
+        const position = { x: pos.x + index * 36, y: pos.y + index * 36 };
+        executeCanvasItem(nodeType, { position });
+        const id = useCanvasStore.getState().selectedNodeIds[0];
+        if (!id) return;
+        const assetId = await storeImageAsset(fileToPlace, fileToPlace.name);
+        useCanvasStore.getState().updateNodeDataWithHistory(id, {
+          assetId,
+          caption: fileToPlace.name,
+          filename: fileToPlace.name,
+          mime: fileToPlace.type,
+          sourceType: "local",
+          remoteUrl: "",
+        });
+      };
       const allNodes = useCanvasStore.getState().nodes;
       // Check if drop is onto an empty asset node (image/pdf/video/file/audio)
       const emptyAssetTypes = ["image", "pdf", "video", "audio", "file"];
@@ -426,45 +466,26 @@ function CanvasInner() {
           assetId,
           caption: file.name,
           filename: file.name,
+          mime: file.type,
           sourceType: "local",
           remoteUrl: "",
         });
         useCanvasStore.getState().setSelectedIds([hitEmpty.id]);
+        await Promise.all(
+          files.slice(1).map((fileToPlace, index) => createFileNode(fileToPlace, index + 1)),
+        );
         return;
       }
-      // Otherwise create new node based on file type
-      const typeMap: Record<string, string> = {
-        "image/": "image",
-        "video/": "video",
-        "audio/": "audio",
-        "application/pdf": "pdf",
-      };
-      let nodeType = "file";
-      for (const [prefix, t] of Object.entries(typeMap)) {
-        if (file.type.startsWith(prefix) || file.type === prefix) {
-          nodeType = t;
-          break;
-        }
-      }
-      const canvas = useCanvasStore.getState();
-      executeCanvasItem(nodeType, { position: pos });
-      const id = useCanvasStore.getState().selectedNodeIds[0];
-      if (id) {
-        const assetId = await storeImageAsset(file, file.name);
-        useCanvasStore.getState().updateNodeDataWithHistory(id, {
-          assetId,
-          caption: file.name,
-          filename: file.name,
-          sourceType: "local",
-          remoteUrl: "",
-        });
-      }
+      await Promise.all(files.map(createFileNode));
     },
     [screenToFlowPosition],
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes("Files")) {
+    if (
+      e.dataTransfer.types.includes("Files") ||
+      e.dataTransfer.types.includes(SUTONOTE_ITEM_MIME)
+    ) {
       e.preventDefault();
       e.dataTransfer.dropEffect = "copy";
     }
@@ -663,28 +684,7 @@ function BottomToolbar() {
     executeCanvasItem(type, { position });
   };
 
-  const tools = [
-    "text",
-    "sticky",
-    "todo",
-    "image",
-    "link",
-    "file",
-    "pdf",
-    "audio",
-    "video",
-    "embed",
-    "shape",
-    "section",
-    "frame",
-    "column",
-    "table",
-    "connector",
-    "pen",
-    "highlighter",
-    "eraser",
-    "comment",
-  ]
+  const tools = ["text", "sticky", "todo", "image", "link", "shape", "section", "connector"]
     .map((type) => getItemDef(type))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
@@ -710,11 +710,16 @@ function BottomToolbar() {
 
         <span className="mx-1 h-6 w-px bg-border" />
 
-        <div className="flex max-w-[min(58vw,620px)] items-center gap-1 overflow-x-auto overscroll-contain scrollbar-thin">
+        <div className="flex items-center gap-1">
           {tools.map(({ type, label, icon: Icon, kind }) => (
             <button
               key={type}
               type="button"
+              draggable
+              onDragStart={(event) => {
+                event.stopPropagation();
+                setCanvasItemDragData(event.dataTransfer, type);
+              }}
               onClick={() => (kind === "tool" ? executeCanvasItem(type) : createWith(type))}
               className={toolBtn(pressed === type || activeTool === type)}
               aria-label={label}

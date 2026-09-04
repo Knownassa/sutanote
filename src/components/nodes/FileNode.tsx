@@ -1,11 +1,12 @@
 import { memo, useRef, useState, useEffect } from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { FileText, Upload } from "lucide-react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { storeAsset } from "@/lib/asset-store";
 import { ResizeControls } from "./ResizeControls";
+import { ConnectorPorts } from "./ConnectorPorts";
 import { useDocumentPreviewStore } from "@/lib/document-preview-store";
 
 function FileNode(props: NodeProps) {
@@ -74,10 +75,7 @@ function FileNode(props: NodeProps) {
           padding: "14px 18px",
         }}
       >
-        <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Left} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
+        <ConnectorPorts />
 
         <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
 

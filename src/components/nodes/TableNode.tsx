@@ -22,6 +22,7 @@ import {
 } from "@/lib/table";
 import { ResizeControls } from "./ResizeControls";
 import { ConnectorPorts } from "./ConnectorPorts";
+import { useItemEditorStore } from "@/lib/item-editor-store";
 
 function TableNode({ id, data, selected }: NodeProps) {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData);
@@ -143,6 +144,10 @@ function TableNode({ id, data, selected }: NodeProps) {
         animate={{ scale: 1, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 18 }}
         className={`nodrag nowheel relative w-full overflow-hidden rounded-[8px] border bg-card transition-shadow ${selected ? "border-border-strong shadow-[0_4px_16px_rgba(0,0,0,0.08)]" : "border-border shadow-[0_2px_8px_rgba(0,0,0,0.04)]"}`}
+        onDoubleClick={(event) => {
+          event.stopPropagation();
+          useItemEditorStore.getState().open(id, "table", "window");
+        }}
       >
         <ConnectorPorts />
 

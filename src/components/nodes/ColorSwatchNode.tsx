@@ -1,11 +1,12 @@
 import { memo, useState, useEffect } from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { Copy } from "lucide-react";
 import { ResizeControls } from "./ResizeControls";
 import { SutonoteColorPicker } from "@/components/ui/SutonoteColorPicker";
+import { ConnectorPorts } from "./ConnectorPorts";
 
 function ColorSwatchNode(props: NodeProps) {
   const { id, data, selected } = props;
@@ -46,10 +47,7 @@ function ColorSwatchNode(props: NodeProps) {
           minHeight: 120,
         }}
       >
-        <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Left} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
+        <ConnectorPorts />
 
         <div className="flex flex-col items-center gap-4">
           <div

@@ -1,11 +1,12 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { MessageCircle } from "lucide-react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { useSettingsStore } from "@/lib/settings-store";
 import { ResizeControls } from "./ResizeControls";
+import { ConnectorPorts } from "./ConnectorPorts";
 
 function CommentNode(props: NodeProps) {
   const { id, data, selected } = props;
@@ -96,10 +97,7 @@ function CommentNode(props: NodeProps) {
         }}
         onDoubleClick={handleDoubleClick}
       >
-        <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Left} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
+        <ConnectorPorts />
 
         <div className="flex items-start gap-2">
           <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />

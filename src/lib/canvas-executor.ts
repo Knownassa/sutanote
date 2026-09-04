@@ -3,6 +3,14 @@ import { getItemDef } from "./item-registry";
 import { useCanvasStore } from "./store";
 import { useInteractionStore, type CanvasTool } from "./interaction-store";
 
+export const SUTONOTE_ITEM_MIME = "application/x-sutonote-item";
+
+export function setCanvasItemDragData(dataTransfer: DataTransfer, type: string) {
+  dataTransfer.effectAllowed = "copy";
+  dataTransfer.setData(SUTONOTE_ITEM_MIME, type);
+  dataTransfer.setData("text/plain", type);
+}
+
 export type CanvasExecutionContext = {
   position?: XYPosition;
   onAction?: (type: string) => void;

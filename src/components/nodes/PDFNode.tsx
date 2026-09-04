@@ -1,5 +1,5 @@
 import { memo, useRef, useState, useEffect, useCallback } from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
@@ -8,6 +8,7 @@ import { ResizeControls } from "./ResizeControls";
 import { EmptyAssetState } from "./EmptyAssetState";
 import { storeImageAsset, getAssetUrl } from "@/lib/asset-store";
 import { useDocumentPreviewStore } from "@/lib/document-preview-store";
+import { ConnectorPorts } from "./ConnectorPorts";
 
 function PDFNode(props: NodeProps) {
   const { id, data, selected } = props;
@@ -138,6 +139,7 @@ function PDFNode(props: NodeProps) {
           maxWidth: 320,
         }}
       >
+        <ConnectorPorts />
         {showEmpty ? (
           <EmptyAssetState
             icon={<FileText className="h-6 w-6" strokeWidth={1.5} />}

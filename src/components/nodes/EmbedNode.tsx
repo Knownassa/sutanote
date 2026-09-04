@@ -1,11 +1,12 @@
 import { memo, useRef, useState, useEffect, useCallback } from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { Globe, ExternalLink, X, Play } from "lucide-react";
 import { useHeavyNode } from "@/hooks/use-heavy-node";
 import { ResizeControls } from "./ResizeControls";
+import { ConnectorPorts } from "./ConnectorPorts";
 import { EmptyAssetState } from "./EmptyAssetState";
 
 function EmbedNode(props: NodeProps) {
@@ -73,6 +74,7 @@ function EmbedNode(props: NodeProps) {
           maxWidth: 480,
         }}
       >
+        <ConnectorPorts />
         {showEmpty ? (
           <EmptyAssetState
             icon={<Globe className="h-6 w-6" strokeWidth={1.5} />}

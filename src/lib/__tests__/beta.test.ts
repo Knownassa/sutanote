@@ -6,6 +6,7 @@ import { useHistoryStore } from "../history-store";
 import { shouldVirtualize } from "../virtualization";
 import { heavyPhase } from "../../hooks/use-heavy-node";
 import { executeCanvasItem } from "../canvas-executor";
+import { getItemEditor } from "../item-editor-registry";
 import { reduceStroke } from "../drawing";
 import { KNOWN_NODE_TYPES, KNOWN_TOOLS } from "../dev-assert";
 import {
@@ -57,6 +58,12 @@ describe("registry invariants", () => {
       expect(getItemDef(type)?.status).toBe("available");
       expect(KNOWN_TOOLS.has(type)).toBe(true);
     }
+  });
+
+  it("registers complex items with a dedicated editor", () => {
+    expect(getItemEditor("table")?.mode).toBe("window");
+    expect(getItemEditor("table")?.component).toBeDefined();
+    expect(getItemEditor("image")).toBeUndefined();
   });
 
   it("executor routes inserts and tools through one boundary", () => {

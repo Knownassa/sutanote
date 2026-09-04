@@ -1,11 +1,12 @@
 import { memo, useRef, useState, useEffect, useCallback } from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { useHeavyNode } from "@/hooks/use-heavy-node";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { Video as VideoIcon, Download, Replace, ExternalLink, X, Play } from "lucide-react";
 import { ResizeControls } from "./ResizeControls";
+import { ConnectorPorts } from "./ConnectorPorts";
 import { EmptyAssetState } from "./EmptyAssetState";
 import { storeImageAsset, getAssetUrl } from "@/lib/asset-store";
 
@@ -134,6 +135,7 @@ function VideoNode(props: NodeProps) {
           maxWidth: 400,
         }}
       >
+        <ConnectorPorts />
         {showEmpty ? (
           <EmptyAssetState
             icon={<VideoIcon className="h-6 w-6" strokeWidth={1.5} />}

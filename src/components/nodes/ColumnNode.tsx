@@ -1,10 +1,11 @@
 import { memo, useState, useMemo } from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { ChevronDown } from "lucide-react";
 import { ResizeControls } from "./ResizeControls";
+import { ConnectorPorts } from "./ConnectorPorts";
 
 function ColumnNode(props: NodeProps) {
   const { id, data, selected } = props;
@@ -19,10 +20,19 @@ function ColumnNode(props: NodeProps) {
   const opacity = (data.opacity as number) ?? 100;
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
-  const children = useMemo(
-    () => allNodes.filter((n) => (n.data.parentId as string | undefined) === id),
-    [allNodes, id],
-  );
+  const children = useMemo(() => {
+    const order = (data.childOrder as string[] | undefined) ?? [];
+    return allNodes
+      .filter((n) => (n.data.parentId as string | undefined) === id)
+      .sort((a, b) => {
+        const aIndex = order.indexOf(a.id);
+        const bIndex = order.indexOf(b.id);
+        return (
+          (aIndex < 0 ? Number.MAX_SAFE_INTEGER : aIndex) -
+          (bIndex < 0 ? Number.MAX_SAFE_INTEGER : bIndex)
+        );
+      });
+  }, [allNodes, data.childOrder, id]);
 
   const handleTitleBlur = () => {
     setIsEditingTitle(false);
@@ -47,10 +57,7 @@ function ColumnNode(props: NodeProps) {
           opacity: opacity / 100,
         }}
       >
-        <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Left} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
+        <ConnectorPorts />
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
@@ -90,29 +97,15 @@ function ColumnNode(props: NodeProps) {
           </div>
 
           {!collapsed && (
-            <div className="space-y-2 border-t border-border/50 pt-2">
-              {children.length === 0 ? (
+            <div
+              className="flex min-h-[76px] flex-col border-t border-border/50 pt-2"
+              style={{ gap: Number(data.gap ?? 10), padding: Number(data.padding ?? 0) }}
+            >
+              {children.length === 0 && (
                 <p className="py-6 text-center text-xs text-muted-foreground/50">Drop items here</p>
-              ) : (
-                <div className="space-y-1">
-                  {children.map((child) => (
-                    <div
-                      key={child.id}
-                      className="flex items-center gap-2 rounded-[5px] bg-card px-2 py-1 text-xs text-foreground border border-border/50"
-                    >
-                      <span className="flex-1 truncate">
-                        {(child.data.title as string) ||
-                          (child.data.text as string)?.slice(0, 24) ||
-                          child.type}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground/60">{child.type}</span>
-                    </div>
-                  ))}
-                </div>
               )}
               <p className="text-center text-[10px] text-muted-foreground/40">
-                {children.length} {children.length === 1 ? "item" : "items"} • move Column to move
-                children
+                {children.length} {children.length === 1 ? "item" : "items"} · drag cards to reorder
               </p>
             </div>
           )}

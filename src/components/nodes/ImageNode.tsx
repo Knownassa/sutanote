@@ -8,6 +8,7 @@ import { ImageIcon, Replace, Link2, Download, X } from "lucide-react";
 import { ResizeControls } from "./ResizeControls";
 import { EmptyAssetState } from "./EmptyAssetState";
 import { useLightboxStore } from "@/lib/lightbox-store";
+import { ConnectorPorts } from "./ConnectorPorts";
 
 function ImageNode(props: NodeProps) {
   const { id, data, selected } = props;
@@ -121,6 +122,7 @@ function ImageNode(props: NodeProps) {
           maxWidth: 360,
         }}
       >
+        <ConnectorPorts />
         {showEmpty ? (
           <EmptyAssetState
             icon={<ImageIcon className="h-6 w-6" strokeWidth={1.5} />}

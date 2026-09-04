@@ -1,9 +1,10 @@
 import { memo, useState, useEffect } from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { ResizeControls } from "./ResizeControls";
+import { ConnectorPorts } from "./ConnectorPorts";
 
 function SectionNode(props: NodeProps) {
   const { id, data, selected } = props;
@@ -11,10 +12,16 @@ function SectionNode(props: NodeProps) {
   const updateNodeDataWithHistory = useCanvasStore((s) => s.updateNodeDataWithHistory);
   const { editingNodeId, setEditingNode } = useInteractionStore();
   const reduce = useReducedMotion();
+  const allNodes = useCanvasStore((s) => s.nodes);
   const rotation = (data.rotation as number) ?? 0;
   const isEditing = editingNodeId === id;
   const [title, setTitle] = useState((data.title as string) ?? "Section");
   const opacity = (data.opacity as number) ?? 100;
+  const showTitle = (data.showTitle as boolean) ?? true;
+  const childCount = allNodes.reduce(
+    (count, node) => count + (node.data.parentId === id ? 1 : 0),
+    0,
+  );
 
   useEffect(() => setTitle((data.title as string) ?? "Section"), [data.title]);
 
@@ -43,41 +50,47 @@ function SectionNode(props: NodeProps) {
           minHeight: 120,
           borderRadius: "6px",
           opacity: opacity / 100,
+          background:
+            (data.backgroundColor as string) ||
+            "color-mix(in srgb, var(--surface) 70%, transparent)",
+          borderColor: (data.borderColor as string) || undefined,
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Left} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
+        <ConnectorPorts />
 
-        <div className="absolute -top-3 left-3">
-          {isEditing ? (
-            <input
-              value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              onBlur={handleTitleBlur}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === "Escape")
-                  (e.currentTarget as HTMLInputElement).blur();
-              }}
-              autoFocus
-              className="rounded bg-card px-2 py-0.5 text-xs font-medium text-foreground shadow-sm border border-border outline-none focus:ring-0"
-            />
-          ) : (
-            <span
-              onDoubleClick={() => useInteractionStore.getState().setEditingNode(id, "title")}
-              onClick={() => {
-                // click title selects section
-                const { selectedNodeIds } = useCanvasStore.getState();
-                if (!selectedNodeIds.includes(id)) useCanvasStore.getState().setSelectedIds([id]);
-              }}
-              className="rounded bg-card px-2 py-0.5 text-xs font-medium text-foreground shadow-sm border border-border cursor-pointer select-none"
-            >
-              {title}
+        {showTitle && (
+          <div className="mb-3 flex items-center justify-between">
+            {isEditing ? (
+              <input
+                value={title}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                onBlur={handleTitleBlur}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === "Escape")
+                    (e.currentTarget as HTMLInputElement).blur();
+                }}
+                autoFocus
+                className="rounded bg-card px-2 py-0.5 text-xs font-medium text-foreground shadow-sm border border-border outline-none focus:ring-0"
+              />
+            ) : (
+              <span
+                onDoubleClick={() => useInteractionStore.getState().setEditingNode(id, "title")}
+                onClick={() => {
+                  // click title selects section
+                  const { selectedNodeIds } = useCanvasStore.getState();
+                  if (!selectedNodeIds.includes(id)) useCanvasStore.getState().setSelectedIds([id]);
+                }}
+                className="rounded bg-card px-2 py-0.5 text-xs font-medium text-foreground shadow-sm border border-border cursor-pointer select-none"
+              >
+                {title}
+              </span>
+            )}
+            <span className="text-[10px] tabular-nums text-muted-foreground/60">
+              {childCount} {childCount === 1 ? "item" : "items"}
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="h-full w-full min-h-[100px]" />
       </motion.div>

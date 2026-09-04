@@ -1,9 +1,10 @@
 import { memo, useState, useMemo } from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { ResizeControls } from "./ResizeControls";
+import { ConnectorPorts } from "./ConnectorPorts";
 
 function FrameNode(props: NodeProps) {
   const { id, data, selected } = props;
@@ -39,20 +40,17 @@ function FrameNode(props: NodeProps) {
         style={{
           transform: `rotate(${rotation}deg)`,
           transformOrigin: "center",
-          padding: showTitle ? "48px 16px 16px" : "16px",
+          padding: "16px",
           minHeight: 120,
           minWidth: 200,
           background: (data.backgroundColor as string) || "transparent",
           opacity: opacity / 100,
         }}
       >
-        <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Left} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
+        <ConnectorPorts />
 
         {showTitle && (
-          <div className="absolute -top-6 left-4 w-auto">
+          <div className="mb-3 w-auto">
             {isEditingTitle ? (
               <input
                 value={title}

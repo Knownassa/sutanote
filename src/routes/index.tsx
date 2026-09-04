@@ -8,6 +8,7 @@ import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { NoticeBar } from "@/components/workspace/NoticeBar";
 import { CanvasErrorBoundary } from "@/components/workspace/CanvasErrorBoundary";
 import { LayersPanel } from "@/components/workspace/LayersPanel";
+import { FloatingItemEditor } from "@/components/workspace/FloatingItemEditor";
 import { useCanvasStore } from "@/lib/store";
 import { useThemeManager } from "@/lib/theme";
 
@@ -92,6 +93,7 @@ function Workspace() {
       </div>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <FloatingItemEditor />
       <NoticeBar />
     </div>
   );

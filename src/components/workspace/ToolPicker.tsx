@@ -11,7 +11,11 @@ import {
   ALL_CATEGORIES,
   STATUS_LABELS,
 } from "@/lib/item-registry";
-import { executeCanvasItem } from "@/lib/canvas-executor";
+import {
+  executeCanvasItem,
+  setCanvasItemDragData,
+  SUTONOTE_ITEM_MIME,
+} from "@/lib/canvas-executor";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ToolPickerProps {
@@ -152,6 +156,12 @@ export function ToolPicker({ open, onClose }: ToolPickerProps) {
                       <button
                         key={item.type}
                         type="button"
+                        draggable={item.status !== "coming-soon"}
+                        onDragStart={(event) => {
+                          if (item.status === "coming-soon") return;
+                          event.stopPropagation();
+                          setCanvasItemDragData(event.dataTransfer, item.type);
+                        }}
                         onClick={() => pick(item)}
                         disabled={item.status === "coming-soon"}
                         className={`flex flex-col items-center gap-1 rounded-xl p-2 transition-colors ${

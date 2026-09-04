@@ -79,6 +79,10 @@ export interface CanvasNodeData {
   label?: string;
   // Container / hierarchy
   parentId?: string;
+  childOrder?: string[];
+  gap?: number;
+  padding?: number;
+  autoHeight?: boolean;
   [key: string]: unknown;
 }
 

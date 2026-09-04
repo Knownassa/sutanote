@@ -1,10 +1,11 @@
 import { memo, useState, useCallback } from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { Copy, FileCode, ChevronDown } from "lucide-react";
 import { ResizeControls } from "./ResizeControls";
+import { ConnectorPorts } from "./ConnectorPorts";
 
 const LANGUAGES = [
   { value: "plaintext", label: "Plain Text" },
@@ -70,10 +71,7 @@ function CodeBlockNode(props: NodeProps) {
           if (!isEditing) setEditingNode(id, "body");
         }}
       >
-        <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Left} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
+        <ConnectorPorts />
 
         <div className="flex items-center justify-between border-b border-border/50 px-3 py-2 bg-muted/30 rounded-t-xl">
           <div className="flex items-center gap-2">

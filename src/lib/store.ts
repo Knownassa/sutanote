@@ -557,8 +557,44 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
                         ? { ...n, data: { ...n.data, parentId: newParent } }
                         : n,
                     ) as CanvasNode[];
+                    if (curParent) {
+                      next = next.map((n) =>
+                        n.id === curParent
+                          ? {
+                              ...n,
+                              data: {
+                                ...n.data,
+                                childOrder: (
+                                  (n.data.childOrder as string[] | undefined) ?? []
+                                ).filter((childId) => childId !== finalNode.id),
+                              },
+                            }
+                          : n,
+                      ) as CanvasNode[];
+                    }
+                    if (newParent) {
+                      next = next.map((n) => {
+                        if (n.id !== newParent) return n;
+                        const childOrder = (n.data.childOrder as string[] | undefined) ?? [];
+                        return {
+                          ...n,
+                          data: {
+                            ...n.data,
+                            childOrder: [
+                              ...childOrder.filter((childId) => childId !== finalNode.id),
+                              finalNode.id,
+                            ],
+                          },
+                        };
+                      }) as CanvasNode[];
+                    }
                     const updated = next.find((n) => n.id === finalNode.id);
                     if (updated) markNodeDirty(updated);
+                    for (const containerId of [curParent, newParent]) {
+                      if (!containerId) continue;
+                      const container = next.find((n) => n.id === containerId);
+                      if (container) markNodeDirty(container);
+                    }
                   }
                 }
                 touched = true;
@@ -635,20 +671,14 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
 
     addNode: (type, position) => {
       const maxZ = get().nodes.reduce((m, n) => Math.max(m, n.zIndex ?? 0), 0);
-      const minZ = get().nodes.reduce(
-        (m, n) => Math.min(m, n.zIndex ?? 0),
-        Number.POSITIVE_INFINITY,
-      );
       const def = getNodeDef(type);
       // Snap initial position to grid if setting enabled.
       const doSnap = useSettingsStore.getState().snapToGrid;
       const pos = doSnap ? { x: snapValue(position.x), y: snapValue(position.y) } : position;
-      const containerTypes = ["section", "frame"];
-      const zIndex = containerTypes.includes(type)
-        ? Number.isFinite(minZ)
-          ? minZ - 1
-          : 0
-        : maxZ + 1;
+      // Containers render as ordinary canvas nodes. Their visual surface owns
+      // the background; children remain regular nodes with explicit parentId
+      // relationships instead of relying on negative z-index values.
+      const zIndex = CONTAINER_TYPES.includes(type) ? 0 : maxZ + 1;
       const newNode: CanvasNode = {
         id: nanoid(),
         type,
@@ -678,9 +708,20 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
                 resolved: false,
               }
             : {}),
-          ...(type === "section" ? { title: "Section", opacity: 100 } : {}),
+          ...(type === "section"
+            ? { title: "Section", opacity: 100, showTitle: true, borderOpacity: 70 }
+            : {}),
           ...(type === "frame" ? { title: "", showTitle: true, opacity: 100 } : {}),
-          ...(type === "column" ? { title: "Column", collapsed: false } : {}),
+          ...(type === "column"
+            ? {
+                title: "Column",
+                collapsed: false,
+                childOrder: [],
+                gap: 10,
+                padding: 12,
+                autoHeight: false,
+              }
+            : {}),
           ...(type === "shape"
             ? {
                 shape: "rectangle",
@@ -784,7 +825,19 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     deleteNode: (id) => {
       // History: push state before deletion.
       pushHistoryAfterChange();
-      const next = get().nodes.filter((n) => n.id !== id);
+      const next = get()
+        .nodes.filter((n) => n.id !== id)
+        .map((n) =>
+          Array.isArray(n.data.childOrder)
+            ? {
+                ...n,
+                data: {
+                  ...n.data,
+                  childOrder: (n.data.childOrder as string[]).filter((childId) => childId !== id),
+                },
+              }
+            : n,
+        ) as CanvasNode[];
       commitNodes(next);
       markNodeDeleted(id);
       scheduleFlush();
@@ -810,7 +863,21 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       if (ids.size === 0) return;
       // History: push state before deletion.
       pushHistoryAfterChange();
-      const next = get().nodes.filter((n) => !ids.has(n.id));
+      const next = get()
+        .nodes.filter((n) => !ids.has(n.id))
+        .map((n) =>
+          Array.isArray(n.data.childOrder)
+            ? {
+                ...n,
+                data: {
+                  ...n.data,
+                  childOrder: (n.data.childOrder as string[]).filter(
+                    (childId) => !ids.has(childId),
+                  ),
+                },
+              }
+            : n,
+        ) as CanvasNode[];
       commitNodes(next);
       ids.forEach(markNodeDeleted);
       const remainingEdges = get().edges.filter((e) => !ids.has(e.source) && !ids.has(e.target));

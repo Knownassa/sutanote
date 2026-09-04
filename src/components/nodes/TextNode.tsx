@@ -1,10 +1,11 @@
 import { memo, useState, useEffect, lazy, Suspense } from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { useInteractionStore } from "@/lib/interaction-store";
 import { ResizeControls } from "./ResizeControls";
 import { RichTextView } from "./RichTextView";
+import { ConnectorPorts } from "./ConnectorPorts";
 
 /** Tiptap is only downloaded/mounted while a node is actually being edited. */
 const RichTextEditor = lazy(() =>
@@ -137,10 +138,7 @@ function TextNode(props: NodeProps) {
         }}
         onDoubleClick={handleDoubleClick}
       >
-        <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Left} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
+        <ConnectorPorts />
         <input
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}

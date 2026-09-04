@@ -1,8 +1,9 @@
 import { memo, useState } from "react";
-import { Handle, Position, NodeProps } from "reactflow";
+import { NodeProps } from "reactflow";
 import { motion, useReducedMotion } from "motion/react";
 import { useCanvasStore } from "@/lib/store";
 import { ResizeControls } from "./ResizeControls";
+import { ConnectorPorts } from "./ConnectorPorts";
 
 type ShapeType = "rectangle" | "rounded-rectangle" | "circle" | "diamond";
 
@@ -41,10 +42,7 @@ function ShapeNode(props: NodeProps) {
           padding: "8px",
         }}
       >
-        <Handle type="target" position={Position.Top} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Bottom} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Left} className="!h-0 !w-0 !opacity-0" />
-        <Handle type="source" position={Position.Right} className="!h-0 !w-0 !opacity-0" />
+        <ConnectorPorts />
 
         <div className="flex items-center justify-center min-h-[80px]">
           <svg viewBox="0 0 100 100" className="w-full h-auto" preserveAspectRatio="none">
