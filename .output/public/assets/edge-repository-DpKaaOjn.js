@@ -1,0 +1,3 @@
+import{n as e}from"./rolldown-runtime-hePW80VL.js";import{t}from"./database-DQHpFc6R.js";var n=e({loadEdgesByBoard:()=>r});async function r(e){return(await t.query(`SELECT id, board_id, source_id, target_id, source_handle, target_handle, type, data
+       FROM canvas_edges
+      WHERE board_id = $1`,[e])).rows.map(e=>({id:e.id,source:e.source_id,target:e.target_id,sourceHandle:e.source_handle??null,targetHandle:e.target_handle??null,type:e.type??void 0,data:e.data??void 0}))}export{r as n,n as t};
