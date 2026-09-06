@@ -1,20 +1,19 @@
 /**
  * Persistence Slice - Manages data persistence with PGlite
- * 
+ *
  * This slice handles:
  * - Dirty state tracking for nodes and edges
  * - Scheduled flushing to database
  * - Immediate flush operations
  * - Persistence status management
- * 
+ *
  * Integrates with PGlite for local-first storage
  */
 
-import { StateCreator } from 'zustand';
-import type { CanvasNode, CanvasEdge, PersistenceStatus } from '../persistence/types';
-import { flushBoard } from '../persistence/persistence-manager';
-import { storageBoardId } from '../persistence/utils';
-import { useBoardTreeStore } from '../board-tree-store';
+import { StateCreator } from "zustand";
+import type { CanvasNode, CanvasEdge, PersistenceStatus } from "../persistence/types";
+import { DEFAULT_BOARD_ID } from "../persistence/types";
+import { flushBoard } from "../persistence/persistence-manager";
 
 export interface PersistenceState {
   persistenceStatus: PersistenceStatus;
@@ -33,6 +32,10 @@ export interface PersistenceActions {
 }
 
 export type PersistenceSlice = PersistenceState & PersistenceActions;
+type PersistenceStore = PersistenceSlice & {
+  edges: CanvasEdge[];
+  currentBoardId: string;
+};
 
 // Entity-level persistence queue — lives outside React state
 const dirtyNodes = new Map<string, CanvasNode>();
@@ -43,6 +46,10 @@ const deletedEdgeIds = new Set<string>();
 const SAVE_DELAY = 500;
 let flushTimer: ReturnType<typeof setTimeout> | undefined;
 let flushing = false;
+
+function storageBoardId(boardId: string): string {
+  return boardId === "b-moodboard" ? DEFAULT_BOARD_ID : boardId;
+}
 
 /**
  * Gets the total size of the dirty queue
@@ -55,12 +62,12 @@ function queueSize(): number {
  * Creates the persistence slice for Zustand store
  */
 export const createPersistenceSlice: StateCreator<
-  PersistenceSlice,
-  [['zustand/devtools', never]],
+  PersistenceStore,
+  [["zustand/devtools", never]],
   [],
   PersistenceSlice
 > = (set, get) => ({
-  persistenceStatus: 'clean',
+  persistenceStatus: "clean",
   lastSavedAt: null,
   lastSaveError: null,
   pendingChanges: 0,
@@ -73,9 +80,9 @@ export const createPersistenceSlice: StateCreator<
   markNodeDeleted: (id) => {
     dirtyNodes.delete(id);
     deletedNodeIds.add(id);
-    
+
     // Also delete connected edges
-    const { edges } = get() as { edges: CanvasEdge[] };
+    const { edges } = get();
     for (const e of edges) {
       if (e.source === id || e.target === id) {
         dirtyEdges.delete(e.id);
@@ -95,7 +102,7 @@ export const createPersistenceSlice: StateCreator<
   },
 
   scheduleFlush: () => {
-    set({ persistenceStatus: 'dirty', pendingChanges: queueSize() });
+    set({ persistenceStatus: "dirty", pendingChanges: queueSize() });
     if (flushTimer) return;
     flushTimer = setTimeout(async () => {
       flushTimer = undefined;
@@ -105,24 +112,24 @@ export const createPersistenceSlice: StateCreator<
 
   flushNow: async () => {
     if (flushing) return;
-    
+
     const dn = new Map(dirtyNodes);
     const dd = new Set(deletedNodeIds);
     const de = new Map(dirtyEdges);
     const dde = new Set(deletedEdgeIds);
-    
+
     if (dn.size === 0 && dd.size === 0 && de.size === 0 && dde.size === 0) {
-      set({ persistenceStatus: 'clean', pendingChanges: 0 });
+      set({ persistenceStatus: "clean", pendingChanges: 0 });
       return;
     }
 
     flushing = true;
-    set({ persistenceStatus: 'saving' });
-    
+    set({ persistenceStatus: "saving" });
+
     try {
-      const store = get() as { currentBoardId: string };
+      const store = get();
       await flushBoard(storageBoardId(store.currentBoardId), dn, dd, de, dde);
-      
+
       // Clean up flushed items
       for (const [id, snap] of dn) {
         if (dirtyNodes.get(id) === snap) dirtyNodes.delete(id);
@@ -138,14 +145,14 @@ export const createPersistenceSlice: StateCreator<
       }
 
       set({
-        persistenceStatus: queueSize() > 0 ? 'dirty' : 'saved',
+        persistenceStatus: queueSize() > 0 ? "dirty" : "saved",
         lastSavedAt: Date.now(),
         lastSaveError: null,
         pendingChanges: queueSize(),
       });
     } catch (err) {
       set({
-        persistenceStatus: 'error',
+        persistenceStatus: "error",
         lastSaveError: err instanceof Error ? err.message : String(err),
         pendingChanges: queueSize(),
       });
