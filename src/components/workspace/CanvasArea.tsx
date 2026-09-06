@@ -80,8 +80,7 @@ const nodeTypes: NodeTypes = {
   drawing: DrawingNode,
 };
 
-const isDrawingTool = (tool: string) =>
-  tool === "pen" || tool === "highlighter";
+const isDrawingTool = (tool: string) => tool === "pen" || tool === "highlighter";
 
 function centerViewport(): Viewport {
   if (typeof window === "undefined") return { x: 0, y: 0, zoom: 0.9 };
